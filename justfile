@@ -1,0 +1,108 @@
+# ── unifly justfile ─────────────────────────────────────────────
+# https://github.com/hyperb1iss/unifly
+
+set dotenv-load
+
+# List available recipes
+default:
+    @just --list --unsorted
+
+# ── Build ───────────────────────────────────────────────────────
+
+# Build all crates (debug)
+build:
+    cargo build --workspace
+
+# Build all crates (release)
+build-release:
+    cargo build --workspace --release
+
+# ── Install ─────────────────────────────────────────────────────
+
+# Install both CLI and TUI binaries
+install:
+    cargo install --path crates/unifly
+    cargo install --path crates/unifly-tui
+
+# Install CLI only
+install-cli:
+    cargo install --path crates/unifly
+
+# Install TUI only
+install-tui:
+    cargo install --path crates/unifly-tui
+
+# ── Quality ─────────────────────────────────────────────────────
+
+# Run all checks (lint + test + clippy)
+check: lint clippy test
+
+# Run clippy with workspace lints
+clippy:
+    cargo clippy --workspace --all-targets
+
+# Auto-fix clippy + formatting
+fix:
+    cargo clippy --workspace --all-targets --fix --allow-dirty
+    cargo fmt --all
+
+# Format all code
+fmt:
+    cargo fmt --all
+
+# Check formatting without modifying
+fmt-check:
+    cargo fmt --all -- --check
+
+# Lint = format check + clippy
+lint: fmt-check clippy
+
+# ── Test ────────────────────────────────────────────────────────
+
+# Run all tests
+test:
+    cargo test --workspace
+
+# Run tests with output
+test-verbose:
+    cargo test --workspace -- --nocapture
+
+# Run tests for a specific crate
+test-crate crate:
+    cargo test -p {{crate}}
+
+# Update insta snapshots
+snap-review:
+    cargo insta review
+
+# ── Run ─────────────────────────────────────────────────────────
+
+# Run the CLI with args
+cli *args:
+    cargo run -p unifly -- {{args}}
+
+# Run the TUI with args
+tui *args:
+    cargo run -p unifly-tui -- {{args}}
+
+# ── Docs ────────────────────────────────────────────────────────
+
+# Generate rustdoc for the workspace
+doc:
+    cargo doc --workspace --no-deps --open
+
+# ── Clean ───────────────────────────────────────────────────────
+
+# Remove build artifacts
+clean:
+    cargo clean
+
+# ── Release ─────────────────────────────────────────────────────
+
+# Dry-run cargo-dist
+dist-plan:
+    cargo dist plan
+
+# Build distributable artifacts
+dist-build:
+    cargo dist build
