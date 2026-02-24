@@ -1513,6 +1513,15 @@ impl Controller {
 
 // ── Background tasks ─────────────────────────────────────────────
 
+/// Parse a numeric field from a JSON object, tolerating both string and number encodings.
+fn parse_f64_field(parent: Option<&serde_json::Value>, key: &str) -> Option<f64> {
+    parent.and_then(|s| s.get(key)).and_then(|v| {
+        v.as_str()
+            .and_then(|s| s.parse().ok())
+            .or_else(|| v.as_f64())
+    })
+}
+
 /// Apply a `device:sync` WebSocket message to the DataStore.
 ///
 /// Extracts CPU, memory, load averages, and uplink bandwidth from the
@@ -1554,23 +1563,8 @@ fn apply_device_sync(store: &DataStore, data: &serde_json::Value) {
         (Some(used), Some(total)) if total > 0 => Some((used as f64 / total as f64) * 100.0),
         _ => None,
     };
-    let load_averages: [Option<f64>; 3] = [
-        sys.and_then(|s| s.get("loadavg_1")).and_then(|v| {
-            v.as_str()
-                .and_then(|s| s.parse().ok())
-                .or_else(|| v.as_f64())
-        }),
-        sys.and_then(|s| s.get("loadavg_5")).and_then(|v| {
-            v.as_str()
-                .and_then(|s| s.parse().ok())
-                .or_else(|| v.as_f64())
-        }),
-        sys.and_then(|s| s.get("loadavg_15")).and_then(|v| {
-            v.as_str()
-                .and_then(|s| s.parse().ok())
-                .or_else(|| v.as_f64())
-        }),
-    ];
+    let load_averages: [Option<f64>; 3] = ["loadavg_1", "loadavg_5", "loadavg_15"]
+        .map(|key| parse_f64_field(sys, key));
 
     // Uplink bandwidth: check "uplink" object or top-level fields
     let uplink = data.get("uplink");
