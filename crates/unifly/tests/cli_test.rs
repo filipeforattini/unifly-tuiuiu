@@ -18,7 +18,7 @@ fn unifly_cmd() -> assert_cmd::Command {
     cmd.env("HOME", "/tmp/unifly-test-nonexistent")
         .env("XDG_CONFIG_HOME", "/tmp/unifly-test-nonexistent")
         .env_remove("UNIFI_PROFILE")
-        .env_remove("UNIFI_CONTROLLER")
+        .env_remove("UNIFI_URL")
         .env_remove("UNIFI_SITE")
         .env_remove("UNIFI_API_KEY")
         .env_remove("UNIFI_OUTPUT")

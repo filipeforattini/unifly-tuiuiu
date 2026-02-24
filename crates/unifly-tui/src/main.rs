@@ -51,6 +51,10 @@ struct Cli {
     #[arg(short = 'a', long, env = "UNIFI_API_KEY")]
     api_key: Option<String>,
 
+    /// Config profile to use (defaults to the default_profile in config)
+    #[arg(short = 'p', long, env = "UNIFI_PROFILE")]
+    profile: Option<String>,
+
     /// Accept self-signed TLS certificates
     #[arg(short = 'k', long, env = "UNIFI_INSECURE")]
     insecure: bool,
@@ -162,8 +166,11 @@ fn try_hybrid_from_config(api_key: &SecretString) -> Option<AuthCredentials> {
     })
 }
 
-/// Try loading a controller from the shared config file (default profile).
-fn build_controller_from_config() -> Option<Controller> {
+/// Try loading a controller from the shared config file.
+///
+/// If `profile_name` is provided, that profile is used; otherwise falls back
+/// to the config's `default_profile`, then `"default"`.
+fn build_controller_from_config(profile_name: Option<&str>) -> Option<Controller> {
     let cfg = match unifly_config::load_config() {
         Ok(cfg) => cfg,
         Err(e) => {
@@ -172,7 +179,9 @@ fn build_controller_from_config() -> Option<Controller> {
         }
     };
 
-    let profile_name = cfg.default_profile.as_deref().unwrap_or("default");
+    let profile_name = profile_name
+        .or(cfg.default_profile.as_deref())
+        .unwrap_or("default");
 
     let Some(profile) = cfg.profiles.get(profile_name) else {
         tracing::warn!(
@@ -208,7 +217,8 @@ async fn main() -> Result<()> {
     );
 
     // Priority: CLI flags > config file > onboarding wizard
-    let controller = build_controller(&cli).or_else(build_controller_from_config);
+    let controller =
+        build_controller(&cli).or_else(|| build_controller_from_config(cli.profile.as_deref()));
     let mut app = App::new(controller);
     app.run().await?;
 

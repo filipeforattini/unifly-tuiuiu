@@ -38,7 +38,7 @@ pub struct GlobalOpts {
     pub profile: Option<String>,
 
     /// Controller URL (overrides profile)
-    #[arg(long, short = 'c', env = "UNIFI_CONTROLLER", global = true)]
+    #[arg(long, short = 'c', env = "UNIFI_URL", global = true)]
     pub controller: Option<String>,
 
     /// Site name or UUID
