@@ -2,8 +2,10 @@ name: CI/CD
 
 on:
   push:
+    branches: [main]
     tags:
       - "v*.*.*"
+  pull_request:
   workflow_dispatch:
     inputs:
       release_run_id:
@@ -11,8 +13,28 @@ on:
         required: false
 
 jobs:
+  # ── CI ─────────────────────────────────────────────────────────
+  ci:
+    uses: hyperb1iss/shared-workflows/.github/workflows/rust-ci.yml@main
+    with:
+      change-detection: false
+      system-deps: 'libdbus-1-dev pkg-config lld'
+      workspace: true
+      all-features: false
+      all-targets: false
+      nextest: false
+      cargo-deny: false
+      nightly-fmt: true
+    permissions:
+      contents: read
+      pull-requests: read
+    secrets: inherit
+
+  # ── Build Artifacts ────────────────────────────────────────────
   build-artifacts:
     name: Build (${{ matrix.build }})
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: ci
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -20,39 +42,30 @@ jobs:
           - build: linux-amd64
             os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
-
           - build: linux-arm64
             os: ubuntu-24.04-arm
             target: aarch64-unknown-linux-gnu
-
           - build: macos-arm64
             os: macos-latest
             target: aarch64-apple-darwin
-
           - build: windows-gnu
             os: windows-latest
             target: x86_64-pc-windows-gnu
-
     steps:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
-
       - name: Install system dependencies (Linux)
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y libdbus-1-dev pkg-config lld
-
       - uses: Swatinem/rust-cache@v2
         with:
           cache-on-failure: true
-
       - name: Build release binaries
         run: cargo build --workspace --release --locked --target ${{ matrix.target }}
-
       - name: Upload unifly artifact
         uses: actions/upload-artifact@v4
         with:
@@ -61,7 +74,6 @@ jobs:
             ./target/${{ matrix.target }}/release/unifly${{ matrix.os == 'windows-latest' && '.exe' || '' }}
           if-no-files-found: error
           retention-days: 1
-
       - name: Upload unifly-tui artifact
         uses: actions/upload-artifact@v4
         with:
@@ -71,34 +83,24 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
-  cargo-publish:
-    name: Publish to crates.io
+  # ── Publish to crates.io ──────────────────────────────────────
+  publish:
+    if: startsWith(github.ref, 'refs/tags/')
     needs: build-artifacts
-    runs-on: ubuntu-latest
+    uses: hyperb1iss/shared-workflows/.github/workflows/rust-publish.yml@main
+    with:
+      crates: 'unifly-api unifly-core'
+      system-deps: 'libdbus-1-dev pkg-config lld'
     permissions:
+      contents: read
       id-token: write
-    steps:
-      - uses: actions/checkout@v6
-      - run: sudo apt-get update && sudo apt-get install -y libdbus-1-dev pkg-config lld
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-      - name: Authenticate with crates.io
-        uses: rust-lang/crates-io-auth-action@v1
-        id: auth
-      - name: Publish crates (dependency order)
-        env:
-          CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
-        run: |
-          # Publish only public crates in dependency order
-          for crate in unifly-api unifly-core; do
-            echo "Publishing $crate..."
-            cargo publish -p $crate --locked || echo "Warning: $crate may already be published"
-            sleep 30  # Wait for crates.io index to update
-          done
+    secrets: inherit
 
+  # ── Create GitHub Release ─────────────────────────────────────
   create-release:
     name: Create GitHub Release
-    needs: [build-artifacts, cargo-publish]
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [build-artifacts, publish]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -106,12 +108,10 @@ jobs:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
-
       - name: Download all artifacts
         uses: actions/download-artifact@v4
         with:
           path: ./artifacts
-
       - name: Prepare release assets
         run: |
           mkdir -p release-assets
@@ -122,7 +122,6 @@ jobs:
             done
           done
           ls -la ./release-assets
-
       - name: Get previous tag
         id: prev_tag
         run: |
@@ -131,7 +130,6 @@ jobs:
             PREVIOUS_TAG=$(git rev-list --max-parents=0 HEAD)
           fi
           echo "tag=$PREVIOUS_TAG" >> $GITHUB_OUTPUT
-
       - name: Download release notes from release workflow
         id: download_notes
         if: ${{ inputs.release_run_id != '' }}
@@ -141,7 +139,6 @@ jobs:
           run-id: ${{ inputs.release_run_id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
-
       - name: Generate release notes (fallback)
         if: steps.download_notes.outcome != 'success'
         uses: hyperb1iss/git-iris@v2
@@ -154,7 +151,6 @@ jobs:
           model: claude-sonnet-4-5-20250929
           api-key: ${{ secrets.ANTHROPIC_API_KEY }}
           output-file: RELEASE_NOTES.md
-
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -164,8 +160,10 @@ jobs:
           files: ./release-assets/*
           body_path: RELEASE_NOTES.md
 
+  # ── Update Homebrew Tap ───────────────────────────────────────
   update-homebrew:
     name: Update Homebrew Tap
+    if: startsWith(github.ref, 'refs/tags/')
     needs: create-release
     runs-on: ubuntu-latest
     steps:
@@ -174,7 +172,6 @@ jobs:
           repository: hyperb1iss/homebrew-tap
           token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
           path: homebrew-tap
-
       - name: Calculate checksums
         id: sha
         run: |
@@ -182,16 +179,13 @@ jobs:
           RELEASE_URL="https://github.com/hyperb1iss/unifly/releases/download/${GITHUB_REF_NAME}"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-          # unifly CLI checksums
           echo "cli_macos_arm64=$(curl -fsSL "${RELEASE_URL}/unifly-macos-arm64" | shasum -a 256 | cut -d' ' -f1)" >> $GITHUB_OUTPUT
           echo "cli_linux_arm64=$(curl -fsSL "${RELEASE_URL}/unifly-linux-arm64" | shasum -a 256 | cut -d' ' -f1)" >> $GITHUB_OUTPUT
           echo "cli_linux_amd64=$(curl -fsSL "${RELEASE_URL}/unifly-linux-amd64" | shasum -a 256 | cut -d' ' -f1)" >> $GITHUB_OUTPUT
 
-          # unifly-tui checksums
           echo "tui_macos_arm64=$(curl -fsSL "${RELEASE_URL}/unifly-tui-macos-arm64" | shasum -a 256 | cut -d' ' -f1)" >> $GITHUB_OUTPUT
           echo "tui_linux_arm64=$(curl -fsSL "${RELEASE_URL}/unifly-tui-linux-arm64" | shasum -a 256 | cut -d' ' -f1)" >> $GITHUB_OUTPUT
           echo "tui_linux_amd64=$(curl -fsSL "${RELEASE_URL}/unifly-tui-linux-amd64" | shasum -a 256 | cut -d' ' -f1)" >> $GITHUB_OUTPUT
-
       - name: Generate formula
         run: |
           cat > homebrew-tap/Formula/unifly.rb << 'FORMULA'
@@ -247,7 +241,6 @@ jobs:
             end
           end
           FORMULA
-
       - name: Push to tap
         run: |
           cd homebrew-tap
