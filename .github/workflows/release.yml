@@ -117,10 +117,14 @@ jobs:
         id: prev_tag
         run: |
           PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          if [[ -z "$PREVIOUS_TAG" ]]; then
+            # First release — use root commit as base
+            PREVIOUS_TAG=$(git rev-list --max-parents=0 HEAD)
+          fi
           echo "tag=$PREVIOUS_TAG" >> $GITHUB_OUTPUT
 
       - name: "Generate release notes"
-        if: ${{ !inputs.dry_run && steps.prev_tag.outputs.tag != '' }}
+        if: ${{ !inputs.dry_run }}
         uses: hyperb1iss/git-iris@v2
         with:
           command: release-notes
@@ -131,13 +135,6 @@ jobs:
           model: claude-sonnet-4-5-20250929
           api-key: ${{ secrets.ANTHROPIC_API_KEY }}
           output-file: RELEASE_NOTES.md
-
-      - name: "Fallback release notes"
-        if: ${{ !inputs.dry_run && steps.prev_tag.outputs.tag == '' }}
-        run: |
-          echo "# Release v${{ steps.version.outputs.version }}" > RELEASE_NOTES.md
-          echo "" >> RELEASE_NOTES.md
-          echo "Initial release." >> RELEASE_NOTES.md
 
       - name: "Upload release notes"
         if: ${{ !inputs.dry_run }}
