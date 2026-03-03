@@ -3,15 +3,20 @@ use std::path::PathBuf;
 
 use clap::CommandFactory;
 
-// Pull in cli.rs directly -- it only depends on clap + clap_complete (both
+// Pull in args.rs directly -- it only depends on clap + clap_complete (both
 // listed as build-dependencies), so this compiles cleanly without dragging
 // in the rest of the crate.
-#[path = "src/cli.rs"]
-mod cli;
+#[path = "src/cli/args.rs"]
+mod args;
 
 fn main() {
+    // Only generate man pages when the CLI feature is active.
+    if std::env::var("CARGO_FEATURE_CLI").is_err() {
+        return;
+    }
+
     // Re-run if the CLI definitions change.
-    println!("cargo::rerun-if-changed=src/cli.rs");
+    println!("cargo::rerun-if-changed=src/cli/args.rs");
 
     let out_dir: PathBuf = std::env::var_os("OUT_DIR")
         .expect("OUT_DIR not set by Cargo")
@@ -19,7 +24,7 @@ fn main() {
     let man_dir = out_dir.join("man");
     fs::create_dir_all(&man_dir).expect("failed to create man output directory");
 
-    let cmd = cli::Cli::command();
+    let cmd = args::Cli::command();
     generate_manpages(&cmd, &man_dir);
 }
 

@@ -1,6 +1,6 @@
 [package]
 name = "unifly-api"
-description = "Async Rust client for the Ubiquiti UniFi controller API (Integration + Legacy)"
+description = "Async Rust client, reactive data layer, and domain model for UniFi controller APIs"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -20,6 +20,7 @@ reqwest           = { workspace = true }
 tokio             = { workspace = true, features = ["macros", "rt"] }
 tokio-tungstenite = { workspace = true }
 tokio-util        = { workspace = true }
+tokio-stream      = { workspace = true, features = ["sync"] }
 serde             = { workspace = true }
 serde_json        = { workspace = true }
 thiserror         = { workspace = true }
@@ -29,7 +30,12 @@ chrono            = { workspace = true }
 uuid              = { workspace = true }
 secrecy           = { workspace = true }
 futures-util      = { workspace = true }
+futures-core      = { workspace = true }
 async-stream      = { workspace = true }
+dashmap           = { workspace = true }
+arc-swap          = { workspace = true }
+strum             = { workspace = true }
+bytes             = { workspace = true }
 rustls            = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
 rustls-pki-types  = "1"
 

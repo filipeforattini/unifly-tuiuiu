@@ -89,7 +89,7 @@ jobs:
     needs: build-artifacts
     uses: hyperb1iss/shared-workflows/.github/workflows/rust-publish.yml@main
     with:
-      crates: 'unifly-api unifly-core'
+      crates: 'unifly-api unifly'
       system-deps: 'libdbus-1-dev pkg-config lld'
     permissions:
       contents: read

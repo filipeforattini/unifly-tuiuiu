@@ -22,15 +22,14 @@ build-release:
 # Install both CLI and TUI binaries
 install:
     cargo install --path crates/unifly
-    cargo install --path crates/unifly-tui
 
 # Install CLI only
 install-cli:
-    cargo install --path crates/unifly
+    cargo install --path crates/unifly --no-default-features --features cli
 
 # Install TUI only
 install-tui:
-    cargo install --path crates/unifly-tui
+    cargo install --path crates/unifly --no-default-features --features tui
 
 # ── Quality ─────────────────────────────────────────────────────
 
@@ -79,11 +78,11 @@ snap-review:
 
 # Run the CLI with args
 cli *args:
-    cargo run -p unifly -- {{args}}
+    cargo run -p unifly --bin unifly -- {{args}}
 
 # Run the TUI with args
 tui *args:
-    cargo run -p unifly-tui -- {{args}}
+    cargo run -p unifly --bin unifly-tui -- {{args}}
 
 # ── Docs ────────────────────────────────────────────────────────
 
