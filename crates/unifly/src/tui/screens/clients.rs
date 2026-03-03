@@ -29,6 +29,12 @@ pub struct ClientsScreen {
     detail_client_idx: usize,
 }
 
+impl Default for ClientsScreen {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ClientsScreen {
     pub fn new() -> Self {
         Self {

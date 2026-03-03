@@ -40,6 +40,12 @@ pub struct TopologyScreen {
     zoom: f64,
 }
 
+impl Default for TopologyScreen {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TopologyScreen {
     pub fn new() -> Self {
         Self {

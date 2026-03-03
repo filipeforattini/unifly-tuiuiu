@@ -115,6 +115,12 @@ pub struct OnboardingScreen {
     throbber_state: throbber_widgets_tui::ThrobberState,
 }
 
+impl Default for OnboardingScreen {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl OnboardingScreen {
     pub fn new() -> Self {
         Self {

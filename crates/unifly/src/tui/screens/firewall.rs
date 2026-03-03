@@ -30,6 +30,12 @@ pub struct FirewallScreen {
     acl_table: TableState,
 }
 
+impl Default for FirewallScreen {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl FirewallScreen {
     pub fn new() -> Self {
         Self {

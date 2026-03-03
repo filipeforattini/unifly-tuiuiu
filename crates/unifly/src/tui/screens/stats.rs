@@ -84,6 +84,12 @@ fn interpolate_fill(data: &[(f64, f64)], target_density: usize) -> Vec<(f64, f64
     result
 }
 
+impl Default for StatsScreen {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl StatsScreen {
     pub fn new() -> Self {
         Self {

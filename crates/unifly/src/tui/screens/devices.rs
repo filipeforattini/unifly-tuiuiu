@@ -28,6 +28,12 @@ pub struct DevicesScreen {
     search_query: String,
 }
 
+impl Default for DevicesScreen {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl DevicesScreen {
     pub fn new() -> Self {
         Self {

@@ -146,6 +146,12 @@ pub struct DashboardScreen {
     last_data_update: Option<Instant>,
 }
 
+impl Default for DashboardScreen {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl DashboardScreen {
     pub fn new() -> Self {
         Self {

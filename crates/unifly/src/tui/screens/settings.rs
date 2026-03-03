@@ -128,6 +128,12 @@ pub struct SettingsScreen {
     theme_selector: RefCell<Option<opaline::ThemeSelectorState>>,
 }
 
+impl Default for SettingsScreen {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SettingsScreen {
     /// Create a new settings screen, pre-populated from the current config.
     pub fn new() -> Self {

@@ -151,6 +151,12 @@ pub struct NetworksScreen {
     action_tx: Option<UnboundedSender<Action>>,
 }
 
+impl Default for NetworksScreen {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl NetworksScreen {
     pub fn new() -> Self {
         Self {

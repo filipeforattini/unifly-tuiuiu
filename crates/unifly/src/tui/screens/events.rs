@@ -27,6 +27,12 @@ pub struct EventsScreen {
     capacity: usize,
 }
 
+impl Default for EventsScreen {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl EventsScreen {
     pub fn new() -> Self {
         Self {
