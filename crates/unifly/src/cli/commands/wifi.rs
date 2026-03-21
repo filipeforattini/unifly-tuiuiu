@@ -100,6 +100,8 @@ pub async fn handle(
     args: WifiArgs,
     global: &GlobalOpts,
 ) -> Result<(), CliError> {
+    util::ensure_integration_access(controller, "wifi").await?;
+
     match args.command {
         WifiCommand::List(list) => {
             let all = controller.wifi_broadcasts_snapshot();

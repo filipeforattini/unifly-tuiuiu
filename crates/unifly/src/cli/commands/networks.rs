@@ -100,6 +100,8 @@ pub async fn handle(
     args: NetworksArgs,
     global: &GlobalOpts,
 ) -> Result<(), CliError> {
+    util::ensure_integration_access(controller, "networks").await?;
+
     match args.command {
         NetworksCommand::List(list) => {
             let all = controller.networks_snapshot();

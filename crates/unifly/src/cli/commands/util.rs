@@ -113,6 +113,20 @@ pub fn matches_json_filter<T: serde::Serialize>(item: &T, filter: &str) -> bool 
         .unwrap_or(false)
 }
 
+pub async fn ensure_integration_access(
+    controller: &Controller,
+    operation: &str,
+) -> Result<(), CliError> {
+    if controller.has_integration_access().await {
+        return Ok(());
+    }
+
+    Err(CliError::Unsupported {
+        operation: operation.into(),
+        required: "Integration API".into(),
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::{apply_list_args, matches_json_filter};

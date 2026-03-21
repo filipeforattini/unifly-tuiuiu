@@ -64,6 +64,8 @@ pub async fn handle(
     args: AclArgs,
     global: &GlobalOpts,
 ) -> Result<(), CliError> {
+    util::ensure_integration_access(controller, "acl").await?;
+
     match args.command {
         AclCommand::List(list) => {
             let all = controller.acl_rules_snapshot();

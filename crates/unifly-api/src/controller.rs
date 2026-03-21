@@ -949,6 +949,12 @@ impl Controller {
         self.inner.legacy_client.lock().await.is_some()
     }
 
+    /// Whether the Integration API is available for integration-backed features.
+    pub async fn has_integration_access(&self) -> bool {
+        self.inner.integration_client.lock().await.is_some()
+            && self.inner.site_id.lock().await.is_some()
+    }
+
     // ── Ad-hoc Integration API queries ───────────────────────────
     //
     // These bypass the DataStore and query the Integration API directly.

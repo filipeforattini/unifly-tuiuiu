@@ -76,6 +76,8 @@ pub async fn handle(
     args: DnsArgs,
     global: &GlobalOpts,
 ) -> Result<(), CliError> {
+    util::ensure_integration_access(controller, "dns").await?;
+
     match args.command {
         DnsCommand::List(list) => {
             let all = controller.dns_policies_snapshot();

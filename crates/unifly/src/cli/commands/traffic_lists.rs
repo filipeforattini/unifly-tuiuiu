@@ -63,6 +63,8 @@ pub async fn handle(
     args: TrafficListsArgs,
     global: &GlobalOpts,
 ) -> Result<(), CliError> {
+    util::ensure_integration_access(controller, "traffic-lists").await?;
+
     match args.command {
         TrafficListsCommand::List(list) => {
             let all = controller.traffic_matching_lists_snapshot();

@@ -76,6 +76,8 @@ pub async fn handle(
     args: HotspotArgs,
     global: &GlobalOpts,
 ) -> Result<(), CliError> {
+    util::ensure_integration_access(controller, "hotspot").await?;
+
     match args.command {
         HotspotCommand::List { limit, offset } => {
             let all = controller.vouchers_snapshot();

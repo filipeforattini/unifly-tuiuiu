@@ -150,6 +150,8 @@ pub async fn handle(
     args: FirewallArgs,
     global: &GlobalOpts,
 ) -> Result<(), CliError> {
+    util::ensure_integration_access(controller, "firewall").await?;
+
     match args.command {
         FirewallCommand::Policies(pargs) => {
             handle_policies(controller, pargs.command, global).await
