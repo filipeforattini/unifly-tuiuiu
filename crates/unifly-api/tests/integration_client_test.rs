@@ -195,6 +195,184 @@ async fn test_pagination_empty_page() {
     assert!(page.data.is_empty());
 }
 
+#[tokio::test]
+async fn test_list_pending_devices_uses_spec_path() {
+    let (server, client) = setup().await;
+
+    let site_id = Uuid::new_v4();
+    let body = json!({
+        "offset": 0,
+        "limit": 10,
+        "count": 1,
+        "totalCount": 1,
+        "data": [
+            { "id": "pending-1", "name": "AP-42" }
+        ]
+    });
+
+    Mock::given(method("GET"))
+        .and(path("/integration/v1/pending-devices"))
+        .and(query_param("offset", "0"))
+        .and(query_param("limit", "10"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(&body))
+        .mount(&server)
+        .await;
+
+    let page = client.list_pending_devices(&site_id, 0, 10).await.unwrap();
+
+    assert_eq!(page.total_count, 1);
+    assert_eq!(page.data.len(), 1);
+    assert_eq!(
+        page.data[0]
+            .fields
+            .get("name")
+            .and_then(serde_json::Value::as_str),
+        Some("AP-42")
+    );
+}
+
+#[tokio::test]
+async fn test_list_device_tags_uses_spec_path() {
+    let (server, client) = setup().await;
+
+    let site_id = Uuid::new_v4();
+    let body = json!({
+        "offset": 5,
+        "limit": 25,
+        "count": 1,
+        "totalCount": 1,
+        "data": [
+            { "id": "tag-1", "name": "Core" }
+        ]
+    });
+
+    Mock::given(method("GET"))
+        .and(path(format!("/integration/v1/sites/{site_id}/device-tags")))
+        .and(query_param("offset", "5"))
+        .and(query_param("limit", "25"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(&body))
+        .mount(&server)
+        .await;
+
+    let page = client.list_device_tags(&site_id, 5, 25).await.unwrap();
+
+    assert_eq!(page.total_count, 1);
+    assert_eq!(
+        page.data[0]
+            .fields
+            .get("name")
+            .and_then(serde_json::Value::as_str),
+        Some("Core")
+    );
+}
+
+#[tokio::test]
+async fn test_list_vpn_tunnels_uses_spec_path() {
+    let (server, client) = setup().await;
+
+    let site_id = Uuid::new_v4();
+    let body = json!({
+        "offset": 0,
+        "limit": 25,
+        "count": 1,
+        "totalCount": 1,
+        "data": [
+            { "id": "vpn-1", "name": "Branch Tunnel" }
+        ]
+    });
+
+    Mock::given(method("GET"))
+        .and(path(format!(
+            "/integration/v1/sites/{site_id}/vpn/site-to-site-tunnels"
+        )))
+        .and(query_param("offset", "0"))
+        .and(query_param("limit", "25"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(&body))
+        .mount(&server)
+        .await;
+
+    let page = client.list_vpn_tunnels(&site_id, 0, 25).await.unwrap();
+
+    assert_eq!(page.total_count, 1);
+    assert_eq!(
+        page.data[0]
+            .fields
+            .get("name")
+            .and_then(serde_json::Value::as_str),
+        Some("Branch Tunnel")
+    );
+}
+
+#[tokio::test]
+async fn test_list_dpi_categories_uses_global_path() {
+    let (server, client) = setup().await;
+
+    let site_id = Uuid::new_v4();
+    let body = json!({
+        "offset": 2,
+        "limit": 25,
+        "count": 1,
+        "totalCount": 1,
+        "data": [
+            { "id": "cat-1", "name": "Streaming" }
+        ]
+    });
+
+    Mock::given(method("GET"))
+        .and(path("/integration/v1/dpi/categories"))
+        .and(query_param("offset", "2"))
+        .and(query_param("limit", "25"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(&body))
+        .mount(&server)
+        .await;
+
+    let page = client.list_dpi_categories(&site_id, 2, 25).await.unwrap();
+
+    assert_eq!(page.total_count, 1);
+    assert_eq!(
+        page.data[0]
+            .fields
+            .get("name")
+            .and_then(serde_json::Value::as_str),
+        Some("Streaming")
+    );
+}
+
+#[tokio::test]
+async fn test_list_dpi_applications_uses_global_path() {
+    let (server, client) = setup().await;
+
+    let site_id = Uuid::new_v4();
+    let body = json!({
+        "offset": 3,
+        "limit": 25,
+        "count": 1,
+        "totalCount": 1,
+        "data": [
+            { "id": "app-1", "name": "YouTube" }
+        ]
+    });
+
+    Mock::given(method("GET"))
+        .and(path("/integration/v1/dpi/applications"))
+        .and(query_param("offset", "3"))
+        .and(query_param("limit", "25"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(&body))
+        .mount(&server)
+        .await;
+
+    let page = client.list_dpi_applications(&site_id, 3, 25).await.unwrap();
+
+    assert_eq!(page.total_count, 1);
+    assert_eq!(
+        page.data[0]
+            .fields
+            .get("name")
+            .and_then(serde_json::Value::as_str),
+        Some("YouTube")
+    );
+}
+
 // ── Error tests ─────────────────────────────────────────────────────
 
 #[tokio::test]

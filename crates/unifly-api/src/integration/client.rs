@@ -412,12 +412,12 @@ impl IntegrationClient {
 
     pub async fn list_pending_devices(
         &self,
-        site_id: &Uuid,
+        _site_id: &Uuid,
         offset: i64,
         limit: i32,
     ) -> Result<types::Page<types::PendingDeviceResponse>, Error> {
         self.get_with_params(
-            &format!("v1/sites/{site_id}/devices/pending"),
+            "v1/pending-devices",
             &[("offset", offset.to_string()), ("limit", limit.to_string())],
         )
         .await
@@ -430,7 +430,7 @@ impl IntegrationClient {
         limit: i32,
     ) -> Result<types::Page<types::DeviceTagResponse>, Error> {
         self.get_with_params(
-            &format!("v1/sites/{site_id}/devices/tags"),
+            &format!("v1/sites/{site_id}/device-tags"),
             &[("offset", offset.to_string()), ("limit", limit.to_string())],
         )
         .await
@@ -983,7 +983,7 @@ impl IntegrationClient {
         limit: i32,
     ) -> Result<types::Page<types::VpnTunnelResponse>, Error> {
         self.get_with_params(
-            &format!("v1/sites/{site_id}/vpn/tunnels"),
+            &format!("v1/sites/{site_id}/vpn/site-to-site-tunnels"),
             &[("offset", offset.to_string()), ("limit", limit.to_string())],
         )
         .await
@@ -1008,12 +1008,12 @@ impl IntegrationClient {
 
     pub async fn list_dpi_categories(
         &self,
-        site_id: &Uuid,
+        _site_id: &Uuid,
         offset: i64,
         limit: i32,
     ) -> Result<types::Page<types::DpiCategoryResponse>, Error> {
         self.get_with_params(
-            &format!("v1/sites/{site_id}/dpi/categories"),
+            "v1/dpi/categories",
             &[("offset", offset.to_string()), ("limit", limit.to_string())],
         )
         .await
@@ -1021,12 +1021,12 @@ impl IntegrationClient {
 
     pub async fn list_dpi_applications(
         &self,
-        site_id: &Uuid,
+        _site_id: &Uuid,
         offset: i64,
         limit: i32,
     ) -> Result<types::Page<types::DpiApplicationResponse>, Error> {
         self.get_with_params(
-            &format!("v1/sites/{site_id}/dpi/applications"),
+            "v1/dpi/applications",
             &[("offset", offset.to_string()), ("limit", limit.to_string())],
         )
         .await
