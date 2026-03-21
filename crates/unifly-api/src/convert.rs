@@ -94,6 +94,130 @@ fn parse_legacy_wan_ipv6(extra: &serde_json::Map<String, Value>) -> Option<Strin
     extra.get("ipv6").and_then(pick_ipv6_from_value)
 }
 
+fn extra_bool(extra: &HashMap<String, Value>, key: &str) -> bool {
+    extra.get(key).and_then(Value::as_bool).unwrap_or(false)
+}
+
+fn extra_frequencies(extra: &HashMap<String, Value>, key: &str) -> Vec<f32> {
+    extra
+        .get(key)
+        .and_then(Value::as_array)
+        .map(|values| {
+            #[allow(clippy::as_conversions, clippy::cast_possible_truncation)]
+            values
+                .iter()
+                .filter_map(Value::as_f64)
+                .map(|frequency| frequency as f32)
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+fn dns_value_from_extra(policy_type: DnsPolicyType, extra: &HashMap<String, Value>) -> String {
+    match policy_type {
+        DnsPolicyType::ARecord => extra
+            .get("ipv4Address")
+            .and_then(Value::as_str)
+            .unwrap_or_default()
+            .to_owned(),
+        DnsPolicyType::AaaaRecord => extra
+            .get("ipv6Address")
+            .and_then(Value::as_str)
+            .unwrap_or_default()
+            .to_owned(),
+        DnsPolicyType::CnameRecord => extra
+            .get("targetDomain")
+            .and_then(Value::as_str)
+            .unwrap_or_default()
+            .to_owned(),
+        DnsPolicyType::MxRecord => extra
+            .get("mailServerDomain")
+            .and_then(Value::as_str)
+            .unwrap_or_default()
+            .to_owned(),
+        DnsPolicyType::TxtRecord => extra
+            .get("text")
+            .and_then(Value::as_str)
+            .unwrap_or_default()
+            .to_owned(),
+        DnsPolicyType::SrvRecord => {
+            let server = extra
+                .get("serverDomain")
+                .and_then(Value::as_str)
+                .unwrap_or("");
+            let service = extra.get("service").and_then(Value::as_str).unwrap_or("");
+            let protocol = extra.get("protocol").and_then(Value::as_str).unwrap_or("");
+            let port = extra.get("port").and_then(Value::as_u64);
+            let priority = extra.get("priority").and_then(Value::as_u64);
+            let weight = extra.get("weight").and_then(Value::as_u64);
+
+            let mut parts = Vec::new();
+            if !server.is_empty() {
+                parts.push(server.to_owned());
+            }
+            if !service.is_empty() || !protocol.is_empty() {
+                parts.push(format!("service={service}{protocol}"));
+            }
+            if let Some(port) = port {
+                parts.push(format!("port={port}"));
+            }
+            if let Some(priority) = priority {
+                parts.push(format!("priority={priority}"));
+            }
+            if let Some(weight) = weight {
+                parts.push(format!("weight={weight}"));
+            }
+            parts.join(" ")
+        }
+        DnsPolicyType::ForwardDomain => extra
+            .get("ipAddress")
+            .and_then(Value::as_str)
+            .unwrap_or_default()
+            .to_owned(),
+    }
+}
+
+fn traffic_matching_item_to_string(item: &Value) -> Option<String> {
+    match item {
+        Value::String(value) => Some(value.clone()),
+        Value::Object(map) => {
+            if let Some(value) = map
+                .get("value")
+                .and_then(Value::as_str)
+                .map(str::to_owned)
+                .or_else(|| {
+                    map.get("value")
+                        .and_then(Value::as_i64)
+                        .map(|value| value.to_string())
+                })
+            {
+                return Some(value);
+            }
+
+            let start = map.get("start").or_else(|| map.get("startPort"));
+            let stop = map.get("stop").or_else(|| map.get("endPort"));
+            match (start, stop) {
+                (Some(start), Some(stop)) => {
+                    let start = start
+                        .as_str()
+                        .map(str::to_owned)
+                        .or_else(|| start.as_i64().map(|value| value.to_string()));
+                    let stop = stop
+                        .as_str()
+                        .map(str::to_owned)
+                        .or_else(|| stop.as_i64().map(|value| value.to_string()));
+                    match (start, stop) {
+                        (Some(start), Some(stop)) => Some(format!("{start}-{stop}")),
+                        _ => None,
+                    }
+                }
+                _ => None,
+            }
+        }
+        _ => None,
+    }
+}
+
 // ── Device ─────────────────────────────────────────────────────────
 
 /// Infer `DeviceType` from the legacy `type` field and optional `model` string.
@@ -987,13 +1111,13 @@ impl From<integration_types::WifiBroadcastResponse> for WifiBroadcast {
                 .and_then(|v| v.as_str())
                 .and_then(|s| uuid::Uuid::parse_str(s).ok())
                 .map(EntityId::Uuid),
-            frequencies_ghz: Vec::new(),
-            hidden: false,
-            client_isolation: false,
-            band_steering: false,
-            mlo_enabled: false,
-            fast_roaming: false,
-            hotspot_enabled: false,
+            frequencies_ghz: extra_frequencies(&w.extra, "broadcastingFrequenciesGHz"),
+            hidden: extra_bool(&w.extra, "hideName"),
+            client_isolation: extra_bool(&w.extra, "clientIsolationEnabled"),
+            band_steering: extra_bool(&w.extra, "bandSteeringEnabled"),
+            mlo_enabled: extra_bool(&w.extra, "mloEnabled"),
+            fast_roaming: extra_bool(&w.extra, "bssTransitionEnabled"),
+            hotspot_enabled: w.extra.contains_key("hotspotConfiguration"),
             origin: origin_from_metadata(&w.metadata),
             source: DataSource::IntegrationApi,
         }
@@ -1391,19 +1515,14 @@ impl From<integration_types::DnsPolicyResponse> for DnsPolicy {
             id: EntityId::Uuid(d.id),
             policy_type,
             domain: d.domain.unwrap_or_default(),
-            value: d
-                .extra
-                .get("value")
-                .and_then(|v| v.as_str())
-                .unwrap_or_default()
-                .to_owned(),
+            value: dns_value_from_extra(policy_type, &d.extra),
             #[allow(clippy::as_conversions, clippy::cast_possible_truncation)]
             ttl_seconds: d
                 .extra
-                .get("ttl")
+                .get("ttlSeconds")
                 .and_then(serde_json::Value::as_u64)
                 .map(|t| t as u32),
-            origin: None,
+            origin: origin_from_metadata(&d.metadata),
             source: DataSource::IntegrationApi,
         }
     }
@@ -1419,7 +1538,7 @@ impl From<integration_types::TrafficMatchingListResponse> for TrafficMatchingLis
             .and_then(|v| v.as_array())
             .map(|arr| {
                 arr.iter()
-                    .filter_map(|v| v.as_str().map(String::from))
+                    .filter_map(traffic_matching_item_to_string)
                     .collect()
             })
             .unwrap_or_default();
@@ -1465,6 +1584,7 @@ impl From<integration_types::VoucherResponse> for Voucher {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde_json::json;
 
     #[test]
     fn device_type_from_legacy_type_field() {
@@ -1572,5 +1692,79 @@ mod tests {
         assert_eq!(channel_to_frequency(Some(36)), Some(5.0));
         assert_eq!(channel_to_frequency(Some(149)), Some(5.0));
         assert_eq!(channel_to_frequency(None), None);
+    }
+
+    #[test]
+    fn integration_wifi_broadcast_preserves_standard_fields() {
+        let response = integration_types::WifiBroadcastResponse {
+            id: uuid::Uuid::nil(),
+            name: "Main".into(),
+            broadcast_type: "STANDARD".into(),
+            enabled: true,
+            security_configuration: json!({"mode": "WPA2_PERSONAL"}),
+            metadata: json!({"origin": "USER"}),
+            network: Some(json!({"id": uuid::Uuid::nil().to_string()})),
+            broadcasting_device_filter: None,
+            extra: HashMap::from([
+                ("broadcastingFrequenciesGHz".into(), json!([2.4, 5.0])),
+                ("hideName".into(), json!(true)),
+                ("clientIsolationEnabled".into(), json!(true)),
+                ("bandSteeringEnabled".into(), json!(true)),
+                ("mloEnabled".into(), json!(false)),
+                ("bssTransitionEnabled".into(), json!(true)),
+                (
+                    "hotspotConfiguration".into(),
+                    json!({"type": "CAPTIVE_PORTAL"}),
+                ),
+            ]),
+        };
+
+        let wifi = WifiBroadcast::from(response);
+        assert_eq!(wifi.frequencies_ghz.len(), 2);
+        assert!((wifi.frequencies_ghz[0] - 2.4).abs() < f32::EPSILON);
+        assert!((wifi.frequencies_ghz[1] - 5.0).abs() < f32::EPSILON);
+        assert!(wifi.hidden);
+        assert!(wifi.client_isolation);
+        assert!(wifi.band_steering);
+        assert!(wifi.fast_roaming);
+        assert!(wifi.hotspot_enabled);
+    }
+
+    #[test]
+    fn integration_dns_policy_uses_type_specific_fields() {
+        let response = integration_types::DnsPolicyResponse {
+            id: uuid::Uuid::nil(),
+            policy_type: "A".into(),
+            enabled: true,
+            domain: Some("example.com".into()),
+            metadata: json!({"origin": "USER"}),
+            extra: HashMap::from([
+                ("ipv4Address".into(), json!("192.168.1.10")),
+                ("ttlSeconds".into(), json!(600)),
+            ]),
+        };
+
+        let dns = DnsPolicy::from(response);
+        assert_eq!(dns.value, "192.168.1.10");
+        assert_eq!(dns.ttl_seconds, Some(600));
+    }
+
+    #[test]
+    fn integration_traffic_matching_list_formats_structured_items() {
+        let response = integration_types::TrafficMatchingListResponse {
+            id: uuid::Uuid::nil(),
+            name: "Ports".into(),
+            list_type: "PORT".into(),
+            extra: HashMap::from([(
+                "items".into(),
+                json!([
+                    {"type": "PORT_NUMBER", "value": 443},
+                    {"type": "PORT_RANGE", "start": 1000, "stop": 2000}
+                ]),
+            )]),
+        };
+
+        let list = TrafficMatchingList::from(response);
+        assert_eq!(list.items, vec!["443".to_owned(), "1000-2000".to_owned()]);
     }
 }

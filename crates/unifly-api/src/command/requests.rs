@@ -4,6 +4,7 @@
 // now uses one of these strongly-typed request structs instead.
 
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 use crate::model::{
     DnsPolicyType, EntityId, FirewallAction, NetworkManagement, NetworkPurpose, WifiSecurityMode,
@@ -73,14 +74,18 @@ pub struct CreateWifiBroadcastRequest {
     pub enabled: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub network_id: Option<EntityId>,
+    #[serde(alias = "hideName")]
     pub hide_ssid: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub broadcast_type: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(alias = "broadcastingFrequenciesGHz")]
     pub frequencies_ghz: Option<Vec<f32>>,
     #[serde(default)]
+    #[serde(alias = "bandSteeringEnabled")]
     pub band_steering: bool,
     #[serde(default)]
+    #[serde(alias = "bssTransitionEnabled")]
     pub fast_roaming: bool,
 }
 
@@ -97,6 +102,7 @@ pub struct UpdateWifiBroadcastRequest {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub enabled: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(alias = "hideName")]
     pub hide_ssid: Option<bool>,
 }
 
@@ -231,15 +237,46 @@ pub struct CreateDnsPolicyRequest {
     pub policy_type: DnsPolicyType,
     pub enabled: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub domain: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub domains: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub upstream: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub value: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(alias = "ttlSeconds")]
     pub ttl_seconds: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub priority: Option<u16>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(alias = "ipv4Address")]
+    pub ipv4_address: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(alias = "ipv6Address")]
+    pub ipv6_address: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(alias = "targetDomain")]
+    pub target_domain: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(alias = "mailServerDomain")]
+    pub mail_server_domain: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub text: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(alias = "ipAddress")]
+    pub ip_address: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(alias = "serverDomain")]
+    pub server_domain: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub service: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub protocol: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub port: Option<u16>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub weight: Option<u16>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -249,15 +286,46 @@ pub struct UpdateDnsPolicyRequest {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub enabled: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub domain: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub domains: Option<Vec<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub upstream: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub value: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(alias = "ttlSeconds")]
     pub ttl_seconds: Option<u32>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub priority: Option<u16>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(alias = "ipv4Address")]
+    pub ipv4_address: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(alias = "ipv6Address")]
+    pub ipv6_address: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(alias = "targetDomain")]
+    pub target_domain: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(alias = "mailServerDomain")]
+    pub mail_server_domain: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub text: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(alias = "ipAddress")]
+    pub ip_address: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(alias = "serverDomain")]
+    pub server_domain: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub service: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub protocol: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub port: Option<u16>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub weight: Option<u16>,
 }
 
 // ── Traffic Matching List ──────────────────────────────────────────
@@ -268,6 +336,10 @@ pub struct CreateTrafficMatchingListRequest {
     #[serde(default = "default_traffic_list_type")]
     pub list_type: String,
     pub entries: Vec<String>,
+    #[serde(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(alias = "items")]
+    pub raw_items: Option<Vec<Value>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
 }
@@ -278,6 +350,9 @@ pub struct UpdateTrafficMatchingListRequest {
     pub name: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub entries: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(alias = "items")]
+    pub raw_items: Option<Vec<Value>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
 }

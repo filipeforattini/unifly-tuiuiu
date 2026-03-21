@@ -214,6 +214,9 @@ pub struct WifiBroadcastResponse {
     pub metadata: Value,
     pub network: Option<Value>,
     pub broadcasting_device_filter: Option<Value>,
+    /// Catch-all for additional overview fields not modeled above.
+    #[serde(flatten)]
+    pub extra: HashMap<String, Value>,
 }
 
 /// WiFi broadcast details — extends overview with additional fields.

@@ -132,11 +132,23 @@ pub async fn handle(
                         .as_ref()
                         .map_or(DnsPolicyType::ARecord, map_dns_type),
                     enabled: true,
+                    domain: None,
                     domains: domain.map(|d| vec![d]),
                     upstream: None,
                     value,
                     ttl_seconds: Some(ttl),
                     priority,
+                    ipv4_address: None,
+                    ipv6_address: None,
+                    target_domain: None,
+                    mail_server_domain: None,
+                    text: None,
+                    ip_address: None,
+                    server_domain: None,
+                    service: None,
+                    protocol: None,
+                    port: None,
+                    weight: None,
                 }
             };
 

@@ -2065,55 +2065,7 @@ async fn route_command(controller: &Controller, cmd: Command) -> Result<CommandR
         Command::CreateWifiBroadcast(req) => {
             let (ic, sid) =
                 require_integration(&integration_guard, site_id, "CreateWifiBroadcast")?;
-            let mut extra = serde_json::Map::new();
-            extra.insert("ssid".into(), serde_json::Value::String(req.ssid));
-            let security_mode = match req.security_mode {
-                crate::model::WifiSecurityMode::Open => "OPEN",
-                crate::model::WifiSecurityMode::Wpa2Personal => "WPA2_PERSONAL",
-                crate::model::WifiSecurityMode::Wpa3Personal => "WPA3_PERSONAL",
-                crate::model::WifiSecurityMode::Wpa2Wpa3Personal => "WPA2_WPA3_PERSONAL",
-                crate::model::WifiSecurityMode::Wpa2Enterprise => "WPA2_ENTERPRISE",
-                crate::model::WifiSecurityMode::Wpa3Enterprise => "WPA3_ENTERPRISE",
-                crate::model::WifiSecurityMode::Wpa2Wpa3Enterprise => "WPA2_WPA3_ENTERPRISE",
-            };
-            let mut security_configuration = serde_json::Map::new();
-            security_configuration.insert(
-                "mode".into(),
-                serde_json::Value::String(security_mode.into()),
-            );
-            if let Some(pass) = req.passphrase {
-                security_configuration.insert("passphrase".into(), serde_json::Value::String(pass));
-            }
-            extra.insert(
-                "securityConfiguration".into(),
-                serde_json::Value::Object(security_configuration),
-            );
-            if let Some(network_id) = req.network_id {
-                extra.insert(
-                    "network".into(),
-                    serde_json::json!({ "id": network_id.to_string() }),
-                );
-            }
-            extra.insert("hideSsid".into(), serde_json::Value::Bool(req.hide_ssid));
-            if req.band_steering {
-                extra.insert("bandSteering".into(), serde_json::Value::Bool(true));
-            }
-            if req.fast_roaming {
-                extra.insert("fastRoaming".into(), serde_json::Value::Bool(true));
-            }
-            if let Some(freqs) = req.frequencies_ghz {
-                let values = freqs
-                    .into_iter()
-                    .map(|f| serde_json::Value::from(f64::from(f)))
-                    .collect::<Vec<_>>();
-                extra.insert("frequencies".into(), serde_json::Value::Array(values));
-            }
-            let body = crate::integration_types::WifiBroadcastCreateUpdate {
-                name: req.name,
-                broadcast_type: req.broadcast_type.unwrap_or_else(|| "STANDARD".into()),
-                enabled: req.enabled,
-                body: extra,
-            };
+            let body = build_create_wifi_broadcast_payload(&req);
             ic.create_wifi_broadcast(&sid, &body).await?;
             Ok(CommandResult::Ok)
         }
@@ -2123,60 +2075,7 @@ async fn route_command(controller: &Controller, cmd: Command) -> Result<CommandR
                 require_integration(&integration_guard, site_id, "UpdateWifiBroadcast")?;
             let uuid = require_uuid(&id)?;
             let existing = ic.get_wifi_broadcast(&sid, &uuid).await?;
-
-            let mut body = serde_json::Map::new();
-            for (k, v) in existing.extra {
-                body.insert(k, v);
-            }
-            body.insert(
-                "securityConfiguration".into(),
-                existing.security_configuration.clone(),
-            );
-            if let Some(network) = existing.network.clone() {
-                body.insert("network".into(), network);
-            }
-            if let Some(filter) = existing.broadcasting_device_filter.clone() {
-                body.insert("broadcastingDeviceFilter".into(), filter);
-            }
-
-            if let Some(ssid) = update.ssid.clone() {
-                body.insert("ssid".into(), serde_json::Value::String(ssid));
-            }
-            if let Some(hidden) = update.hide_ssid {
-                body.insert("hideSsid".into(), serde_json::Value::Bool(hidden));
-            }
-
-            let mut security_cfg = existing
-                .security_configuration
-                .as_object()
-                .cloned()
-                .unwrap_or_default();
-            if let Some(mode) = update.security_mode {
-                let mode = match mode {
-                    crate::model::WifiSecurityMode::Open => "OPEN",
-                    crate::model::WifiSecurityMode::Wpa2Personal => "WPA2_PERSONAL",
-                    crate::model::WifiSecurityMode::Wpa3Personal => "WPA3_PERSONAL",
-                    crate::model::WifiSecurityMode::Wpa2Wpa3Personal => "WPA2_WPA3_PERSONAL",
-                    crate::model::WifiSecurityMode::Wpa2Enterprise => "WPA2_ENTERPRISE",
-                    crate::model::WifiSecurityMode::Wpa3Enterprise => "WPA3_ENTERPRISE",
-                    crate::model::WifiSecurityMode::Wpa2Wpa3Enterprise => "WPA2_WPA3_ENTERPRISE",
-                };
-                security_cfg.insert("mode".into(), serde_json::Value::String(mode.into()));
-            }
-            if let Some(passphrase) = update.passphrase.clone() {
-                security_cfg.insert("passphrase".into(), serde_json::Value::String(passphrase));
-            }
-            body.insert(
-                "securityConfiguration".into(),
-                serde_json::Value::Object(security_cfg),
-            );
-
-            let payload = crate::integration_types::WifiBroadcastCreateUpdate {
-                name: update.name.unwrap_or(existing.name),
-                broadcast_type: existing.broadcast_type,
-                enabled: update.enabled.unwrap_or(existing.enabled),
-                body,
-            };
+            let payload = build_update_wifi_broadcast_payload(&existing, &update);
             ic.update_wifi_broadcast(&sid, &uuid, &payload).await?;
             Ok(CommandResult::Ok)
         }
@@ -2474,48 +2373,10 @@ async fn route_command(controller: &Controller, cmd: Command) -> Result<CommandR
         // ── DNS Policy CRUD ──────────────────────────────────────
         Command::CreateDnsPolicy(req) => {
             let (ic, sid) = require_integration(&integration_guard, site_id, "CreateDnsPolicy")?;
-            let policy_type_str = match req.policy_type {
-                crate::model::DnsPolicyType::ARecord => "A",
-                crate::model::DnsPolicyType::AaaaRecord => "AAAA",
-                crate::model::DnsPolicyType::CnameRecord => "CNAME",
-                crate::model::DnsPolicyType::MxRecord => "MX",
-                crate::model::DnsPolicyType::TxtRecord => "TXT",
-                crate::model::DnsPolicyType::SrvRecord => "SRV",
-                crate::model::DnsPolicyType::ForwardDomain => "FORWARD_DOMAIN",
-            };
-            let mut fields = serde_json::Map::new();
-            if let Some(domains) = req.domains {
-                if let Some(first) = domains.first() {
-                    fields.insert("domain".into(), serde_json::Value::String(first.clone()));
-                }
-                fields.insert(
-                    "domains".into(),
-                    serde_json::Value::Array(
-                        domains.into_iter().map(serde_json::Value::String).collect(),
-                    ),
-                );
-            }
-            if let Some(upstream) = req.upstream {
-                fields.insert("upstream".into(), serde_json::Value::String(upstream));
-            }
-            if let Some(value) = req.value {
-                fields.insert("value".into(), serde_json::Value::String(value));
-            }
-            if let Some(ttl) = req.ttl_seconds {
-                fields.insert(
-                    "ttl".into(),
-                    serde_json::Value::Number(serde_json::Number::from(ttl)),
-                );
-            }
-            if let Some(priority) = req.priority {
-                fields.insert(
-                    "priority".into(),
-                    serde_json::Value::Number(serde_json::Number::from(priority)),
-                );
-            }
-            fields.insert("name".into(), serde_json::Value::String(req.name));
+            let policy_type_str = dns_policy_type_name(req.policy_type);
+            let fields = build_create_dns_policy_fields(&req)?;
             let body = crate::integration_types::DnsPolicyCreateUpdate {
-                policy_type: policy_type_str.into(),
+                policy_type: policy_type_str.to_owned(),
                 enabled: req.enabled,
                 fields,
             };
@@ -2527,46 +2388,7 @@ async fn route_command(controller: &Controller, cmd: Command) -> Result<CommandR
             let (ic, sid) = require_integration(&integration_guard, site_id, "UpdateDnsPolicy")?;
             let uuid = require_uuid(&id)?;
             let existing = ic.get_dns_policy(&sid, &uuid).await?;
-            let mut fields: serde_json::Map<String, serde_json::Value> =
-                existing.extra.into_iter().collect();
-
-            if let Some(domains) = update.domains {
-                if let Some(first) = domains.first() {
-                    fields.insert("domain".into(), serde_json::Value::String(first.clone()));
-                }
-                fields.insert(
-                    "domains".into(),
-                    serde_json::Value::Array(
-                        domains.into_iter().map(serde_json::Value::String).collect(),
-                    ),
-                );
-            } else if let Some(domain) = existing.domain {
-                fields
-                    .entry("domain")
-                    .or_insert_with(|| serde_json::Value::String(domain));
-            }
-
-            if let Some(name) = update.name {
-                fields.insert("name".into(), serde_json::Value::String(name));
-            }
-            if let Some(upstream) = update.upstream {
-                fields.insert("upstream".into(), serde_json::Value::String(upstream));
-            }
-            if let Some(value) = update.value {
-                fields.insert("value".into(), serde_json::Value::String(value));
-            }
-            if let Some(ttl) = update.ttl_seconds {
-                fields.insert(
-                    "ttl".into(),
-                    serde_json::Value::Number(serde_json::Number::from(ttl)),
-                );
-            }
-            if let Some(priority) = update.priority {
-                fields.insert(
-                    "priority".into(),
-                    serde_json::Value::Number(serde_json::Number::from(priority)),
-                );
-            }
+            let fields = build_update_dns_policy_fields(&existing, &update)?;
 
             let body = crate::integration_types::DnsPolicyCreateUpdate {
                 policy_type: existing.policy_type,
@@ -2590,13 +2412,11 @@ async fn route_command(controller: &Controller, cmd: Command) -> Result<CommandR
                 require_integration(&integration_guard, site_id, "CreateTrafficMatchingList")?;
             let mut fields = serde_json::Map::new();
             fields.insert(
-                "entries".into(),
-                serde_json::Value::Array(
-                    req.entries
-                        .into_iter()
-                        .map(serde_json::Value::String)
-                        .collect(),
-                ),
+                "items".into(),
+                serde_json::Value::Array(traffic_matching_list_items(
+                    &req.entries,
+                    req.raw_items.as_deref(),
+                )),
             );
             if let Some(desc) = req.description {
                 fields.insert("description".into(), serde_json::Value::String(desc));
@@ -2616,19 +2436,18 @@ async fn route_command(controller: &Controller, cmd: Command) -> Result<CommandR
             let uuid = require_uuid(&id)?;
             let existing = ic.get_traffic_matching_list(&sid, &uuid).await?;
             let mut fields = serde_json::Map::new();
-            let entries = if let Some(new_entries) = update.entries {
-                serde_json::Value::Array(
-                    new_entries
-                        .into_iter()
-                        .map(serde_json::Value::String)
-                        .collect(),
-                )
+            let entries = if let Some(raw_items) = update.raw_items.as_deref() {
+                serde_json::Value::Array(raw_items.to_vec())
+            } else if let Some(new_entries) = &update.entries {
+                serde_json::Value::Array(traffic_matching_list_items(new_entries, None))
+            } else if let Some(existing_entries) = existing.extra.get("items") {
+                existing_entries.clone()
             } else if let Some(existing_entries) = existing.extra.get("entries") {
                 existing_entries.clone()
             } else {
                 serde_json::Value::Array(Vec::new())
             };
-            fields.insert("entries".into(), entries);
+            fields.insert("items".into(), entries);
             if let Some(desc) = update.description {
                 fields.insert("description".into(), serde_json::Value::String(desc));
             } else if let Some(existing_desc) = existing.extra.get("description") {
@@ -3034,9 +2853,526 @@ fn build_endpoint_json(
     obj
 }
 
+fn wifi_security_mode_name(mode: crate::model::WifiSecurityMode) -> &'static str {
+    match mode {
+        crate::model::WifiSecurityMode::Open => "OPEN",
+        crate::model::WifiSecurityMode::Wpa2Personal => "WPA2_PERSONAL",
+        crate::model::WifiSecurityMode::Wpa3Personal => "WPA3_PERSONAL",
+        crate::model::WifiSecurityMode::Wpa2Wpa3Personal => "WPA2_WPA3_PERSONAL",
+        crate::model::WifiSecurityMode::Wpa2Enterprise => "WPA2_ENTERPRISE",
+        crate::model::WifiSecurityMode::Wpa3Enterprise => "WPA3_ENTERPRISE",
+        crate::model::WifiSecurityMode::Wpa2Wpa3Enterprise => "WPA2_WPA3_ENTERPRISE",
+    }
+}
+
+fn wifi_payload_name(name: &str, ssid: &str) -> String {
+    if name.is_empty() {
+        ssid.to_owned()
+    } else {
+        name.to_owned()
+    }
+}
+
+fn wifi_frequency_values(frequencies: &[f32]) -> Vec<serde_json::Value> {
+    frequencies
+        .iter()
+        .map(|frequency| serde_json::Value::from(f64::from(*frequency)))
+        .collect()
+}
+
+fn ensure_wifi_payload_defaults(
+    body: &mut serde_json::Map<String, serde_json::Value>,
+    broadcast_type: &str,
+) {
+    body.entry("clientIsolationEnabled")
+        .or_insert(serde_json::Value::Bool(false));
+    body.entry("multicastToUnicastConversionEnabled")
+        .or_insert(serde_json::Value::Bool(false));
+    body.entry("hideName")
+        .or_insert(serde_json::Value::Bool(false));
+    body.entry("uapsdEnabled")
+        .or_insert(serde_json::Value::Bool(true));
+
+    if broadcast_type == "STANDARD" {
+        body.entry("broadcastingFrequenciesGHz")
+            .or_insert_with(|| serde_json::Value::Array(wifi_frequency_values(&[2.4, 5.0])));
+        body.entry("mloEnabled")
+            .or_insert(serde_json::Value::Bool(false));
+        body.entry("bandSteeringEnabled")
+            .or_insert(serde_json::Value::Bool(false));
+        body.entry("arpProxyEnabled")
+            .or_insert(serde_json::Value::Bool(false));
+        body.entry("bssTransitionEnabled")
+            .or_insert(serde_json::Value::Bool(false));
+        body.entry("advertiseDeviceName")
+            .or_insert(serde_json::Value::Bool(false));
+    }
+}
+
+fn build_create_wifi_broadcast_payload(
+    req: &crate::command::CreateWifiBroadcastRequest,
+) -> crate::integration_types::WifiBroadcastCreateUpdate {
+    let broadcast_type = req
+        .broadcast_type
+        .clone()
+        .unwrap_or_else(|| "STANDARD".into());
+
+    let mut body = serde_json::Map::new();
+    let mut security_configuration = serde_json::Map::new();
+    security_configuration.insert(
+        "mode".into(),
+        serde_json::Value::String(wifi_security_mode_name(req.security_mode).into()),
+    );
+    if let Some(passphrase) = req.passphrase.clone() {
+        security_configuration.insert("passphrase".into(), serde_json::Value::String(passphrase));
+    }
+    body.insert(
+        "securityConfiguration".into(),
+        serde_json::Value::Object(security_configuration),
+    );
+
+    if let Some(network_id) = &req.network_id {
+        body.insert(
+            "network".into(),
+            serde_json::json!({ "id": network_id.to_string() }),
+        );
+    }
+    body.insert("hideName".into(), serde_json::Value::Bool(req.hide_ssid));
+    if req.band_steering {
+        body.insert("bandSteeringEnabled".into(), serde_json::Value::Bool(true));
+    }
+    if req.fast_roaming {
+        body.insert("bssTransitionEnabled".into(), serde_json::Value::Bool(true));
+    }
+    if let Some(frequencies) = req.frequencies_ghz.as_ref() {
+        body.insert(
+            "broadcastingFrequenciesGHz".into(),
+            serde_json::Value::Array(wifi_frequency_values(frequencies)),
+        );
+    }
+    ensure_wifi_payload_defaults(&mut body, &broadcast_type);
+
+    crate::integration_types::WifiBroadcastCreateUpdate {
+        name: wifi_payload_name(&req.name, &req.ssid),
+        broadcast_type,
+        enabled: req.enabled,
+        body,
+    }
+}
+
+fn build_update_wifi_broadcast_payload(
+    existing: &crate::integration_types::WifiBroadcastDetailsResponse,
+    update: &crate::command::UpdateWifiBroadcastRequest,
+) -> crate::integration_types::WifiBroadcastCreateUpdate {
+    let mut body: serde_json::Map<String, serde_json::Value> =
+        existing.extra.clone().into_iter().collect();
+
+    body.remove("ssid");
+    body.remove("hideSsid");
+    body.remove("bandSteering");
+    body.remove("fastRoaming");
+    body.remove("frequencies");
+
+    if let Some(network) = existing.network.clone() {
+        body.insert("network".into(), network);
+    }
+    if let Some(filter) = existing.broadcasting_device_filter.clone() {
+        body.insert("broadcastingDeviceFilter".into(), filter);
+    }
+    if let Some(hidden) = update.hide_ssid {
+        body.insert("hideName".into(), serde_json::Value::Bool(hidden));
+    }
+
+    let mut security_cfg = existing
+        .security_configuration
+        .as_object()
+        .cloned()
+        .unwrap_or_default();
+    if let Some(mode) = update.security_mode {
+        security_cfg.insert(
+            "mode".into(),
+            serde_json::Value::String(wifi_security_mode_name(mode).into()),
+        );
+    }
+    if let Some(passphrase) = update.passphrase.clone() {
+        security_cfg.insert("passphrase".into(), serde_json::Value::String(passphrase));
+    }
+    body.insert(
+        "securityConfiguration".into(),
+        serde_json::Value::Object(security_cfg),
+    );
+    ensure_wifi_payload_defaults(&mut body, &existing.broadcast_type);
+
+    crate::integration_types::WifiBroadcastCreateUpdate {
+        name: update
+            .name
+            .clone()
+            .or_else(|| update.ssid.clone())
+            .unwrap_or_else(|| existing.name.clone()),
+        broadcast_type: existing.broadcast_type.clone(),
+        enabled: update.enabled.unwrap_or(existing.enabled),
+        body,
+    }
+}
+
+fn dns_policy_type_name(policy_type: crate::model::DnsPolicyType) -> &'static str {
+    match policy_type {
+        crate::model::DnsPolicyType::ARecord => "A",
+        crate::model::DnsPolicyType::AaaaRecord => "AAAA",
+        crate::model::DnsPolicyType::CnameRecord => "CNAME",
+        crate::model::DnsPolicyType::MxRecord => "MX",
+        crate::model::DnsPolicyType::TxtRecord => "TXT",
+        crate::model::DnsPolicyType::SrvRecord => "SRV",
+        crate::model::DnsPolicyType::ForwardDomain => "FORWARD_DOMAIN",
+    }
+}
+
+fn dns_policy_type_from_name(policy_type: &str) -> crate::model::DnsPolicyType {
+    match policy_type {
+        "A" => crate::model::DnsPolicyType::ARecord,
+        "AAAA" => crate::model::DnsPolicyType::AaaaRecord,
+        "CNAME" => crate::model::DnsPolicyType::CnameRecord,
+        "MX" => crate::model::DnsPolicyType::MxRecord,
+        "TXT" => crate::model::DnsPolicyType::TxtRecord,
+        "SRV" => crate::model::DnsPolicyType::SrvRecord,
+        _ => crate::model::DnsPolicyType::ForwardDomain,
+    }
+}
+
+fn validation_failed(message: impl Into<String>) -> CoreError {
+    CoreError::ValidationFailed {
+        message: message.into(),
+    }
+}
+
+fn dns_domain_value(
+    domain: Option<&str>,
+    domains: Option<&[String]>,
+    fallback: Option<&str>,
+) -> Option<String> {
+    domain
+        .map(str::to_owned)
+        .or_else(|| domains.and_then(|values| values.first().cloned()))
+        .or_else(|| {
+            fallback
+                .filter(|value| !value.is_empty())
+                .map(str::to_owned)
+        })
+}
+
+fn insert_string_field(
+    fields: &mut serde_json::Map<String, serde_json::Value>,
+    key: &str,
+    value: Option<String>,
+) {
+    if let Some(value) = value {
+        fields.insert(key.into(), serde_json::Value::String(value));
+    }
+}
+
+fn insert_u16_field(
+    fields: &mut serde_json::Map<String, serde_json::Value>,
+    key: &str,
+    value: Option<u16>,
+) {
+    if let Some(value) = value {
+        fields.insert(
+            key.into(),
+            serde_json::Value::Number(serde_json::Number::from(value)),
+        );
+    }
+}
+
+fn insert_u32_field(
+    fields: &mut serde_json::Map<String, serde_json::Value>,
+    key: &str,
+    value: Option<u32>,
+) {
+    if let Some(value) = value {
+        fields.insert(
+            key.into(),
+            serde_json::Value::Number(serde_json::Number::from(value)),
+        );
+    }
+}
+
+fn ensure_dns_required_string(
+    fields: &serde_json::Map<String, serde_json::Value>,
+    key: &str,
+    policy_type: crate::model::DnsPolicyType,
+) -> Result<(), CoreError> {
+    if fields
+        .get(key)
+        .and_then(serde_json::Value::as_str)
+        .is_some()
+    {
+        Ok(())
+    } else {
+        Err(validation_failed(format!(
+            "{policy_type:?} DNS policy requires `{key}`"
+        )))
+    }
+}
+
+fn ensure_dns_required_number(
+    fields: &serde_json::Map<String, serde_json::Value>,
+    key: &str,
+    policy_type: crate::model::DnsPolicyType,
+) -> Result<(), CoreError> {
+    if fields
+        .get(key)
+        .and_then(serde_json::Value::as_u64)
+        .is_some()
+    {
+        Ok(())
+    } else {
+        Err(validation_failed(format!(
+            "{policy_type:?} DNS policy requires `{key}`"
+        )))
+    }
+}
+
+fn validate_dns_policy_fields(
+    policy_type: crate::model::DnsPolicyType,
+    fields: &serde_json::Map<String, serde_json::Value>,
+) -> Result<(), CoreError> {
+    ensure_dns_required_string(fields, "domain", policy_type)?;
+
+    match policy_type {
+        crate::model::DnsPolicyType::ARecord => {
+            ensure_dns_required_string(fields, "ipv4Address", policy_type)?;
+            ensure_dns_required_number(fields, "ttlSeconds", policy_type)?;
+        }
+        crate::model::DnsPolicyType::AaaaRecord => {
+            ensure_dns_required_string(fields, "ipv6Address", policy_type)?;
+            ensure_dns_required_number(fields, "ttlSeconds", policy_type)?;
+        }
+        crate::model::DnsPolicyType::CnameRecord => {
+            ensure_dns_required_string(fields, "targetDomain", policy_type)?;
+            ensure_dns_required_number(fields, "ttlSeconds", policy_type)?;
+        }
+        crate::model::DnsPolicyType::MxRecord => {
+            ensure_dns_required_string(fields, "mailServerDomain", policy_type)?;
+            ensure_dns_required_number(fields, "priority", policy_type)?;
+        }
+        crate::model::DnsPolicyType::TxtRecord => {
+            ensure_dns_required_string(fields, "text", policy_type)?;
+        }
+        crate::model::DnsPolicyType::SrvRecord => {
+            for key in ["serverDomain", "service", "protocol"] {
+                ensure_dns_required_string(fields, key, policy_type)?;
+            }
+            for key in ["port", "priority", "weight"] {
+                ensure_dns_required_number(fields, key, policy_type)?;
+            }
+        }
+        crate::model::DnsPolicyType::ForwardDomain => {
+            ensure_dns_required_string(fields, "ipAddress", policy_type)?;
+        }
+    }
+
+    Ok(())
+}
+
+fn build_create_dns_policy_fields(
+    req: &crate::command::CreateDnsPolicyRequest,
+) -> Result<serde_json::Map<String, serde_json::Value>, CoreError> {
+    let mut fields = serde_json::Map::new();
+    let domain = dns_domain_value(
+        req.domain.as_deref(),
+        req.domains.as_deref(),
+        Some(req.name.as_str()),
+    )
+    .ok_or_else(|| validation_failed("DNS policy requires `domain`"))?;
+    fields.insert("domain".into(), serde_json::Value::String(domain));
+
+    match req.policy_type {
+        crate::model::DnsPolicyType::ARecord => {
+            insert_string_field(
+                &mut fields,
+                "ipv4Address",
+                req.ipv4_address.clone().or_else(|| req.value.clone()),
+            );
+            insert_u32_field(&mut fields, "ttlSeconds", req.ttl_seconds);
+        }
+        crate::model::DnsPolicyType::AaaaRecord => {
+            insert_string_field(
+                &mut fields,
+                "ipv6Address",
+                req.ipv6_address.clone().or_else(|| req.value.clone()),
+            );
+            insert_u32_field(&mut fields, "ttlSeconds", req.ttl_seconds);
+        }
+        crate::model::DnsPolicyType::CnameRecord => {
+            insert_string_field(
+                &mut fields,
+                "targetDomain",
+                req.target_domain.clone().or_else(|| req.value.clone()),
+            );
+            insert_u32_field(&mut fields, "ttlSeconds", req.ttl_seconds);
+        }
+        crate::model::DnsPolicyType::MxRecord => {
+            insert_string_field(
+                &mut fields,
+                "mailServerDomain",
+                req.mail_server_domain.clone().or_else(|| req.value.clone()),
+            );
+            insert_u16_field(&mut fields, "priority", req.priority);
+        }
+        crate::model::DnsPolicyType::TxtRecord => {
+            insert_string_field(
+                &mut fields,
+                "text",
+                req.text.clone().or_else(|| req.value.clone()),
+            );
+        }
+        crate::model::DnsPolicyType::SrvRecord => {
+            insert_string_field(
+                &mut fields,
+                "serverDomain",
+                req.server_domain.clone().or_else(|| req.value.clone()),
+            );
+            insert_string_field(&mut fields, "service", req.service.clone());
+            insert_string_field(&mut fields, "protocol", req.protocol.clone());
+            insert_u16_field(&mut fields, "port", req.port);
+            insert_u16_field(&mut fields, "priority", req.priority);
+            insert_u16_field(&mut fields, "weight", req.weight);
+        }
+        crate::model::DnsPolicyType::ForwardDomain => {
+            insert_string_field(
+                &mut fields,
+                "ipAddress",
+                req.ip_address
+                    .clone()
+                    .or_else(|| req.upstream.clone())
+                    .or_else(|| req.value.clone()),
+            );
+        }
+    }
+
+    validate_dns_policy_fields(req.policy_type, &fields)?;
+    Ok(fields)
+}
+
+fn build_update_dns_policy_fields(
+    existing: &crate::integration_types::DnsPolicyResponse,
+    update: &crate::command::UpdateDnsPolicyRequest,
+) -> Result<serde_json::Map<String, serde_json::Value>, CoreError> {
+    let policy_type = dns_policy_type_from_name(&existing.policy_type);
+    let mut fields: serde_json::Map<String, serde_json::Value> =
+        existing.extra.clone().into_iter().collect();
+
+    if let Some(domain) = dns_domain_value(
+        update.domain.as_deref(),
+        update.domains.as_deref(),
+        existing.domain.as_deref(),
+    ) {
+        fields.insert("domain".into(), serde_json::Value::String(domain));
+    }
+
+    match policy_type {
+        crate::model::DnsPolicyType::ARecord => {
+            insert_string_field(
+                &mut fields,
+                "ipv4Address",
+                update.ipv4_address.clone().or_else(|| update.value.clone()),
+            );
+            insert_u32_field(&mut fields, "ttlSeconds", update.ttl_seconds);
+        }
+        crate::model::DnsPolicyType::AaaaRecord => {
+            insert_string_field(
+                &mut fields,
+                "ipv6Address",
+                update.ipv6_address.clone().or_else(|| update.value.clone()),
+            );
+            insert_u32_field(&mut fields, "ttlSeconds", update.ttl_seconds);
+        }
+        crate::model::DnsPolicyType::CnameRecord => {
+            insert_string_field(
+                &mut fields,
+                "targetDomain",
+                update
+                    .target_domain
+                    .clone()
+                    .or_else(|| update.value.clone()),
+            );
+            insert_u32_field(&mut fields, "ttlSeconds", update.ttl_seconds);
+        }
+        crate::model::DnsPolicyType::MxRecord => {
+            insert_string_field(
+                &mut fields,
+                "mailServerDomain",
+                update
+                    .mail_server_domain
+                    .clone()
+                    .or_else(|| update.value.clone()),
+            );
+            insert_u16_field(&mut fields, "priority", update.priority);
+        }
+        crate::model::DnsPolicyType::TxtRecord => {
+            insert_string_field(
+                &mut fields,
+                "text",
+                update.text.clone().or_else(|| update.value.clone()),
+            );
+        }
+        crate::model::DnsPolicyType::SrvRecord => {
+            insert_string_field(
+                &mut fields,
+                "serverDomain",
+                update
+                    .server_domain
+                    .clone()
+                    .or_else(|| update.value.clone()),
+            );
+            insert_string_field(&mut fields, "service", update.service.clone());
+            insert_string_field(&mut fields, "protocol", update.protocol.clone());
+            insert_u16_field(&mut fields, "port", update.port);
+            insert_u16_field(&mut fields, "priority", update.priority);
+            insert_u16_field(&mut fields, "weight", update.weight);
+        }
+        crate::model::DnsPolicyType::ForwardDomain => {
+            insert_string_field(
+                &mut fields,
+                "ipAddress",
+                update
+                    .ip_address
+                    .clone()
+                    .or_else(|| update.upstream.clone())
+                    .or_else(|| update.value.clone()),
+            );
+        }
+    }
+
+    validate_dns_policy_fields(policy_type, &fields)?;
+    Ok(fields)
+}
+
+fn traffic_matching_list_items(
+    entries: &[String],
+    raw_items: Option<&[serde_json::Value]>,
+) -> Vec<serde_json::Value> {
+    raw_items.map_or_else(
+        || {
+            entries
+                .iter()
+                .cloned()
+                .map(serde_json::Value::String)
+                .collect()
+        },
+        <[serde_json::Value]>::to_vec,
+    )
+}
+
 #[cfg(test)]
 mod tests {
-    use super::parse_ipv4_cidr;
+    use super::{
+        build_create_dns_policy_fields, build_create_wifi_broadcast_payload, parse_ipv4_cidr,
+        traffic_matching_list_items,
+    };
+    use crate::command::{CreateDnsPolicyRequest, CreateWifiBroadcastRequest};
+    use crate::model::{DnsPolicyType, WifiSecurityMode};
+    use serde_json::json;
 
     #[test]
     fn parse_ipv4_cidr_accepts_valid_input() {
@@ -3053,5 +3389,75 @@ mod tests {
     #[test]
     fn parse_ipv4_cidr_rejects_missing_prefix() {
         assert!(parse_ipv4_cidr("192.168.10.1").is_err());
+    }
+
+    #[test]
+    fn wifi_create_payload_uses_integration_field_names() {
+        let payload = build_create_wifi_broadcast_payload(&CreateWifiBroadcastRequest {
+            name: "Main".into(),
+            ssid: "Main".into(),
+            security_mode: WifiSecurityMode::Wpa2Personal,
+            passphrase: Some("supersecret".into()),
+            enabled: true,
+            network_id: None,
+            hide_ssid: true,
+            broadcast_type: Some("STANDARD".into()),
+            frequencies_ghz: Some(vec![2.4, 5.0]),
+            band_steering: true,
+            fast_roaming: true,
+        });
+
+        assert_eq!(payload.name, "Main");
+        assert!(payload.body.get("ssid").is_none());
+        assert_eq!(payload.body.get("hideName"), Some(&json!(true)));
+        let frequencies = payload
+            .body
+            .get("broadcastingFrequenciesGHz")
+            .and_then(serde_json::Value::as_array)
+            .expect("frequencies array");
+        assert_eq!(frequencies.len(), 2);
+        assert_eq!(frequencies[1], json!(5.0));
+        assert_eq!(payload.body.get("bandSteeringEnabled"), Some(&json!(true)));
+        assert_eq!(payload.body.get("bssTransitionEnabled"), Some(&json!(true)));
+    }
+
+    #[test]
+    fn dns_create_fields_use_type_specific_schema_keys() {
+        let fields = build_create_dns_policy_fields(&CreateDnsPolicyRequest {
+            name: "example.com".into(),
+            policy_type: DnsPolicyType::ARecord,
+            enabled: true,
+            domain: Some("example.com".into()),
+            domains: None,
+            upstream: None,
+            value: Some("192.168.1.10".into()),
+            ttl_seconds: Some(600),
+            priority: None,
+            ipv4_address: None,
+            ipv6_address: None,
+            target_domain: None,
+            mail_server_domain: None,
+            text: None,
+            ip_address: None,
+            server_domain: None,
+            service: None,
+            protocol: None,
+            port: None,
+            weight: None,
+        })
+        .expect("valid DNS fields");
+
+        assert_eq!(fields.get("domain"), Some(&json!("example.com")));
+        assert_eq!(fields.get("ipv4Address"), Some(&json!("192.168.1.10")));
+        assert_eq!(fields.get("ttlSeconds"), Some(&json!(600)));
+        assert!(fields.get("value").is_none());
+        assert!(fields.get("ttl").is_none());
+    }
+
+    #[test]
+    fn traffic_matching_list_items_prefer_raw_payloads() {
+        let raw_items = [json!({"type": "PORT_NUMBER", "value": 443})];
+        let items = traffic_matching_list_items(&["80".into()], Some(&raw_items));
+        assert_eq!(items, vec![json!({"type": "PORT_NUMBER", "value": 443})]);
     }
 }

@@ -122,6 +122,7 @@ pub async fn handle(
                         },
                     ),
                     entries: items.unwrap_or_default(),
+                    raw_items: None,
                     description: None,
                 }
             };
