@@ -47,7 +47,8 @@ pub use wifi::{WifiBroadcast, WifiBroadcastType, WifiSecurityMode};
 
 // Firewall
 pub use firewall::{
-    AclAction, AclRule, AclRuleType, FirewallAction, FirewallPolicy, FirewallZone, IpVersion,
+    AclAction, AclRule, AclRuleType, FirewallAction, FirewallPolicy, FirewallZone, IpSpec,
+    IpVersion, PolicyEndpoint, PortSpec, TrafficFilter,
 };
 
 // DNS

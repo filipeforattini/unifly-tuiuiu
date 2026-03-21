@@ -247,6 +247,331 @@ pub struct WifiBroadcastCreateUpdate {
     pub body: serde_json::Map<String, Value>,
 }
 
+// ── Firewall Traffic Filters ─────────────────────────────────────────
+
+/// Source endpoint of a firewall policy.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FirewallPolicySource {
+    pub zone_id: Option<Uuid>,
+    #[serde(default)]
+    pub traffic_filter: Option<SourceTrafficFilter>,
+}
+
+/// Destination endpoint of a firewall policy.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FirewallPolicyDestination {
+    pub zone_id: Option<Uuid>,
+    #[serde(default)]
+    pub traffic_filter: Option<DestTrafficFilter>,
+}
+
+/// Source traffic filter — discriminated by `type`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "type")]
+pub enum SourceTrafficFilter {
+    #[serde(rename = "NETWORK")]
+    Network {
+        #[serde(rename = "networkFilter")]
+        network_filter: NetworkFilter,
+        #[serde(
+            rename = "macAddressFilter",
+            default,
+            skip_serializing_if = "Option::is_none"
+        )]
+        mac_address_filter: Option<MacAddressFilter>,
+        #[serde(
+            rename = "portFilter",
+            default,
+            skip_serializing_if = "Option::is_none"
+        )]
+        port_filter: Option<PortFilter>,
+    },
+    #[serde(rename = "IP_ADDRESS")]
+    IpAddress {
+        #[serde(rename = "ipAddressFilter")]
+        ip_address_filter: IpAddressFilter,
+        #[serde(
+            rename = "macAddressFilter",
+            default,
+            skip_serializing_if = "Option::is_none"
+        )]
+        mac_address_filter: Option<MacAddressFilter>,
+        #[serde(
+            rename = "portFilter",
+            default,
+            skip_serializing_if = "Option::is_none"
+        )]
+        port_filter: Option<PortFilter>,
+    },
+    #[serde(rename = "MAC_ADDRESS")]
+    MacAddress {
+        #[serde(rename = "macAddressFilter")]
+        mac_address_filter: MacAddressFilter,
+        #[serde(
+            rename = "portFilter",
+            default,
+            skip_serializing_if = "Option::is_none"
+        )]
+        port_filter: Option<PortFilter>,
+    },
+    #[serde(rename = "PORT")]
+    Port {
+        #[serde(rename = "portFilter")]
+        port_filter: PortFilter,
+    },
+    #[serde(rename = "REGION")]
+    Region {
+        #[serde(rename = "regionFilter")]
+        region_filter: RegionFilter,
+        #[serde(
+            rename = "portFilter",
+            default,
+            skip_serializing_if = "Option::is_none"
+        )]
+        port_filter: Option<PortFilter>,
+    },
+    #[serde(other)]
+    Unknown,
+}
+
+/// Destination traffic filter — discriminated by `type`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "type")]
+pub enum DestTrafficFilter {
+    #[serde(rename = "NETWORK")]
+    Network {
+        #[serde(rename = "networkFilter")]
+        network_filter: NetworkFilter,
+        #[serde(
+            rename = "portFilter",
+            default,
+            skip_serializing_if = "Option::is_none"
+        )]
+        port_filter: Option<PortFilter>,
+    },
+    #[serde(rename = "IP_ADDRESS")]
+    IpAddress {
+        #[serde(rename = "ipAddressFilter")]
+        ip_address_filter: IpAddressFilter,
+        #[serde(
+            rename = "portFilter",
+            default,
+            skip_serializing_if = "Option::is_none"
+        )]
+        port_filter: Option<PortFilter>,
+    },
+    #[serde(rename = "PORT")]
+    Port {
+        #[serde(rename = "portFilter")]
+        port_filter: PortFilter,
+    },
+    #[serde(rename = "REGION")]
+    Region {
+        #[serde(rename = "regionFilter")]
+        region_filter: RegionFilter,
+        #[serde(
+            rename = "portFilter",
+            default,
+            skip_serializing_if = "Option::is_none"
+        )]
+        port_filter: Option<PortFilter>,
+    },
+    #[serde(rename = "APPLICATION")]
+    Application {
+        #[serde(rename = "applicationFilter")]
+        application_filter: ApplicationFilter,
+        #[serde(
+            rename = "portFilter",
+            default,
+            skip_serializing_if = "Option::is_none"
+        )]
+        port_filter: Option<PortFilter>,
+    },
+    #[serde(rename = "APPLICATION_CATEGORY")]
+    ApplicationCategory {
+        #[serde(rename = "applicationCategoryFilter")]
+        application_category_filter: ApplicationCategoryFilter,
+        #[serde(
+            rename = "portFilter",
+            default,
+            skip_serializing_if = "Option::is_none"
+        )]
+        port_filter: Option<PortFilter>,
+    },
+    #[serde(rename = "DOMAIN")]
+    Domain {
+        #[serde(rename = "domainFilter")]
+        domain_filter: DomainFilter,
+        #[serde(
+            rename = "portFilter",
+            default,
+            skip_serializing_if = "Option::is_none"
+        )]
+        port_filter: Option<PortFilter>,
+    },
+    #[serde(other)]
+    Unknown,
+}
+
+/// Network filter — match by network IDs.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NetworkFilter {
+    pub network_ids: Vec<Uuid>,
+    #[serde(default)]
+    pub match_opposite: bool,
+}
+
+/// IP address filter — polymorphic: specific addresses or traffic matching list.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "type")]
+pub enum IpAddressFilter {
+    #[serde(rename = "IP_ADDRESSES", alias = "SPECIFIC")]
+    Specific {
+        #[serde(default)]
+        items: Vec<IpAddressItem>,
+        #[serde(default, rename = "matchOpposite")]
+        match_opposite: bool,
+    },
+    #[serde(rename = "TRAFFIC_MATCHING_LIST")]
+    TrafficMatchingList {
+        #[serde(rename = "trafficMatchingListId")]
+        traffic_matching_list_id: Uuid,
+        #[serde(default, rename = "matchOpposite")]
+        match_opposite: bool,
+    },
+    #[serde(other)]
+    Unknown,
+}
+
+/// Individual IP address match item.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "type")]
+pub enum IpAddressItem {
+    #[serde(rename = "IP_ADDRESS")]
+    Address { value: String },
+    #[serde(rename = "RANGE")]
+    Range { start: String, stop: String },
+    #[serde(rename = "SUBNET")]
+    Subnet { value: String },
+}
+
+/// Port filter — polymorphic: explicit values or traffic matching list.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "type")]
+pub enum PortFilter {
+    #[serde(rename = "PORTS", alias = "VALUE")]
+    Ports {
+        #[serde(default)]
+        items: Vec<PortItem>,
+        #[serde(default, rename = "matchOpposite")]
+        match_opposite: bool,
+    },
+    #[serde(rename = "TRAFFIC_MATCHING_LIST")]
+    TrafficMatchingList {
+        #[serde(rename = "trafficMatchingListId")]
+        traffic_matching_list_id: Uuid,
+        #[serde(default, rename = "matchOpposite")]
+        match_opposite: bool,
+    },
+    #[serde(other)]
+    Unknown,
+}
+
+/// Individual port match item.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "type")]
+pub enum PortItem {
+    #[serde(rename = "PORT_NUMBER")]
+    Number {
+        #[serde(deserialize_with = "crate::integration::types::deserialize_port_value")]
+        value: String,
+    },
+    #[serde(rename = "PORT_RANGE")]
+    Range {
+        #[serde(
+            rename = "startPort",
+            deserialize_with = "crate::integration::types::deserialize_port_value"
+        )]
+        start_port: String,
+        #[serde(
+            rename = "endPort",
+            deserialize_with = "crate::integration::types::deserialize_port_value"
+        )]
+        end_port: String,
+    },
+    #[serde(other)]
+    Unknown,
+}
+
+/// Deserialize a port value that may be either a number or a string.
+fn deserialize_port_value<'de, D>(deserializer: D) -> Result<String, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    struct PortValueVisitor;
+    impl serde::de::Visitor<'_> for PortValueVisitor {
+        type Value = String;
+
+        fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+            formatter.write_str("a port number as string or integer")
+        }
+
+        fn visit_u64<E: serde::de::Error>(self, v: u64) -> Result<String, E> {
+            Ok(v.to_string())
+        }
+
+        fn visit_i64<E: serde::de::Error>(self, v: i64) -> Result<String, E> {
+            Ok(v.to_string())
+        }
+
+        fn visit_str<E: serde::de::Error>(self, v: &str) -> Result<String, E> {
+            Ok(v.to_string())
+        }
+    }
+
+    deserializer.deserialize_any(PortValueVisitor)
+}
+
+/// MAC address filter.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MacAddressFilter {
+    pub mac_addresses: Vec<String>,
+}
+
+/// DPI application filter.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ApplicationFilter {
+    pub application_ids: Vec<i64>,
+}
+
+/// DPI application category filter.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ApplicationCategoryFilter {
+    pub application_category_ids: Vec<i64>,
+}
+
+/// Region filter.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RegionFilter {
+    pub regions: Vec<String>,
+}
+
+/// Domain filter — polymorphic.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "type")]
+pub enum DomainFilter {
+    #[serde(rename = "SPECIFIC")]
+    Specific { domains: Vec<String> },
+    #[serde(other)]
+    Unknown,
+}
+
 // ── Firewall Policies ────────────────────────────────────────────────
 
 /// Firewall policy — from `GET /v1/sites/{siteId}/firewall/policies`.
@@ -264,8 +589,13 @@ pub struct FirewallPolicyResponse {
     #[serde(default)]
     pub logging_enabled: bool,
     pub metadata: Option<Value>,
-    /// Catch-all for additional / variable fields (index, source, destination,
-    /// sourceFirewallZoneId, destinationFirewallZoneId, schedule, etc.)
+    /// Typed source endpoint with traffic filter.
+    #[serde(default)]
+    pub source: Option<FirewallPolicySource>,
+    /// Typed destination endpoint with traffic filter.
+    #[serde(default)]
+    pub destination: Option<FirewallPolicyDestination>,
+    /// Catch-all for remaining fields (index, schedule, ipsec, connectionStateFilter, etc.)
     #[serde(flatten)]
     pub extra: HashMap<String, Value>,
 }

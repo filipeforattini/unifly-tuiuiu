@@ -38,35 +38,37 @@ struct PolicyRow {
     action: String,
     #[tabled(rename = "Enabled")]
     enabled: String,
-    #[tabled(rename = "Src Zone")]
-    src_zone: String,
-    #[tabled(rename = "Dst Zone")]
-    dst_zone: String,
+    #[tabled(rename = "Source")]
+    source: String,
+    #[tabled(rename = "Destination")]
+    destination: String,
 }
 
 impl From<&Arc<FirewallPolicy>> for PolicyRow {
     fn from(p: &Arc<FirewallPolicy>) -> Self {
+        let src = p
+            .source_summary
+            .as_deref()
+            .or_else(|| p.source.zone_id.as_ref().map(|_| "zone-only"))
+            .unwrap_or("-");
+        let dst = p
+            .destination_summary
+            .as_deref()
+            .or_else(|| p.destination.zone_id.as_ref().map(|_| "zone-only"))
+            .unwrap_or("-");
         Self {
             id: p.id.to_string(),
             name: p.name.clone(),
             action: format!("{:?}", p.action),
             enabled: if p.enabled { "yes" } else { "no" }.into(),
-            src_zone: p
-                .source_zone_id
-                .as_ref()
-                .map(ToString::to_string)
-                .unwrap_or_default(),
-            dst_zone: p
-                .destination_zone_id
-                .as_ref()
-                .map(ToString::to_string)
-                .unwrap_or_default(),
+            source: src.into(),
+            destination: dst.into(),
         }
     }
 }
 
 fn policy_detail(p: &Arc<FirewallPolicy>) -> String {
-    [
+    let mut lines = vec![
         format!("ID:          {}", p.id),
         format!("Name:        {}", p.name),
         format!("Description: {}", p.description.as_deref().unwrap_or("-")),
@@ -75,19 +77,35 @@ fn policy_detail(p: &Arc<FirewallPolicy>) -> String {
         format!("IP Version:  {:?}", p.ip_version),
         format!(
             "Src Zone:    {}",
-            p.source_zone_id
+            p.source
+                .zone_id
                 .as_ref()
                 .map_or_else(|| "-".into(), ToString::to_string)
         ),
-        format!(
-            "Dst Zone:    {}",
-            p.destination_zone_id
-                .as_ref()
-                .map_or_else(|| "-".into(), ToString::to_string)
-        ),
-        format!("Logging:     {}", p.logging_enabled),
-    ]
-    .join("\n")
+    ];
+    if let Some(ref filter) = p.source.filter {
+        lines.push(format!("Src Filter:  {}", filter.summary()));
+    }
+    lines.push(format!(
+        "Dst Zone:    {}",
+        p.destination
+            .zone_id
+            .as_ref()
+            .map_or_else(|| "-".into(), ToString::to_string)
+    ));
+    if let Some(ref filter) = p.destination.filter {
+        lines.push(format!("Dst Filter:  {}", filter.summary()));
+    }
+    lines.push(format!(
+        "States:      {}",
+        if p.connection_states.is_empty() {
+            "any".into()
+        } else {
+            p.connection_states.join(", ")
+        }
+    ));
+    lines.push(format!("Logging:     {}", p.logging_enabled));
+    lines.join("\n")
 }
 
 // ── Zone table row ──────────────────────────────────────────────────
