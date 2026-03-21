@@ -574,20 +574,24 @@ impl Controller {
 
             drop(integration_guard);
 
-            // Supplement with Legacy API data (events, health, client traffic, device stats)
-            let (legacy_events, legacy_health, legacy_clients, legacy_devices): (
+            // Supplement with Legacy API data (events, health, client traffic, device stats, DHCP reservations)
+            #[allow(clippy::type_complexity)]
+            let (legacy_events, legacy_health, legacy_clients, legacy_devices, legacy_users): (
                 Vec<Event>,
                 Vec<HealthSummary>,
                 Vec<crate::legacy::models::LegacyClientEntry>,
                 Vec<crate::legacy::models::LegacyDevice>,
+                Vec<crate::legacy::models::LegacyUserEntry>,
             ) = match *self.inner.legacy_client.lock().await {
                 Some(ref legacy) => {
-                    let (events_res, health_res, clients_res, devices_res) = tokio::join!(
-                        legacy.list_events(Some(100)),
-                        legacy.get_health(),
-                        legacy.list_clients(),
-                        legacy.list_devices(),
-                    );
+                    let (events_res, health_res, clients_res, devices_res, users_res) =
+                        tokio::join!(
+                            legacy.list_events(Some(100)),
+                            legacy.get_health(),
+                            legacy.list_clients(),
+                            legacy.list_devices(),
+                            legacy.list_users(),
+                        );
 
                     let events = match events_res {
                         Ok(raw) => {
@@ -630,9 +634,17 @@ impl Controller {
                         }
                     };
 
-                    (events, health, lc, ld)
+                    let lu = match users_res {
+                        Ok(raw) => raw,
+                        Err(e) => {
+                            warn!(error = %e, "legacy user fetch failed (non-fatal)");
+                            Vec::new()
+                        }
+                    };
+
+                    (events, health, lc, ld, lu)
                 }
-                None => (Vec::new(), Vec::new(), Vec::new(), Vec::new()),
+                None => (Vec::new(), Vec::new(), Vec::new(), Vec::new(), Vec::new()),
             };
 
             // Merge Legacy client traffic (tx/rx bytes, hostname) into Integration clients.
@@ -674,6 +686,21 @@ impl Controller {
                     merged,
                     "client traffic merge (by IP)"
                 );
+            }
+
+            // Merge Legacy user DHCP reservations (fixed IP) into clients by MAC.
+            if !legacy_users.is_empty() {
+                let users_by_mac: HashMap<String, &crate::legacy::models::LegacyUserEntry> =
+                    legacy_users
+                        .iter()
+                        .map(|u| (u.mac.to_lowercase(), u))
+                        .collect();
+                for client in &mut clients {
+                    if let Some(user) = users_by_mac.get(&client.mac.as_str().to_lowercase()) {
+                        client.use_fixedip = user.use_fixedip.unwrap_or(false);
+                        client.fixed_ip = user.fixed_ip.as_deref().and_then(|s| s.parse().ok());
+                    }
+                }
             }
 
             // Merge Legacy device num_sta (client counts) into Integration devices
@@ -775,10 +802,6 @@ impl Controller {
     /// Sends the command through the internal channel to the command
     /// processor task and awaits the result.
     pub async fn execute(&self, cmd: Command) -> Result<CommandResult, CoreError> {
-        if *self.inner.connection_state.borrow() != ConnectionState::Connected {
-            return Err(CoreError::ControllerDisconnected);
-        }
-
         let (tx, rx) = tokio::sync::oneshot::channel();
 
         let command_tx = self.inner.command_tx.lock().await.clone();
@@ -1856,6 +1879,24 @@ async fn route_command(controller: &Controller, cmd: Command) -> Result<CommandR
             Ok(CommandResult::Ok)
         }
 
+        Command::SetClientFixedIp {
+            mac,
+            ip,
+            network_id,
+        } => {
+            let legacy = require_legacy(&legacy_guard)?;
+            legacy
+                .set_client_fixed_ip(mac.as_str(), &ip.to_string(), &network_id.to_string())
+                .await?;
+            Ok(CommandResult::Ok)
+        }
+
+        Command::RemoveClientFixedIp { mac } => {
+            let legacy = require_legacy(&legacy_guard)?;
+            legacy.remove_client_fixed_ip(mac.as_str()).await?;
+            Ok(CommandResult::Ok)
+        }
+
         // ── Alarm operations ─────────────────────────────────────
         Command::ArchiveAlarm { id } => {
             let legacy = require_legacy(&legacy_guard)?;
@@ -2266,13 +2307,17 @@ async fn route_command(controller: &Controller, cmd: Command) -> Result<CommandR
             Ok(CommandResult::Ok)
         }
 
-        Command::PatchFirewallPolicy { id, enabled } => {
+        Command::PatchFirewallPolicy {
+            id,
+            enabled,
+            logging,
+        } => {
             let (ic, sid) =
                 require_integration(&integration_guard, site_id, "PatchFirewallPolicy")?;
             let uuid = require_uuid(&id)?;
             let body = crate::integration_types::FirewallPolicyPatch {
-                enabled: Some(enabled),
-                logging_enabled: None,
+                enabled,
+                logging_enabled: logging,
             };
             ic.patch_firewall_policy(&sid, &uuid, &body).await?;
             Ok(CommandResult::Ok)

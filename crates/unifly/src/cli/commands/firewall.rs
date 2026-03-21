@@ -238,14 +238,38 @@ async fn handle_policies(
             Ok(())
         }
 
-        FirewallPoliciesCommand::Patch { id, enabled } => {
+        FirewallPoliciesCommand::Patch {
+            id,
+            enabled,
+            logging,
+        } => {
+            if enabled.is_none() && logging.is_none() {
+                return Err(CliError::Validation {
+                    field: "patch".into(),
+                    reason: "at least one of --enabled or --logging is required".into(),
+                });
+            }
             let eid = EntityId::from(id);
             controller
-                .execute(CoreCommand::PatchFirewallPolicy { id: eid, enabled })
+                .execute(CoreCommand::PatchFirewallPolicy {
+                    id: eid,
+                    enabled,
+                    logging,
+                })
                 .await?;
             if !global.quiet {
-                let state = if enabled { "enabled" } else { "disabled" };
-                eprintln!("Firewall policy {state}");
+                let mut parts = Vec::new();
+                if let Some(e) = enabled {
+                    parts.push(if e { "enabled" } else { "disabled" });
+                }
+                if let Some(l) = logging {
+                    parts.push(if l {
+                        "logging enabled"
+                    } else {
+                        "logging disabled"
+                    });
+                }
+                eprintln!("Firewall policy {}", parts.join(", "));
             }
             Ok(())
         }

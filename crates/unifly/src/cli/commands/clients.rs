@@ -1,5 +1,6 @@
 //! Client command handlers.
 
+use std::net::Ipv4Addr;
 use std::sync::Arc;
 
 use tabled::Tabled;
@@ -64,6 +65,12 @@ fn detail(c: &Arc<Client>) -> String {
         format!("Guest:     {}", c.is_guest),
         format!("Blocked:   {}", c.blocked),
     ];
+    if c.use_fixedip {
+        lines.push(format!(
+            "Fixed IP:  {}",
+            c.fixed_ip.map_or("-".into(), |ip| ip.to_string())
+        ));
+    }
     if let Some(ref w) = c.wireless {
         lines.push(format!("SSID:      {}", w.ssid.as_deref().unwrap_or("-")));
         if let Some(sig) = w.signal_dbm {
@@ -201,5 +208,93 @@ pub async fn handle(
             }
             Ok(())
         }
+
+        ClientsCommand::SetIp { mac, ip, network } => {
+            let ip_addr: Ipv4Addr = ip.parse().map_err(|_| CliError::Validation {
+                field: "ip".into(),
+                reason: format!("'{ip}' is not a valid IPv4 address"),
+            })?;
+
+            let network_id = resolve_network(controller, network.as_deref(), ip_addr)?;
+            let mac_addr = MacAddress::new(&mac);
+
+            controller
+                .execute(CoreCommand::SetClientFixedIp {
+                    mac: mac_addr,
+                    ip: ip_addr,
+                    network_id,
+                })
+                .await?;
+            if !global.quiet {
+                eprintln!("Fixed IP {ip} set for {mac}");
+            }
+            Ok(())
+        }
+
+        ClientsCommand::RemoveIp { mac } => {
+            let mac_addr = MacAddress::new(&mac);
+            controller
+                .execute(CoreCommand::RemoveClientFixedIp { mac: mac_addr })
+                .await?;
+            if !global.quiet {
+                eprintln!("Fixed IP removed for {mac}");
+            }
+            Ok(())
+        }
     }
+}
+
+/// Resolve a network by name/ID, or auto-detect from an IP address by
+/// matching against known network subnets.
+fn resolve_network(
+    controller: &Controller,
+    name_or_id: Option<&str>,
+    ip: Ipv4Addr,
+) -> Result<EntityId, CliError> {
+    let networks = controller.networks_snapshot();
+
+    if let Some(needle) = name_or_id {
+        // Explicit network: match by name or ID
+        return networks
+            .iter()
+            .find(|n| n.name.eq_ignore_ascii_case(needle) || n.id.to_string() == needle)
+            .map(|n| n.id.clone())
+            .ok_or_else(|| CliError::NotFound {
+                resource_type: "network".into(),
+                identifier: needle.into(),
+                list_command: "networks list".into(),
+            });
+    }
+
+    // Auto-detect: find the network whose subnet contains the IP
+    let ip_u32 = u32::from(ip);
+    for net in networks.iter() {
+        if let Some(ref subnet_str) = net.subnet {
+            if let Some((net_addr, prefix)) = parse_cidr(subnet_str) {
+                let mask = if prefix == 0 {
+                    0
+                } else {
+                    u32::MAX << (32 - prefix)
+                };
+                if (ip_u32 & mask) == (u32::from(net_addr) & mask) {
+                    return Ok(net.id.clone());
+                }
+            }
+        }
+    }
+
+    Err(CliError::Validation {
+        field: "network".into(),
+        reason: format!(
+            "could not auto-detect network for IP {ip}; use --network to specify explicitly"
+        ),
+    })
+}
+
+/// Parse "10.4.22.1/24" into (Ipv4Addr, prefix_len).
+fn parse_cidr(s: &str) -> Option<(Ipv4Addr, u32)> {
+    let (addr_str, prefix_str) = s.split_once('/')?;
+    let addr: Ipv4Addr = addr_str.parse().ok()?;
+    let prefix: u32 = prefix_str.parse().ok()?;
+    Some((addr, prefix))
 }

@@ -81,6 +81,14 @@ pub enum Command {
     UnauthorizeGuest {
         client_id: EntityId,
     },
+    SetClientFixedIp {
+        mac: MacAddress,
+        ip: std::net::Ipv4Addr,
+        network_id: EntityId,
+    },
+    RemoveClientFixedIp {
+        mac: MacAddress,
+    },
 
     // ── Network CRUD ─────────────────────────────────────────────────
     CreateNetwork(CreateNetworkRequest),
@@ -115,7 +123,8 @@ pub enum Command {
     },
     PatchFirewallPolicy {
         id: EntityId,
-        enabled: bool,
+        enabled: Option<bool>,
+        logging: Option<bool>,
     },
     ReorderFirewallPolicies {
         zone_pair: (EntityId, EntityId),

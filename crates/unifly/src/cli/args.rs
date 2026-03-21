@@ -380,6 +380,28 @@ pub enum ClientsCommand {
         /// Client MAC address
         mac: String,
     },
+
+    /// Set a fixed IP (DHCP reservation) for a client (legacy API)
+    #[command(alias = "reserve")]
+    SetIp {
+        /// Client MAC address
+        mac: String,
+
+        /// IPv4 address to reserve
+        #[arg(long)]
+        ip: String,
+
+        /// Network name or ID (auto-detected from IP if omitted)
+        #[arg(long)]
+        network: Option<String>,
+    },
+
+    /// Remove a fixed IP (DHCP reservation) from a client (legacy API)
+    #[command(alias = "unreserve")]
+    RemoveIp {
+        /// Client MAC address
+        mac: String,
+    },
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -709,14 +731,18 @@ pub enum FirewallPoliciesCommand {
         from_file: Option<PathBuf>,
     },
 
-    /// Patch a firewall policy (quick enable/disable)
+    /// Patch a firewall policy (quick toggle enabled/logging)
     Patch {
         /// Firewall policy ID (UUID)
         id: String,
 
         /// Enable or disable the policy
-        #[arg(long, required = true, action = clap::ArgAction::Set)]
-        enabled: bool,
+        #[arg(long, action = clap::ArgAction::Set)]
+        enabled: Option<bool>,
+
+        /// Enable or disable logging for matched traffic
+        #[arg(long, action = clap::ArgAction::Set)]
+        logging: Option<bool>,
     },
 
     /// Delete a firewall policy

@@ -165,6 +165,39 @@ pub struct LegacyClientEntry {
     pub extra: serde_json::Map<String, serde_json::Value>,
 }
 
+// ── User (known client / DHCP reservation) ──────────────────────────
+
+/// User object from `rest/user`.
+///
+/// The "user" collection stores persistent client configuration such as
+/// names, notes, and DHCP reservations. Unlike `stat/sta` (currently
+/// connected stations), `rest/user` includes offline/historical clients.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LegacyUserEntry {
+    #[serde(rename = "_id")]
+    pub id: String,
+    pub mac: String,
+    #[serde(default)]
+    pub name: Option<String>,
+    #[serde(default)]
+    pub hostname: Option<String>,
+    #[serde(default)]
+    pub use_fixedip: Option<bool>,
+    #[serde(default)]
+    pub fixed_ip: Option<String>,
+    #[serde(default)]
+    pub network_id: Option<String>,
+    #[serde(default)]
+    pub site_id: Option<String>,
+    #[serde(default)]
+    pub noted: Option<bool>,
+    #[serde(default)]
+    pub note: Option<String>,
+    /// Catch-all for undocumented fields.
+    #[serde(flatten)]
+    pub extra: serde_json::Map<String, serde_json::Value>,
+}
+
 // ── Site ─────────────────────────────────────────────────────────────
 
 /// Site object from `/api/self/sites`.

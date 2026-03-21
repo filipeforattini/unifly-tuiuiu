@@ -2,7 +2,7 @@
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use std::net::IpAddr;
+use std::net::{IpAddr, Ipv4Addr};
 
 use super::common::{Bandwidth, DataSource};
 use super::entity_id::{EntityId, MacAddress};
@@ -75,6 +75,10 @@ pub struct Client {
     // Fingerprint (legacy API)
     pub os_name: Option<String>,
     pub device_class: Option<String>,
+
+    // DHCP reservation (legacy API)
+    pub use_fixedip: bool,
+    pub fixed_ip: Option<Ipv4Addr>,
 
     // Blocking state (legacy API)
     pub blocked: bool,

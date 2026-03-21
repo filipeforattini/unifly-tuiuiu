@@ -8,7 +8,7 @@ use tracing::debug;
 
 use crate::error::Error;
 use crate::legacy::client::LegacyClient;
-use crate::legacy::models::LegacyClientEntry;
+use crate::legacy::models::{LegacyClientEntry, LegacyUserEntry};
 
 impl LegacyClient {
     /// List all currently connected clients (stations).
@@ -147,6 +147,93 @@ impl LegacyClient {
                 &json!({
                     "cmd": "unauthorize-guest",
                     "mac": mac,
+                }),
+            )
+            .await?;
+        Ok(())
+    }
+
+    // ── DHCP reservation (rest/user) ──────────────────────────────
+
+    /// List all known users (includes offline clients with reservations).
+    ///
+    /// `GET /api/s/{site}/rest/user`
+    pub async fn list_users(&self) -> Result<Vec<LegacyUserEntry>, Error> {
+        let url = self.site_url("rest/user");
+        debug!("listing known users");
+        self.get(url).await
+    }
+
+    /// Set a fixed IP (DHCP reservation) for a client.
+    ///
+    /// Looks up the client in `rest/user` by MAC. If already known, PUTs an
+    /// update; otherwise POSTs a new user entry.
+    pub async fn set_client_fixed_ip(
+        &self,
+        mac: &str,
+        ip: &str,
+        network_id: &str,
+    ) -> Result<(), Error> {
+        debug!(mac, ip, network_id, "setting client fixed IP");
+
+        let users = self.list_users().await?;
+        let normalized_mac = mac.to_lowercase();
+        let existing = users
+            .iter()
+            .find(|u| u.mac.to_lowercase() == normalized_mac);
+
+        if let Some(user) = existing {
+            // Update existing user entry
+            let url = self.site_url(&format!("rest/user/{}", user.id));
+            let _: Vec<serde_json::Value> = self
+                .put(
+                    url,
+                    &json!({
+                        "use_fixedip": true,
+                        "fixed_ip": ip,
+                        "network_id": network_id,
+                    }),
+                )
+                .await?;
+        } else {
+            // Create new user entry
+            let url = self.site_url("rest/user");
+            let _: Vec<serde_json::Value> = self
+                .post(
+                    url,
+                    &json!({
+                        "mac": normalized_mac,
+                        "use_fixedip": true,
+                        "fixed_ip": ip,
+                        "network_id": network_id,
+                    }),
+                )
+                .await?;
+        }
+        Ok(())
+    }
+
+    /// Remove a fixed IP (DHCP reservation) from a client.
+    ///
+    /// Sets `use_fixedip` to false on the existing user entry.
+    pub async fn remove_client_fixed_ip(&self, mac: &str) -> Result<(), Error> {
+        debug!(mac, "removing client fixed IP");
+
+        let users = self.list_users().await?;
+        let normalized_mac = mac.to_lowercase();
+        let user = users
+            .iter()
+            .find(|u| u.mac.to_lowercase() == normalized_mac)
+            .ok_or_else(|| Error::LegacyApi {
+                message: format!("no known user with MAC {mac}"),
+            })?;
+
+        let url = self.site_url(&format!("rest/user/{}", user.id));
+        let _: Vec<serde_json::Value> = self
+            .put(
+                url,
+                &json!({
+                    "use_fixedip": false,
                 }),
             )
             .await?;
