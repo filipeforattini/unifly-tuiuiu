@@ -161,19 +161,6 @@ impl Controller {
 
                 *self.inner.integration_client.lock().await = Some(integration);
                 *self.inner.site_id.lock().await = Some(site_id);
-
-                // Also set up Legacy client for event streams and supplementary data.
-                // API key auth may not work with Legacy API on all controllers,
-                // so we swallow errors here — it's optional.
-                match setup_legacy_client(config, &transport).await {
-                    Ok(client) => {
-                        *self.inner.legacy_client.lock().await = Some(client);
-                        debug!("legacy client available as supplement");
-                    }
-                    Err(e) => {
-                        debug!(error = %e, "legacy client unavailable (non-fatal with API key auth)");
-                    }
-                }
             }
             AuthCredentials::Credentials { username, password } => {
                 // Legacy-only auth
@@ -955,6 +942,11 @@ impl Controller {
     /// Drain warnings accumulated during connect (e.g. Legacy auth failure).
     pub async fn take_warnings(&self) -> Vec<String> {
         std::mem::take(&mut *self.inner.warnings.lock().await)
+    }
+
+    /// Whether a logged-in Legacy client is available for legacy-only features.
+    pub async fn has_legacy_access(&self) -> bool {
+        self.inner.legacy_client.lock().await.is_some()
     }
 
     // ── Ad-hoc Integration API queries ───────────────────────────
@@ -2198,10 +2190,8 @@ async fn route_command(controller: &Controller, cmd: Command) -> Result<CommandR
                 FirewallAction::Block => "DROP",
                 FirewallAction::Reject => "REJECT",
             };
-            let source = build_endpoint_json(
-                &req.source_zone_id.to_string(),
-                req.source_filter.as_ref(),
-            );
+            let source =
+                build_endpoint_json(&req.source_zone_id.to_string(), req.source_filter.as_ref());
             let destination = build_endpoint_json(
                 &req.destination_zone_id.to_string(),
                 req.destination_filter.as_ref(),
@@ -2875,16 +2865,6 @@ async fn resolve_site_id(
         })
 }
 
-/// Try to set up a Legacy client (best-effort for API key auth).
-async fn setup_legacy_client(
-    config: &ControllerConfig,
-    transport: &TransportConfig,
-) -> Result<LegacyClient, CoreError> {
-    let platform = LegacyClient::detect_platform(&config.url).await?;
-    let client = LegacyClient::new(config.url.clone(), config.site.clone(), platform, transport)?;
-    Ok(client)
-}
-
 fn parse_ipv4_cidr(cidr: &str) -> Result<(Ipv4Addr, u8), CoreError> {
     let (host, prefix) = cidr
         .split_once('/')
@@ -2920,7 +2900,10 @@ fn require_uuid(id: &EntityId) -> Result<uuid::Uuid, CoreError> {
 fn require_legacy<'a>(
     guard: &'a tokio::sync::MutexGuard<'_, Option<LegacyClient>>,
 ) -> Result<&'a LegacyClient, CoreError> {
-    guard.as_ref().ok_or(CoreError::ControllerDisconnected)
+    guard.as_ref().ok_or_else(|| CoreError::Unsupported {
+        operation: "Legacy API operation".into(),
+        required: "Legacy API credentials".into(),
+    })
 }
 
 fn require_integration<'a>(

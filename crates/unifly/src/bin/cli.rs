@@ -3,7 +3,7 @@
 use clap::Parser;
 use tracing_subscriber::EnvFilter;
 
-use unifly::cli::args::{Cli, Command, GlobalOpts};
+use unifly::cli::args::{Cli, Command, EventsCommand, GlobalOpts};
 use unifly::cli::commands;
 use unifly::cli::error::CliError;
 use unifly::config::resolve;
@@ -53,9 +53,15 @@ async fn run(cli: Cli) -> Result<(), CliError> {
         }
 
         cmd => {
-            let controller_config = build_controller_config(&cli.global)?;
+            let mut controller_config = build_controller_config(&cli.global)?;
+            controller_config.websocket_enabled = command_uses_websocket(&cmd);
             let controller = Controller::new(controller_config);
             controller.connect().await.map_err(CliError::from)?;
+            for warning in controller.take_warnings().await {
+                if !cli.global.quiet {
+                    eprintln!("warning: {warning}");
+                }
+            }
 
             tracing::debug!(command = ?cmd, "dispatching command");
             let result = commands::dispatch(cmd, &controller, &cli.global).await;
@@ -64,6 +70,13 @@ async fn run(cli: Cli) -> Result<(), CliError> {
             result
         }
     }
+}
+
+fn command_uses_websocket(command: &Command) -> bool {
+    matches!(
+        command,
+        Command::Events(args) if matches!(args.command, EventsCommand::Watch { .. })
+    )
 }
 
 fn build_controller_config(global: &GlobalOpts) -> Result<unifly_api::ControllerConfig, CliError> {
@@ -110,4 +123,26 @@ fn build_controller_config(global: &GlobalOpts) -> Result<unifly_api::Controller
         websocket_enabled: false,
         polling_interval_secs: 30,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::command_uses_websocket;
+    use unifly::cli::args::{Command, EventsArgs, EventsCommand};
+
+    #[test]
+    fn only_events_watch_enables_websocket() {
+        let watch = Command::Events(EventsArgs {
+            command: EventsCommand::Watch { types: None },
+        });
+        let list = Command::Events(EventsArgs {
+            command: EventsCommand::List {
+                limit: 100,
+                within: 24,
+            },
+        });
+
+        assert!(command_uses_websocket(&watch));
+        assert!(!command_uses_websocket(&list));
+    }
 }
