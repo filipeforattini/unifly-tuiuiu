@@ -100,7 +100,7 @@ unifly [global-flags] <entity> <action> [args] [flags]
 | Entity              | Actions                                                                                                    | Description              |
 | ------------------- | ---------------------------------------------------------------------------------------------------------- | ------------------------ |
 | `devices`           | list, get, adopt, remove, restart, locate, port-cycle, stats, pending, upgrade, provision, speedtest, tags | Network hardware         |
-| `clients`           | list, get, authorize, unauthorize, block, unblock, kick, forget                                            | Connected endpoints      |
+| `clients`           | list, get, authorize, unauthorize, block, unblock, kick, forget, set-ip, remove-ip                         | Connected endpoints      |
 | `networks`          | list, get, create, update, delete, refs                                                                    | VLANs & subnets          |
 | `wifi`              | list, get, create, update, delete                                                                          | SSIDs & broadcasts       |
 | `firewall policies` | list, get, create, update, patch, delete, reorder                                                          | Traffic rules            |
@@ -212,16 +212,50 @@ unifly wifi create --name "IoT-WiFi" --security wpa2-personal \
 ### Firewall Management
 
 ```bash
-# List policies between zones
+# List policies (now shows traffic filter summaries)
 unifly firewall policies list -o json
 
-# Create a block rule
-unifly firewall policies create --action block \
-  --description "Block IoT to LAN" --logging true
+# Get policy with full traffic filter details
+unifly firewall policies get <policy-id> -o json
+
+# Create a rule with traffic filters
+unifly firewall policies create --name "Block IoT to LAN" \
+  --action block --source-zone <id> --dest-zone <id> \
+  --src-network <network-id> --dst-ip 10.0.0.1,10.0.0.2 \
+  --states NEW --ip-version IPV4_ONLY --logging
+
+# Create a port-filtered rule
+unifly firewall policies create --name "Allow SSDP responses" \
+  --action allow --source-zone <id> --dest-zone <id> \
+  --src-port 1900,5353 --states NEW
+
+# Update a policy's traffic filter
+unifly firewall policies update <policy-id> \
+  --dst-ip 10.4.20.21 --dst-port 8123
+
+# Quick toggle logging or enabled state
+unifly firewall policies patch <policy-id> --logging false
+unifly firewall policies patch <policy-id> --enabled false
 
 # Reorder policies
 unifly firewall policies reorder --source-zone <id> --dest-zone <id> \
   --policy-ids "<id1>,<id2>,<id3>"
+```
+
+### DHCP Reservations
+
+```bash
+# Set a fixed IP (auto-detects network from IP subnet)
+unifly clients set-ip <mac> --ip <ipv4>
+
+# Set with explicit network
+unifly clients set-ip 00:11:22:33:44:55 --ip 10.4.22.11 --network IoT
+
+# Remove a reservation
+unifly clients remove-ip <mac>
+
+# View reservation status in client list
+unifly clients list -o json | jq '.[] | select(.use_fixedip)'
 ```
 
 ### Device Operations

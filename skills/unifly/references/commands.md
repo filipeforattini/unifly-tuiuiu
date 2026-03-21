@@ -193,6 +193,31 @@ Remove a client from the controller's history entirely (Legacy API).
 unifly clients forget "aa:bb:cc:dd:ee:ff"
 ```
 
+### `unifly clients set-ip <mac> --ip <ipv4> [--network <name|id>]`
+
+Set a DHCP reservation (fixed IP) for a client. Auto-detects the network
+from the IP subnet, or specify explicitly with `--network`.
+
+Aliases: `reserve`
+
+```bash
+# Auto-detect network from IP
+unifly clients set-ip "00:11:22:33:44:55" --ip 10.4.22.11
+
+# Explicit network
+unifly clients set-ip "00:11:22:33:44:55" --ip 10.4.22.11 --network IoT
+```
+
+### `unifly clients remove-ip <mac>`
+
+Remove a DHCP reservation from a client.
+
+Aliases: `unreserve`
+
+```bash
+unifly clients remove-ip "00:11:22:33:44:55"
+```
+
 ---
 
 ## Networks
@@ -364,32 +389,54 @@ unifly firewall policies get "policy-uuid" -o json
 
 #### `unifly firewall policies create`
 
-Create a new firewall policy.
+Create a new firewall policy with optional traffic filters.
 
 ```bash
 unifly firewall policies create \
+  --name "Block IoT to LAN" \
   --action allow|block|reject \
-  --description "Allow IoT to DNS" \
-  [--logging true|false]
+  --source-zone <zone-uuid> \
+  --dest-zone <zone-uuid> \
+  [--src-network <network-id,...>] \
+  [--src-ip <ip,cidr,range,...>] \
+  [--src-port <port,range,...>] \
+  [--dst-network <network-id,...>] \
+  [--dst-ip <ip,cidr,range,...>] \
+  [--dst-port <port,range,...>] \
+  [--states NEW,ESTABLISHED,RELATED,INVALID] \
+  [--ip-version IPV4_ONLY|IPV6_ONLY|IPV4_AND_IPV6] \
+  [--logging] \
+  [--from-file policy.json]
 ```
+
+**Traffic filter flags:**
+- `--src-network` / `--dst-network` — Filter by network IDs (comma-separated UUIDs)
+- `--src-ip` / `--dst-ip` — Filter by IP addresses, CIDRs, or ranges (e.g. `10.0.0.1,10.0.0.0/24,10.0.0.1-10.0.0.100`)
+- `--src-port` / `--dst-port` — Filter by ports or port ranges (e.g. `80,443,8000-9000`)
+
+Priority: if multiple filter types specified, network > ip > port (first wins).
 
 #### `unifly firewall policies update <id>`
 
-Update a firewall policy.
+Update a firewall policy. Supports the same traffic filter flags as create.
+Preserves existing fields not specified in the update.
 
 ```bash
+# Update destination to specific IPs
 unifly firewall policies update "policy-uuid" \
-  [--action allow|block|reject] \
-  [--description "Updated description"] \
-  [--logging true|false]
+  --dst-ip 10.4.20.21,10.4.20.20
+
+# Update via JSON file
+unifly firewall policies update "policy-uuid" -F policy.json
 ```
 
 #### `unifly firewall policies patch <id>`
 
-Quick enable/disable toggle for a policy.
+Quick toggle for logging and enabled state.
 
 ```bash
-unifly firewall policies patch "policy-uuid" --enabled true|false
+unifly firewall policies patch "policy-uuid" --logging false
+unifly firewall policies patch "policy-uuid" --enabled false
 ```
 
 #### `unifly firewall policies delete <id>`
