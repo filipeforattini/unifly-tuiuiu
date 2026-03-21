@@ -45,7 +45,6 @@ pub async fn handle(
 ) -> Result<(), CliError> {
     match args.command {
         SitesCommand::List(list) => {
-            util::ensure_integration_access(controller, "sites list").await?;
             let all = controller.sites_snapshot();
             let snap = util::apply_list_args(all.iter().cloned(), &list, |s, filter| {
                 util::matches_json_filter(s, filter)
