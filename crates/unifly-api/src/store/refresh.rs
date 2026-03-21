@@ -20,6 +20,7 @@ fn upsert_and_prune<T: Clone + Send + Sync + 'static>(
     collection: &EntityCollection<T>,
     items: Vec<(String, EntityId, T)>,
 ) {
+    let _batch = collection.begin_batch();
     let incoming_keys: HashSet<String> = items.iter().map(|(k, _, _)| k.clone()).collect();
     for (key, id, entity) in items {
         collection.upsert(key, id, entity);
@@ -208,5 +209,33 @@ impl DataStore {
         );
 
         let _ = self.last_full_refresh.send(Some(Utc::now()));
+    }
+}
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn upsert_and_prune_batches_snapshot_updates() {
+        let collection: EntityCollection<String> = EntityCollection::new();
+        collection.upsert("stale".into(), EntityId::from("stale"), "old".into());
+
+        let version_rx = collection.version_receiver();
+        let start_version = *version_rx.borrow();
+
+        upsert_and_prune(
+            &collection,
+            vec![
+                ("keep-a".into(), EntityId::from("a"), "one".into()),
+                ("keep-b".into(), EntityId::from("b"), "two".into()),
+            ],
+        );
+
+        assert_eq!(*version_rx.borrow(), start_version + 1);
+        assert_eq!(collection.len(), 2);
+        assert!(collection.get_by_key("stale").is_none());
+        assert_eq!(collection.snapshot().len(), 2);
     }
 }

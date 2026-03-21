@@ -4,6 +4,7 @@
 // change notification via `watch` channels.
 
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 
 use dashmap::DashMap;
 use tokio::sync::watch;
@@ -32,6 +33,12 @@ pub(crate) struct EntityCollection<T: Clone + Send + Sync + 'static> {
 
     /// Full snapshot, rebuilt on mutation for efficient subscription.
     snapshot: watch::Sender<Arc<Vec<Arc<T>>>>,
+
+    /// Nested mutation batch depth. Non-zero means snapshot updates are deferred.
+    batch_depth: AtomicUsize,
+
+    /// Marks that at least one mutation happened while batching was active.
+    pending_snapshot: AtomicBool,
 }
 
 impl<T: Clone + Send + Sync + 'static> EntityCollection<T> {
@@ -45,7 +52,19 @@ impl<T: Clone + Send + Sync + 'static> EntityCollection<T> {
             key_to_id: DashMap::new(),
             version,
             snapshot,
+            batch_depth: AtomicUsize::new(0),
+            pending_snapshot: AtomicBool::new(false),
         }
+    }
+
+    /// Begin a mutation batch.
+    ///
+    /// While the returned guard is alive, mutations update the collection
+    /// state immediately but defer snapshot/version broadcasts until the
+    /// outermost guard is dropped.
+    pub(crate) fn begin_batch(&self) -> MutationBatch<'_, T> {
+        self.batch_depth.fetch_add(1, Ordering::AcqRel);
+        MutationBatch { collection: self }
     }
 
     /// Insert or update an entity. Returns `true` if the key was new.
@@ -62,8 +81,7 @@ impl<T: Clone + Send + Sync + 'static> EntityCollection<T> {
         self.id_to_key.insert(id.clone(), key.clone());
         self.key_to_id.insert(key, id);
 
-        self.rebuild_snapshot();
-        self.bump_version();
+        self.mark_mutated();
 
         is_new
     }
@@ -75,8 +93,7 @@ impl<T: Clone + Send + Sync + 'static> EntityCollection<T> {
             if let Some((_, id)) = self.key_to_id.remove(key) {
                 self.id_to_key.remove(&id);
             }
-            self.rebuild_snapshot();
-            self.bump_version();
+            self.mark_mutated();
         }
         removed
     }
@@ -110,8 +127,7 @@ impl<T: Clone + Send + Sync + 'static> EntityCollection<T> {
         self.by_key.clear();
         self.id_to_key.clear();
         self.key_to_id.clear();
-        self.rebuild_snapshot();
-        self.bump_version();
+        self.mark_mutated();
     }
 
     pub(crate) fn len(&self) -> usize {
@@ -130,6 +146,14 @@ impl<T: Clone + Send + Sync + 'static> EntityCollection<T> {
 
     // ── Private helpers ──────────────────────────────────────────────
 
+    fn mark_mutated(&self) {
+        if self.batch_depth.load(Ordering::Acquire) > 0 {
+            self.pending_snapshot.store(true, Ordering::Release);
+        } else {
+            self.flush_snapshot();
+        }
+    }
+
     /// Collect all values into a snapshot vec and broadcast to subscribers.
     fn rebuild_snapshot(&self) {
         let values: Vec<Arc<T>> = self.by_key.iter().map(|r| Arc::clone(r.value())).collect();
@@ -137,9 +161,38 @@ impl<T: Clone + Send + Sync + 'static> EntityCollection<T> {
         self.snapshot.send_modify(|snap| *snap = Arc::new(values));
     }
 
+    fn flush_snapshot(&self) {
+        self.rebuild_snapshot();
+        self.bump_version();
+    }
+
     /// Increment the version counter.
     fn bump_version(&self) {
         self.version.send_modify(|v| *v += 1);
+    }
+
+    fn finish_batch(&self) {
+        if self.batch_depth.fetch_sub(1, Ordering::AcqRel) == 1
+            && self.pending_snapshot.swap(false, Ordering::AcqRel)
+        {
+            self.flush_snapshot();
+        }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn version_receiver(&self) -> watch::Receiver<u64> {
+        self.version.subscribe()
+    }
+}
+
+#[must_use]
+pub(crate) struct MutationBatch<'a, T: Clone + Send + Sync + 'static> {
+    collection: &'a EntityCollection<T>,
+}
+
+impl<T: Clone + Send + Sync + 'static> Drop for MutationBatch<'_, T> {
+    fn drop(&mut self) {
+        self.collection.finish_batch();
     }
 }
 
@@ -225,5 +278,36 @@ mod tests {
         col.upsert("key1".into(), id2.clone(), "v2".into());
         assert!(col.get_by_id(&id1).is_none()); // old id cleaned up
         assert_eq!(*col.get_by_id(&id2).unwrap(), "v2");
+    }
+
+    #[test]
+    fn batch_defers_snapshot_broadcast_until_outer_guard_drops() {
+        let col: EntityCollection<String> = EntityCollection::new();
+        let mut snapshot_rx = col.subscribe();
+        let version_rx = col.version_receiver();
+        let start_version = *version_rx.borrow();
+
+        {
+            let _outer = col.begin_batch();
+            col.upsert("a".into(), EntityId::from("1"), "x".into());
+
+            {
+                let _inner = col.begin_batch();
+                col.upsert("b".into(), EntityId::from("2"), "y".into());
+                col.remove("a");
+            }
+
+            assert!(!snapshot_rx.has_changed().unwrap());
+            assert_eq!(*version_rx.borrow(), start_version);
+            assert_eq!(*col.get_by_key("b").unwrap(), "y");
+            assert!(col.snapshot().is_empty());
+        }
+
+        assert!(snapshot_rx.has_changed().unwrap());
+        assert_eq!(*version_rx.borrow(), start_version + 1);
+
+        let snap = snapshot_rx.borrow_and_update().clone();
+        assert_eq!(snap.len(), 1);
+        assert_eq!(*snap[0], "y");
     }
 }
