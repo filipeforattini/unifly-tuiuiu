@@ -43,21 +43,18 @@ cargo test --workspace
 
 ```bash
 cargo run -p unifly -- devices list
-cargo run -p unifly-tui
+cargo run -p unifly --bin unifly-tui
 ```
 
 ### Workspace Structure
 
 ```
 crates/
-  unifly-api/      # Async HTTP/WebSocket transport — Integration + Legacy API clients
-  unifly-core/     # Controller lifecycle, DataStore, entity models, reactive streams
-  unifly-config/   # Profile management, keyring integration, TOML config
-  unifly/          # CLI binary — clap command routing, output formatting
-  unifly-tui/      # TUI binary — 8-screen ratatui dashboard, charts, SilkCircuit theme
+  unifly-api/      # Library — HTTP/WS transport, Controller, DataStore, domain models
+  unifly/          # Binaries — unifly (CLI) + unifly-tui (TUI), config, profiles
 ```
 
-Dependency chain: `unifly-api` <- `unifly-core` <- `unifly-config` <- CLI / TUI binaries.
+Dependency chain: `unifly` depends on `unifly-api`.
 
 See the [README](README.md#-architecture) for the full architecture overview.
 

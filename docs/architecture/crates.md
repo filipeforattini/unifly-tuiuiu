@@ -2,9 +2,11 @@
 
 ## unifly-api
 
-**Role:** Async HTTP/WebSocket transport layer.
+**Role:** Library — transport, business logic, and domain model.
 
-Handles all network communication with UniFi controllers:
+Published on [crates.io](https://crates.io/crates/unifly-api). The engine powering everything:
+
+### Transport Layer
 
 - **Integration API client** — RESTful endpoints with API key authentication
 - **Legacy API client** — Session-based with cookie and CSRF token handling
@@ -17,11 +19,7 @@ Key design decisions:
 - CSRF tokens captured from login response, rotated via `X-Updated-CSRF-Token` header
 - WebSocket reconnection handled at the transport level
 
-## unifly-core
-
-**Role:** Business logic and shared services.
-
-The heart of the system:
+### Domain Layer
 
 - **Controller** — Lifecycle management (connect, authenticate, fetch, disconnect)
 - **DataStore** — `DashMap`-based entity storage with `tokio::watch` channels
@@ -34,35 +32,33 @@ Provides two connection modes:
 - `Controller::connect()` — Full lifecycle with background refresh and WebSocket events
 - `Controller::oneshot()` — Fire-and-forget for CLI commands (no background tasks)
 
-## unifly-config
+## unifly
 
-**Role:** Configuration and credential management.
+**Role:** CLI + TUI binaries and configuration.
+
+Produces two binaries via feature flags (`cli` and `tui`):
+
+### CLI (`unifly`)
+
+- **clap-derived** command tree with 23 resource commands
+- **Output formatting** — Table, JSON, YAML, plain text via `tabled`
+- **Shell completions** — Bash, Zsh, Fish via `clap_complete`
+- **Man pages** — Generated at build time via `clap_mangen`
+
+### TUI (`unifly-tui`)
+
+Real-time dashboard built with `ratatui`:
+
+- **8 screens** — Dashboard, Devices, Clients, Networks, Firewall, Topology, Events, Stats
+- **Data bridge** — Translates `Controller` events into TUI actions
+- **SilkCircuit theme** — Opaline-powered color palette with the project's visual identity
+- **Braille charts** — High-resolution terminal graphs using Unicode Braille patterns
+- **Reactive rendering** — Only re-renders on data changes via `EntityStream` subscriptions
+
+### Configuration
 
 - **Profile system** — Named profiles for multiple controllers
 - **Keyring integration** — OS-native credential storage via the `keyring` crate
 - **TOML config** — File-based settings at `~/.config/unifly/config.toml`
 - **Environment overlay** — Environment variables override file config
 - **Setup wizard** — Interactive configuration with `dialoguer`
-
-## unifly
-
-**Role:** CLI binary.
-
-Thin shell over `unifly-core`:
-
-- **clap-derived** command tree with 20+ resource commands
-- **Output formatting** — Table, JSON, YAML, plain text via `tabled`
-- **Shell completions** — Bash, Zsh, Fish via `clap_complete`
-- **Man pages** — Generated at build time via `clap_mangen`
-
-## unifly-tui
-
-**Role:** Terminal UI binary.
-
-Real-time dashboard built with `ratatui`:
-
-- **8 screens** — Dashboard, Devices, Clients, Networks, Firewall, Topology, Events, Stats
-- **Data bridge** — Translates `Controller` events into TUI actions
-- **SilkCircuit theme** — Custom color palette with the project's visual identity
-- **Braille charts** — High-resolution terminal graphs using Unicode Braille patterns
-- **Reactive rendering** — Only re-renders on data changes via `EntityStream` subscriptions

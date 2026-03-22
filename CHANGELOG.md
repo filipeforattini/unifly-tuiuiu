@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- **`topology` command** — network tree visualization with device hierarchy (`unifly topology`)
+- **`clients find`** — quick client lookup by name, IP, or MAC
+- **SilkCircuit themed CLI output** — opaline-powered color theming across all CLI commands
+- **Firewall traffic filter support** — read and write traffic matching filters (Phase 1 & 2)
+- **DHCP reservation management** — create, list, and delete DHCP static mappings
+- **TUI theme selector** — interactive theme picker in settings screen via Opaline engine
+- **Legacy site listing** — `sites list` works with legacy API auth
+
+### Changed
+
+- **Consolidated from 5 crates to 2** — merged `unifly-core` into `unifly-api`, absorbed `unifly-config` and `unifly-tui` into `unifly`
+- **Rewrote TUI bandwidth chart** — Canvas widget with EMA smoothing replaces old chart
+- **Switched opaline to crates.io** — no longer depends on local path
+
+### Fixed
+
+- Integration API paths aligned with OpenAPI spec
+- Store batch refresh snapshot rebuilds
+- CLI rejects empty update requests and unavailable integration surfaces
+- Legacy event behavior restored
+- TUI traffic chart stability improvements
+- WebSocket connections now respect TLS verification settings
+- Local list filter parsing
+
 ## [0.1.0] — 2026-02-23
 
 ### Added
@@ -32,7 +58,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - **Environment variable support** — `UNIFI_API_KEY`, `UNIFI_URL`, `UNIFI_PROFILE`, `UNIFI_SITE`, `UNIFI_OUTPUT`, `UNIFI_INSECURE`, `UNIFI_TIMEOUT`
 - **Shell completions** — Bash, Zsh, Fish via `completions` command
 - **SilkCircuit theme** — neon-on-dark color palette with semantic highlighting and ANSI fallback
-- **Published library crates** — `unifly-api` and `unifly-core` on crates.io for building custom UniFi tools
+- **Published library crate** — `unifly-api` on crates.io for building custom UniFi tools
 - **AI agent skill** — teaches coding assistants UniFi infrastructure management via the CLI
 - **Cross-platform distribution** — Homebrew tap, shell/PowerShell installers, cargo install, GitHub releases for Linux (x86_64, aarch64), macOS (x86_64, aarch64), Windows (x86_64)
 
@@ -42,5 +68,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - Config file permissions restricted to owner (0600) on Unix
 - Credential storage via OS keyring with plaintext fallback only when keyring is unavailable
 
-[Unreleased]: https://github.com/hyperb1iss/unifly/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/hyperb1iss/unifly/compare/v0.2.0...HEAD
 [0.1.0]: https://github.com/hyperb1iss/unifly/releases/tag/v0.1.0

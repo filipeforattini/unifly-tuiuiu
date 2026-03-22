@@ -13,6 +13,7 @@
   <img src="https://img.shields.io/badge/Rust-1.86+-e135ff?style=for-the-badge&logo=rust&logoColor=white" alt="Rust">
   <img src="https://img.shields.io/badge/Edition-2024-80ffea?style=for-the-badge&logo=rust&logoColor=0a0a0f" alt="Edition 2024">
   <img src="https://img.shields.io/badge/ratatui-TUI-ff6ac1?style=for-the-badge&logo=gnometerminal&logoColor=white" alt="ratatui">
+  <img src="https://img.shields.io/badge/opaline-Theme-e135ff?style=for-the-badge&logo=rust&logoColor=white" alt="opaline">
   <img src="https://img.shields.io/badge/tokio-Async-f1fa8c?style=for-the-badge&logo=rust&logoColor=0a0a0f" alt="tokio">
   <img src="https://img.shields.io/badge/License-Apache--2.0-50fa7b?style=for-the-badge&logo=apache&logoColor=0a0a0f" alt="License">
 </p>
@@ -33,9 +34,9 @@
 
 ## 💜 What is unifly?
 
-A complete command-line toolkit for managing Ubiquiti UniFi network controllers. Two binaries — one CLI for scripting and automation, one TUI for real-time monitoring — both powered by a shared async engine that speaks every UniFi API dialect.
+A complete command-line toolkit for managing Ubiquiti UniFi network controllers. Two binaries, one CLI for scripting and automation, one TUI for real-time monitoring, both powered by a shared async engine that speaks every UniFi API dialect.
 
-> _Manage devices, monitor clients, inspect VLANs, stream events, and watch bandwidth charts — all without leaving your terminal._
+> _Manage devices, monitor clients, inspect VLANs, stream events, and watch bandwidth charts, all without leaving your terminal._
 
 The Integration API handles CRUD. The Legacy API fills the gaps with events, statistics, and device commands. WebSocket pushes real-time updates. **unifly** unifies all three into a single, coherent interface.
 
@@ -45,16 +46,16 @@ The Integration API handles CRUD. The Legacy API fills the gaps with events, sta
 
 | Capability | What You Get |
 | --- | --- |
-| 🔮 **Dual API Engine** | Integration API (REST, API key) + Legacy API (session, cookie/CSRF) — automatic negotiation with Hybrid mode |
+| 🔮 **Dual API Engine** | Integration API (REST, API key) + Legacy API (session, cookie/CSRF) with automatic Hybrid negotiation |
 | ⚡ **Real-Time TUI** | 8-screen dashboard with area-fill traffic charts, CPU/MEM gauges, live client counts, zoomable topology |
-| 🦋 **22 Resource Types** | Devices, clients, networks, WiFi, firewall policies, zones, ACLs, DNS, VPN, hotspot vouchers, DPI, RADIUS... |
-| 💎 **Flexible Output** | Table, JSON, compact JSON, YAML, and plain text — pipe-friendly for scripting |
-| 🔒 **Secure Credentials** | OS keyring storage for API keys and passwords — nothing in plaintext |
-| 🌐 **Multi-Profile** | Named profiles for multiple controllers — switch with a single flag |
-| 🧠 **Smart Config** | Interactive wizard, environment variables, TOML config, CLI overrides — pick your style |
+| 🦋 **23 Resource Commands** | Devices, clients, networks, WiFi, firewall policies, zones, ACLs, DNS, VPN, hotspot vouchers, DPI, RADIUS, topology... |
+| 💎 **Flexible Output** | Table, JSON, compact JSON, YAML, and plain text. Pipe-friendly for scripting |
+| 🔒 **Secure Credentials** | OS keyring storage for API keys and passwords. Nothing in plaintext |
+| 🌐 **Multi-Profile** | Named profiles for multiple controllers. Switch with a single flag |
+| 🧠 **Smart Config** | Interactive wizard, environment variables, TOML config, CLI overrides |
 | 📡 **WebSocket Events** | Live event streaming with 10K rolling buffer, severity filtering, pause/scroll-back |
-| 📊 **Historical Stats** | WAN bandwidth area fills, client counts, DPI app/category breakdown — 1h to 30d windows |
-| 🎨 **SilkCircuit Theme** | Neon-on-dark color palette with semantic highlighting, ANSI fallback, responsive layouts |
+| 📊 **Historical Stats** | WAN bandwidth area fills, client counts, DPI app/category breakdown (1h to 30d) |
+| 🎨 **SilkCircuit Theme** | Neon-on-dark color palette powered by [opaline](https://crates.io/crates/opaline). Token-based theming across CLI and TUI with ANSI fallback |
 
 ---
 
@@ -99,7 +100,7 @@ Run the interactive setup wizard:
 unifly config init
 ```
 
-The wizard walks you through controller URL, authentication method, and site selection. Credentials are stored in your OS keyring — never written to disk in plaintext.
+The wizard walks you through controller URL, authentication method, and site selection. Credentials are stored in your OS keyring, never written to disk in plaintext.
 
 Once configured:
 
@@ -141,7 +142,7 @@ unifly config init                     # Select "Username/Password" during setup
 
 ### Hybrid Mode
 
-Best of both worlds — API key for Integration API CRUD, username/password for Legacy API features. The wizard offers this when both are available.
+Best of both worlds: API key for Integration API CRUD, username/password for Legacy API features. The wizard offers this when both are available.
 
 ### Environment Variables
 
@@ -170,17 +171,18 @@ Best of both worlds — API key for Integration API CRUD, username/password for 
 | `completions` | | Generate shell completions |
 | `config` | | Manage CLI configuration |
 | `countries` | | List available country codes |
-| `devices` | `d` | Manage adopted and pending devices |
+| `devices` | `dev`, `d` | Manage adopted and pending devices |
 | `dns` | | Manage DNS policies (local records) |
 | `dpi` | | DPI reference data |
 | `events` | | View and stream events |
 | `firewall` | `fw` | Manage firewall policies and zones |
 | `hotspot` | | Manage hotspot vouchers |
-| `networks` | `n` | Manage networks and VLANs |
+| `networks` | `net`, `n` | Manage networks and VLANs |
 | `radius` | | View RADIUS profiles |
 | `sites` | | Manage sites |
 | `stats` | | Query statistics and reports |
 | `system` | `sys` | System operations and info |
+| `topology` | `topo` | Show network topology tree |
 | `traffic-lists` | | Manage traffic matching lists |
 | `vpn` | | View VPN servers and tunnels |
 | `wans` | | View WAN interfaces |
@@ -235,14 +237,14 @@ Navigate with number keys `1`–`8` or `Tab`/`Shift+Tab`:
 
 | Key | Screen | Description |
 | --- | --- | --- |
-| `1` | **Dashboard** | btop-style overview — area-fill WAN traffic chart, gateway info, connectivity health, CPU/MEM bars, networks with IPv6, WiFi AP experience, top clients, recent events |
-| `2` | **Devices** | Adopted devices with model, IP, CPU/MEM, TX/RX, uptime — 5-tab detail panel (Overview, Performance, Radios, Clients, Ports) |
-| `3` | **Clients** | Connected clients — hostname, IP, MAC, VLAN, signal bars, traffic — filterable by type (All/Wireless/Wired/VPN/Guest) |
-| `4` | **Networks** | VLAN topology — subnets, DHCP, IPv6, gateway type — inline edit overlay for live config changes |
-| `5` | **Firewall** | Policies, zones, and ACL rules across three sub-tabs — visual rule reordering |
-| `6` | **Topology** | Zoomable network topology tree — gateway → switches → APs, color-coded by type and state |
-| `7` | **Events** | Live event stream with 10K rolling buffer — pause, scroll back, severity color-coding |
-| `8` | **Stats** | Historical charts — WAN bandwidth area fills, client counts, DPI app/category breakdown (1h/24h/7d/30d) |
+| `1` | **Dashboard** | btop-style overview: area-fill WAN traffic chart, gateway info, connectivity health, CPU/MEM bars, networks with IPv6, WiFi AP experience, top clients, recent events |
+| `2` | **Devices** | Adopted devices with model, IP, CPU/MEM, TX/RX, uptime. 5-tab detail panel (Overview, Performance, Radios, Clients, Ports) |
+| `3` | **Clients** | Connected clients: hostname, IP, MAC, VLAN, signal bars, traffic. Filterable by type (All/Wireless/Wired/VPN/Guest) |
+| `4` | **Networks** | VLAN topology: subnets, DHCP, IPv6, gateway type. Inline edit overlay for live config changes |
+| `5` | **Firewall** | Policies, zones, and ACL rules across three sub-tabs with visual rule reordering |
+| `6` | **Topology** | Zoomable network topology tree: gateway → switches → APs, color-coded by type and state |
+| `7` | **Events** | Live event stream with 10K rolling buffer. Pause, scroll back, severity color-coding |
+| `8` | **Stats** | Historical charts: WAN bandwidth area fills, client counts, DPI app/category breakdown (1h/24h/7d/30d) |
 
 ### Dashboard
 
@@ -252,14 +254,14 @@ The dashboard packs eight live panels into a dense, information-rich overview:
   <img src="docs/images/dashboard.png" alt="unifly-tui dashboard" width="900">
 </p>
 
-- **WAN Traffic** — Area-fill chart with Braille line overlay, live TX/RX rates, peak tracking
-- **Gateway** — Model, firmware, WAN IP, IPv6, DNS, ISP, latency, uptime
-- **Connectivity** — Subsystem status dots (WAN/WWW/WLAN/LAN/VPN), aggregate traffic bars
-- **Capacity** — Color-coded CPU/MEM gauges, load averages, device/client fleet summary
-- **Networks** — VLANs sorted by ID with IPv6 prefix delegation and SLAAC mode
-- **WiFi / APs** — Client count, WiFi experience %, channel info per access point
-- **Top Clients** — Proportional traffic bars with fractional block characters
-- **Recent Events** — Two-column compact event display, color-coded by severity
+- **WAN Traffic** · Area-fill chart with Braille line overlay, live TX/RX rates, peak tracking
+- **Gateway** · Model, firmware, WAN IP, IPv6, DNS, ISP, latency, uptime
+- **Connectivity** · Subsystem status dots (WAN/WWW/WLAN/LAN/VPN), aggregate traffic bars
+- **Capacity** · Color-coded CPU/MEM gauges, load averages, device/client fleet summary
+- **Networks** · VLANs sorted by ID with IPv6 prefix delegation and SLAAC mode
+- **WiFi / APs** · Client count, WiFi experience %, channel info per access point
+- **Top Clients** · Proportional traffic bars with fractional block characters
+- **Recent Events** · Two-column compact event display, color-coded by severity
 
 ### Devices & Clients
 
@@ -289,10 +291,10 @@ Historical statistics with selectable time windows and dual-API data sourcing:
   <img src="docs/images/stats.png" alt="unifly-tui stats" width="900">
 </p>
 
-- **WAN Bandwidth** — TX/RX area fills with Braille line overlay, auto-scaling axes
-- **Client Count** — Braille line chart tracking connected clients over time
-- **Top Applications** — DPI application breakdown with proportional bars (Integration API names, Legacy fallback)
-- **Traffic by Category** — Percentage bars for streaming, gaming, social, etc.
+- **WAN Bandwidth** · TX/RX area fills with Braille line overlay, auto-scaling axes
+- **Client Count** · Braille line chart tracking connected clients over time
+- **Top Applications** · DPI application breakdown with proportional bars (Integration API names, Legacy fallback)
+- **Traffic by Category** · Percentage bars for streaming, gaming, social, etc.
 
 ### Key Bindings
 
@@ -336,29 +338,23 @@ Historical statistics with selectable time windows and dual-API data sourcing:
 
 ## 🏗️ Architecture
 
-Five crates, clean dependency chain:
+Two crates, clean dependency chain:
 
 ```
-                    unifly (CLI binary)
-                         │
-                         ▼
-  unifly-tui ───▶ unifly-core ───▶ unifly-api
-  (TUI binary)   (business       (HTTP/WS
-                   logic)          transport)
-                     │
-                     ▼
-                unifly-config
-                (profiles, keyring,
-                 TOML config)
+  unifly (CLI + TUI binaries)
+       │
+       ▼
+  unifly-api (library)
+  ├── HTTP/WS transport
+  ├── Controller lifecycle
+  ├── Reactive DataStore
+  └── Domain models
 ```
 
 | Crate | Purpose |
 | --- | --- |
-| **unifly-api** | Async HTTP/WebSocket client — Integration API, Legacy API (with CSRF), WebSocket event stream |
-| **unifly-core** | Controller lifecycle, DataStore (`DashMap` + `tokio::watch`), entity models, reactive streams |
-| **unifly-config** | Profile management, keyring integration, TOML config, environment variable overlay |
-| **unifly** | CLI binary — clap-based command routing, output formatting, shell completions |
-| **unifly-tui** | TUI binary — 8-screen ratatui dashboard, area-fill charts, SilkCircuit theme, real-time data bridge |
+| **unifly-api** | Async HTTP/WebSocket client, Controller lifecycle, reactive DataStore (`DashMap` + `tokio::watch`), entity models. Published on [crates.io](https://crates.io/crates/unifly-api) |
+| **unifly** | CLI binary (`unifly`) + TUI binary (`unifly-tui`) via feature flags, profile/keyring config, clap command routing, 8-screen ratatui dashboard with SilkCircuit theme |
 
 ### Data Flow
 
@@ -381,7 +377,7 @@ Controller URL ──▶ Integration API ──▶ REST (API key auth)
            CLI out    TUI render  Event stream
 ```
 
-The `Controller` wraps `Arc<ControllerInner>` for cheap cloning across async tasks. `EntityStream<T>` wraps `tokio::watch::Receiver` for reactive subscriptions — the TUI receives updates without polling.
+The `Controller` (in `unifly-api`) wraps `Arc<ControllerInner>` for cheap cloning across async tasks. `EntityStream<T>` wraps `tokio::watch::Receiver` for reactive subscriptions so the TUI receives updates without polling.
 
 ---
 
@@ -423,16 +419,13 @@ unifly --profile home devices  # One-off override
 
 ## 📦 Library
 
-The core engine is available as two published crates on [crates.io](https://crates.io) — use them to build your own UniFi tools, integrations, or automations in Rust.
+The engine is published on [crates.io](https://crates.io). Use it to build your own UniFi tools, integrations, or automations in Rust.
 
-| Crate | Description |
-| --- | --- |
-| [![unifly-api](https://img.shields.io/crates/v/unifly-api.svg)](https://crates.io/crates/unifly-api) | Async HTTP/WebSocket transport — Integration API + Legacy API clients |
-| [![unifly-core](https://img.shields.io/crates/v/unifly-core.svg)](https://crates.io/crates/unifly-core) | High-level Controller, reactive DataStore, domain models, command dispatch |
+[![unifly-api](https://img.shields.io/crates/v/unifly-api.svg)](https://crates.io/crates/unifly-api) · Async HTTP/WebSocket transport, high-level Controller, reactive DataStore, domain models
 
 ### Quick Start
 
-**Low-level API access** — talk directly to the controller:
+**Low-level API access** · talk directly to the controller:
 
 ```rust
 use unifly_api::{IntegrationClient, TransportConfig, TlsMode, ControllerPlatform};
@@ -448,10 +441,10 @@ let client = IntegrationClient::from_api_key(
 let devices = client.list_devices("default").await?;
 ```
 
-**High-level Controller** — reactive streams, automatic refresh, data merging:
+**High-level Controller** · reactive streams, automatic refresh, data merging:
 
 ```rust
-use unifly_core::{Controller, ControllerConfig, AuthCredentials, TlsVerification};
+use unifly_api::{Controller, ControllerConfig, AuthCredentials, TlsVerification};
 use secrecy::SecretString;
 
 let config = ControllerConfig {
@@ -467,7 +460,7 @@ let devices = controller.devices().current();
 println!("Found {} devices", devices.len());
 ```
 
-Full API documentation on [docs.rs/unifly-api](https://docs.rs/unifly-api) and [docs.rs/unifly-core](https://docs.rs/unifly-core).
+Full API documentation on [docs.rs/unifly-api](https://docs.rs/unifly-api).
 
 ---
 
@@ -512,7 +505,7 @@ ln -s $(pwd)/unifly ~/.claude/plugins/unifly
 | **Network Manager agent** | Autonomous agent for infrastructure provisioning, diagnostics, and security audits |
 | **Reference docs** | Detailed command reference, UniFi networking concepts, workflow patterns |
 
-The skill enables agents to create VLANs, manage firewall policies, provision WiFi, diagnose connectivity issues, generate guest vouchers, and more — all through the unifly CLI.
+The skill enables agents to create VLANs, manage firewall policies, provision WiFi, diagnose connectivity issues, generate guest vouchers, and more, all through the unifly CLI.
 
 ---
 
@@ -542,46 +535,45 @@ cargo clippy --workspace -- -D warnings
 
 ```bash
 cargo run -p unifly -- devices list
-cargo run -p unifly-tui
+cargo run -p unifly --bin unifly-tui
 ```
 
 ### Workspace Layout
 
 ```
 crates/
-  unifly-api/      # Async HTTP/WS client
-  unifly-core/     # Business logic, Controller, DataStore
-  unifly-config/   # Profiles, keyring, TOML config
-  unifly/          # CLI binary (unifly)
-  unifly-tui/      # TUI binary (unifly-tui)
+  unifly-api/      # Library: HTTP/WS transport, Controller, DataStore, domain models
+  unifly/          # Binaries: unifly (CLI) + unifly-tui (TUI), config, profiles
 ```
 
 ### Lint Policy
 
-Pedantic clippy with `unsafe_code = "forbid"`. See `Cargo.toml` workspace lints for the full configuration — it's opinionated and we like it that way.
+Pedantic clippy with `unsafe_code = "forbid"`. See `Cargo.toml` workspace lints for the full configuration. It's opinionated and we like it that way.
 
 ---
 
 ## ⚖️ License
 
-Apache-2.0 — See [LICENSE](LICENSE)
+Apache-2.0. See [LICENSE](LICENSE)
 
 ---
 
 <p align="center">
-  <a href="https://github.com/hyperb1iss/unifly">
-    <img src="https://img.shields.io/github/stars/hyperb1iss/unifly?style=social" alt="Star on GitHub">
+  <a href="https://github.com/sponsors/hyperb1iss">
+    <img src="https://img.shields.io/badge/%E2%9D%A4%EF%B8%8F_Sponsor-hyperb1iss-e135ff?style=for-the-badge&logo=githubsponsors&logoColor=white" alt="Sponsor on GitHub">
   </a>
-  &nbsp;&nbsp;
-  <a href="https://ko-fi.com/hyperb1iss">
-    <img src="https://img.shields.io/badge/Ko--fi-Support%20Development-ff5e5b?logo=ko-fi&logoColor=white" alt="Ko-fi">
+  &nbsp;
+  <a href="https://github.com/hyperb1iss/unifly">
+    <img src="https://img.shields.io/github/stars/hyperb1iss/unifly?style=for-the-badge&logo=github&logoColor=white&color=80ffea" alt="Star on GitHub">
   </a>
 </p>
 
 <p align="center">
+  <iframe src="https://github.com/sponsors/hyperb1iss/card" title="Sponsor hyperb1iss" height="225" width="600" style="border: 0;"></iframe>
+</p>
+
+<p align="center">
   <sub>
-    If unifly keeps your network humming, give us a ⭐ or <a href="https://ko-fi.com/hyperb1iss">support the project</a>
-    <br><br>
     ✦ Built with obsession by <a href="https://hyperbliss.tech"><strong>Hyperbliss Technologies</strong></a> ✦
   </sub>
 </p>

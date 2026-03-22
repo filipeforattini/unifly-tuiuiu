@@ -4,7 +4,7 @@ Version-based milestones for unifly development. No fixed timelines — shipping
 
 ---
 
-## v0.1.0 — Initial Release (Current)
+## v0.1.0 — Initial Release (Shipped)
 
 The foundation. A fully functional CLI + TUI for UniFi network management.
 
@@ -17,7 +17,7 @@ The foundation. A fully functional CLI + TUI for UniFi network management.
 - **Keyring credential storage** — OS-native keyring for API keys and passwords, plaintext fallback
 - **5 output formats** — table, JSON, compact JSON, YAML, plain text
 - **Multi-profile configuration** — named controller profiles, interactive setup wizard, environment variable overrides
-- **Published library crates** — `unifly-api` and `unifly-core` on crates.io for building custom UniFi tools
+- **Published library crate** — `unifly-api` on crates.io for building custom UniFi tools
 - **AI agent skill** — teaches coding assistants to manage UniFi infrastructure via the CLI
 - **Cross-platform distribution** — Homebrew, shell/PowerShell installers, cargo install
 
@@ -30,18 +30,23 @@ The foundation. A fully functional CLI + TUI for UniFi network management.
 
 ---
 
-## v0.2.0 — Network Essentials
+## v0.2.0 — Network Essentials (Current)
 
 Fill the gaps in day-to-day network management.
 
+- ~~DHCP static reservation management~~ ✓
+- ~~Firewall traffic filter read/write support~~ ✓
+- ~~`topology` command for network tree visualization~~ ✓
+- ~~`clients find` for quick client lookup~~ ✓
+- ~~SilkCircuit themed CLI output via Opaline~~ ✓
+- ~~Consolidate workspace from 5 crates to 2~~ ✓
+- ~~WebSocket TLS consistency for self-signed certificates~~ ✓
 - Port forwarding CRUD (CLI + TUI)
-- DHCP static reservation management
 - Active DHCP lease listing
 - Device radio data parsing from interfaces JSON
 - VPN server/tunnel create, update, delete
 - TUI WiFi screen (SSID management)
 - Fix controller reconnect lifecycle (CancellationToken reset on disconnect)
-- WebSocket TLS consistency for self-signed certificates
 
 ---
 

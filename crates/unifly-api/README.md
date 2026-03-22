@@ -52,7 +52,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
-For a higher-level abstraction with reactive data streams and automatic data merging, see [unifly-core](https://crates.io/crates/unifly-core).
+This crate also includes the high-level `Controller` with reactive `DataStore` and `EntityStream` for automatic data merging and live subscriptions. See the [docs](https://docs.rs/unifly-api) for the full API.
 
 ## License
 

@@ -1,30 +1,22 @@
 # Architecture
 
-Unifly is a five-crate Rust workspace with a clean dependency chain. Each crate has a single responsibility, and dependencies flow in one direction.
+Unifly is a two-crate Rust workspace with a clean dependency chain.
 
 ## Crate Map
 
 ```mermaid
 graph TD
-    CLI["unifly<br/><i>CLI binary</i>"]
-    TUI["unifly-tui<br/><i>TUI binary</i>"]
-    CORE["unifly-core<br/><i>Business logic</i>"]
-    API["unifly-api<br/><i>HTTP/WS transport</i>"]
-    CONFIG["unifly-config<br/><i>Profiles & keyring</i>"]
+    UNIFLY["unifly<br/><i>CLI + TUI binaries</i>"]
+    API["unifly-api<br/><i>Library: transport, controller,<br/>data store, domain models</i>"]
 
-    CLI --> CORE
-    TUI --> CORE
-    CORE --> API
-    CORE --> CONFIG
-    CLI --> CONFIG
-    TUI --> CONFIG
+    UNIFLY --> API
 ```
 
 ## Design Principles
 
-### Thin Binaries, Fat Core
+### Thin Binaries, Fat Library
 
-The CLI and TUI binaries are thin shells — they handle argument parsing and rendering, but all business logic lives in `unifly-core`. This means both binaries share identical controller lifecycle, data fetching, and entity management.
+The `unifly` crate produces two binaries (`unifly` CLI and `unifly-tui` TUI) via feature flags. Both are thin shells — argument parsing and rendering only. All business logic lives in `unifly-api`, which provides the Controller lifecycle, DataStore, entity models, and API transport. Config and profile management lives in the `unifly` crate alongside the binaries.
 
 ### Reactive Data Store
 
@@ -32,7 +24,7 @@ The `DataStore` uses `DashMap` for lock-free concurrent reads and `tokio::watch`
 
 ### Dual API Transparency
 
-`unifly-core` transparently routes requests to the correct API backend. Callers don't need to know whether a feature uses the Integration API or the Legacy API — the controller handles routing, authentication, and response normalization.
+`unifly-api`'s `Controller` transparently routes requests to the correct API backend. Callers don't need to know whether a feature uses the Integration API or the Legacy API — the controller handles routing, authentication, and response normalization.
 
 ## Key Types
 

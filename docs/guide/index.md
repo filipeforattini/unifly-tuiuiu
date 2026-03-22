@@ -32,19 +32,17 @@ Unifly unifies these into a single, coherent interface. You don't need to know w
 ## Architecture at a Glance
 
 ```
-                    unifly (CLI)
-                         │
-                         ▼
-  unifly-tui ───▶ unifly-core ───▶ unifly-api
-  (TUI)          (business       (HTTP/WS
-                   logic)          transport)
-                     │
-                     ▼
-                unifly-config
-                (profiles, keyring)
+  unifly (CLI + TUI binaries)
+       │
+       ▼
+  unifly-api (library)
+  ├── HTTP/WS transport
+  ├── Controller lifecycle
+  ├── Reactive DataStore
+  └── Domain models
 ```
 
-Five crates with a clean dependency chain. See the [Architecture](/architecture/) section for the full picture.
+Two crates with a clean dependency chain. See the [Architecture](/architecture/) section for the full picture.
 
 ## Next Steps
 
