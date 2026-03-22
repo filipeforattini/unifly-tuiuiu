@@ -280,11 +280,10 @@ pub async fn handle(
                 &global.output,
                 &pending,
                 |v| PendingDeviceRow {
-                    id: p.id(
-                        v.get("id")
-                            .and_then(serde_json::Value::as_str)
-                            .unwrap_or(""),
-                    ),
+                    id: p.id(v
+                        .get("id")
+                        .and_then(serde_json::Value::as_str)
+                        .unwrap_or("")),
                     name: p.name(
                         v.get("name")
                             .and_then(serde_json::Value::as_str)
@@ -364,12 +363,11 @@ pub async fn handle(
                 &global.output,
                 &tags,
                 |v| DeviceTagRow {
-                    id: p.id(
-                        v.get("id")
-                            .or_else(|| v.get("_id"))
-                            .and_then(serde_json::Value::as_str)
-                            .unwrap_or(""),
-                    ),
+                    id: p.id(v
+                        .get("id")
+                        .or_else(|| v.get("_id"))
+                        .and_then(serde_json::Value::as_str)
+                        .unwrap_or("")),
                     name: p.name(
                         v.get("name")
                             .and_then(serde_json::Value::as_str)

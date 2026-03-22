@@ -20,10 +20,8 @@ pub async fn handle(controller: &Controller, global: &GlobalOpts) -> Result<(), 
     let p = crate::cli::output::Painter::new(global);
 
     // Build MAC → device lookup
-    let _device_by_mac: HashMap<&str, &Arc<Device>> = devices
-        .iter()
-        .map(|d| (d.mac.as_str(), d))
-        .collect();
+    let _device_by_mac: HashMap<&str, &Arc<Device>> =
+        devices.iter().map(|d| (d.mac.as_str(), d)).collect();
 
     // Group clients by uplink device MAC
     let mut clients_by_uplink: HashMap<String, Vec<&Arc<Client>>> = HashMap::new();
@@ -41,7 +39,9 @@ pub async fn handle(controller: &Controller, global: &GlobalOpts) -> Result<(), 
     }
 
     // Find the gateway
-    let gateway = devices.iter().find(|d| d.device_type == unifly_api::DeviceType::Gateway);
+    let gateway = devices
+        .iter()
+        .find(|d| d.device_type == unifly_api::DeviceType::Gateway);
 
     // Separate infrastructure devices (non-gateway)
     let mut infra: Vec<&Arc<Device>> = devices
@@ -65,7 +65,11 @@ pub async fn handle(controller: &Controller, global: &GlobalOpts) -> Result<(), 
     let infra_count = infra.len();
     for (i, device) in infra.iter().enumerate() {
         let is_last_device = i == infra_count - 1 && unlinked.is_empty();
-        let branch = if is_last_device { "\u{2570}" } else { "\u{251c}" };
+        let branch = if is_last_device {
+            "\u{2570}"
+        } else {
+            "\u{251c}"
+        };
         let cont = if is_last_device { " " } else { "\u{2502}" };
 
         let dev_type = match device.device_type {
@@ -97,7 +101,11 @@ pub async fn handle(controller: &Controller, global: &GlobalOpts) -> Result<(), 
         let client_count = dev_clients.len();
         for (j, client) in dev_clients.iter().enumerate() {
             let is_last_client = j == client_count - 1;
-            let cbranch = if is_last_client { "\u{2570}" } else { "\u{251c}" };
+            let cbranch = if is_last_client {
+                "\u{2570}"
+            } else {
+                "\u{251c}"
+            };
 
             let vlan = vlan_label(client.ip, &networks);
             let signal = client
@@ -112,7 +120,11 @@ pub async fn handle(controller: &Controller, global: &GlobalOpts) -> Result<(), 
                 _ => "?",
             };
 
-            let client_name = client.name.as_deref().or(client.hostname.as_deref()).unwrap_or("?");
+            let client_name = client
+                .name
+                .as_deref()
+                .or(client.hostname.as_deref())
+                .unwrap_or("?");
             let client_ip = client.ip.map_or("-".into(), |ip| ip.to_string());
             println!(
                 "{cont}   {cbranch}\u{2500} [{}] {} \u{00b7} {} \u{00b7} {}{}",
@@ -133,7 +145,11 @@ pub async fn handle(controller: &Controller, global: &GlobalOpts) -> Result<(), 
             let is_last = j == count - 1;
             let cbranch = if is_last { "\u{2570}" } else { "\u{251c}" };
             let vlan = vlan_label(client.ip, &networks);
-            let client_name = client.name.as_deref().or(client.hostname.as_deref()).unwrap_or("?");
+            let client_name = client
+                .name
+                .as_deref()
+                .or(client.hostname.as_deref())
+                .unwrap_or("?");
             let client_ip = client.ip.map_or("-".into(), |ip| ip.to_string());
             println!(
                 "    {cbranch}\u{2500} [{}] {} \u{00b7} {}",
@@ -157,7 +173,11 @@ fn vlan_label(ip: Option<std::net::IpAddr>, networks: &[Arc<Network>]) -> String
     for net in networks {
         if let Some(ref subnet_str) = net.subnet {
             if let Some((net_addr, prefix)) = parse_cidr(subnet_str) {
-                let mask = if prefix == 0 { 0 } else { u32::MAX << (32 - prefix) };
+                let mask = if prefix == 0 {
+                    0
+                } else {
+                    u32::MAX << (32 - prefix)
+                };
                 if (ip_u32 & mask) == (u32::from(net_addr) & mask) {
                     return net.name.clone();
                 }

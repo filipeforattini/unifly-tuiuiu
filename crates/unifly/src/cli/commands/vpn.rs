@@ -28,10 +28,7 @@ fn vpn_server_row(s: &VpnServer, p: &output::Painter) -> VpnServerRow {
         id: p.id(&s.id.to_string()),
         name: p.name(&s.name.clone().unwrap_or_default()),
         server_type: p.muted(&s.server_type),
-        enabled: s.enabled.map_or_else(
-            || p.muted("-"),
-            |e| p.enabled(e),
-        ),
+        enabled: s.enabled.map_or_else(|| p.muted("-"), |e| p.enabled(e)),
     }
 }
 
@@ -52,10 +49,7 @@ fn vpn_tunnel_row(t: &VpnTunnel, p: &output::Painter) -> VpnTunnelRow {
         id: p.id(&t.id.to_string()),
         name: p.name(&t.name.clone().unwrap_or_default()),
         tunnel_type: p.muted(&t.tunnel_type),
-        enabled: t.enabled.map_or_else(
-            || p.muted("-"),
-            |e| p.enabled(e),
-        ),
+        enabled: t.enabled.map_or_else(|| p.muted("-"), |e| p.enabled(e)),
     }
 }
 
