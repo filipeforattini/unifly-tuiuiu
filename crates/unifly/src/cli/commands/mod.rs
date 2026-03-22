@@ -17,6 +17,7 @@ pub mod radius;
 pub mod sites;
 pub mod stats;
 pub mod system;
+pub mod topology;
 pub mod traffic_lists;
 pub mod util;
 pub mod vpn;
@@ -55,6 +56,7 @@ pub async fn dispatch(
         Command::TrafficLists(args) => traffic_lists::handle(controller, args, global).await,
         Command::Vpn(args) => vpn::handle(controller, args, global).await,
         Command::Wans(args) => wans::handle(controller, args, global).await,
+        Command::Topology => topology::handle(controller, global).await,
         Command::Wifi(args) => wifi::handle(controller, args, global).await,
         // Config and Completions are handled before dispatch
         Command::Config(_) | Command::Completions(_) => unreachable!(),

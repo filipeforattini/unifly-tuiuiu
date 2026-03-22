@@ -173,6 +173,10 @@ pub enum Command {
     #[command(alias = "sys")]
     System(SystemArgs),
 
+    /// Show network topology (devices, clients, connections)
+    #[command(alias = "topo")]
+    Topology,
+
     /// Manage traffic matching lists
     TrafficLists(TrafficListsArgs),
 
