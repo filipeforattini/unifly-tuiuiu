@@ -336,7 +336,7 @@ unifly system backup download "autobackup_2024-01-15.unf"
 For real-time monitoring, use the TUI:
 
 ```bash
-unifly-tui
+unifly tui
 ```
 
 Navigate with `1`-`8` for screens: Dashboard, Devices, Clients, Networks,

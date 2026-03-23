@@ -82,7 +82,7 @@ cli *args:
 
 # Run the TUI with args
 tui *args:
-    cargo run -p unifly --bin unifly-tui -- {{args}}
+    cargo run -p unifly -- tui {{args}}
 
 # ── Docs ────────────────────────────────────────────────────────
 

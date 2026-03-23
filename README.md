@@ -70,27 +70,20 @@ UniFi controllers expose multiple APIs with different capabilities. unifly unifi
 brew install hyperb1iss/tap/unifly
 ```
 
-Installs both `unifly` (CLI) and `unifly-tui` (TUI) in one shot.
+### GitHub Releases
 
-### Shell Script (Linux / macOS)
+Download the latest binary for your platform from [GitHub Releases](https://github.com/hyperb1iss/unifly/releases/latest).
+
+### AUR (Arch Linux)
 
 ```bash
-curl --proto '=https' --tlsv1.2 -LsSf https://github.com/hyperb1iss/unifly/releases/latest/download/unifly-installer.sh | sh
-curl --proto '=https' --tlsv1.2 -LsSf https://github.com/hyperb1iss/unifly/releases/latest/download/unifly-tui-installer.sh | sh
-```
-
-### PowerShell (Windows)
-
-```powershell
-powershell -ExecutionPolicy ByPass -c "irm https://github.com/hyperb1iss/unifly/releases/latest/download/unifly-installer.ps1 | iex"
-powershell -ExecutionPolicy ByPass -c "irm https://github.com/hyperb1iss/unifly/releases/latest/download/unifly-tui-installer.ps1 | iex"
+yay -S unifly-bin
 ```
 
 ### From Source
 
 ```bash
 cargo install --git https://github.com/hyperb1iss/unifly.git unifly
-cargo install --git https://github.com/hyperb1iss/unifly.git unifly-tui
 ```
 
 ---
@@ -225,13 +218,13 @@ unifly completions fish > ~/.config/fish/completions/unifly.fish
 
 ## 🖥️ TUI
 
-The `unifly-tui` binary is a real-time terminal dashboard for monitoring and managing your UniFi network. Eight screens cover everything from live bandwidth charts to firewall policy management.
+The `unifly tui` subcommand launches a real-time terminal dashboard for monitoring and managing your UniFi network. Eight screens cover everything from live bandwidth charts to firewall policy management.
 
 ```bash
-unifly-tui                   # Launch with default profile
-unifly-tui -p office         # Use a specific profile
-unifly-tui -k                # Accept self-signed TLS certs
-unifly-tui -v                # Verbose logging
+unifly tui                   # Launch with default profile
+unifly tui -p office         # Use a specific profile
+unifly tui -k                # Accept self-signed TLS certs
+unifly tui -v                # Verbose logging
 ```
 
 ### Screens
@@ -254,7 +247,7 @@ Navigate with number keys `1`–`8` or `Tab`/`Shift+Tab`:
 The dashboard packs eight live panels into a dense, information-rich overview:
 
 <p align="center">
-  <img src="docs/images/dashboard.png" alt="unifly-tui dashboard" width="900">
+  <img src="docs/images/dashboard.png" alt="unifly tui dashboard" width="900">
 </p>
 
 - **WAN Traffic** · Area-fill chart with Braille line overlay, live TX/RX rates, peak tracking
@@ -269,21 +262,21 @@ The dashboard packs eight live panels into a dense, information-rich overview:
 ### Devices & Clients
 
 <p align="center">
-  <img src="docs/images/devices.png" alt="unifly-tui devices" width="900">
+  <img src="docs/images/devices.png" alt="unifly tui devices" width="900">
 </p>
 
 <p align="center">
-  <img src="docs/images/clients.png" alt="unifly-tui clients" width="900">
+  <img src="docs/images/clients.png" alt="unifly tui clients" width="900">
 </p>
 
 ### Networks & Firewall
 
 <p align="center">
-  <img src="docs/images/networks.png" alt="unifly-tui networks" width="900">
+  <img src="docs/images/networks.png" alt="unifly tui networks" width="900">
 </p>
 
 <p align="center">
-  <img src="docs/images/firewall.png" alt="unifly-tui firewall" width="900">
+  <img src="docs/images/firewall.png" alt="unifly tui firewall" width="900">
 </p>
 
 ### Stats
@@ -291,7 +284,7 @@ The dashboard packs eight live panels into a dense, information-rich overview:
 Historical statistics with selectable time windows and dual-API data sourcing:
 
 <p align="center">
-  <img src="docs/images/stats.png" alt="unifly-tui stats" width="900">
+  <img src="docs/images/stats.png" alt="unifly tui stats" width="900">
 </p>
 
 - **WAN Bandwidth** · TX/RX area fills with Braille line overlay, auto-scaling axes
@@ -357,7 +350,7 @@ Two crates, clean dependency chain:
 | Crate | Purpose |
 | --- | --- |
 | **unifly-api** | Async HTTP/WebSocket client, Controller lifecycle, reactive DataStore (`DashMap` + `tokio::watch`), entity models. Published on [crates.io](https://crates.io/crates/unifly-api) |
-| **unifly** | CLI binary (`unifly`) + TUI binary (`unifly-tui`) via feature flags, profile/keyring config, clap command routing, 8-screen ratatui dashboard with SilkCircuit theme |
+| **unifly** | Single binary: CLI commands + `unifly tui` dashboard via feature flags, profile/keyring config, clap command routing, 8-screen ratatui dashboard with SilkCircuit theme |
 
 ### Data Flow
 
@@ -538,7 +531,7 @@ cargo clippy --workspace -- -D warnings
 
 ```bash
 cargo run -p unifly -- devices list
-cargo run -p unifly --bin unifly-tui
+cargo run -p unifly -- tui
 ```
 
 ### Workspace Layout
@@ -546,7 +539,7 @@ cargo run -p unifly --bin unifly-tui
 ```
 crates/
   unifly-api/      # Library: HTTP/WS transport, Controller, DataStore, domain models
-  unifly/          # Binaries: unifly (CLI) + unifly-tui (TUI), config, profiles
+  unifly/          # Single binary: CLI commands + tui subcommand, config, profiles
 ```
 
 ### Lint Policy

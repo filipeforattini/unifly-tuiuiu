@@ -13,7 +13,6 @@ use unifly_api::Controller;
 #[tokio::main]
 async fn main() {
     let cli = Cli::parse();
-    init_tracing(cli.global.verbose);
 
     if let Err(err) = run(cli).await {
         let code = err.exit_code();
@@ -52,7 +51,17 @@ async fn run(cli: Cli) -> Result<(), CliError> {
             Ok(())
         }
 
+        #[cfg(feature = "tui")]
+        Command::Tui(args) => unifly::tui::launch(&cli.global, args)
+            .await
+            .map_err(|e| CliError::ApiError {
+                code: "tui".into(),
+                message: e.to_string(),
+                request_id: None,
+            }),
+
         cmd => {
+            init_tracing(cli.global.verbose);
             let mut controller_config = build_controller_config(&cli.global)?;
             controller_config.websocket_enabled = command_uses_websocket(&cmd);
             let controller = Controller::new(controller_config);

@@ -1,13 +1,13 @@
 # TUI Dashboard
 
-The `unifly-tui` binary provides a real-time terminal dashboard for monitoring your UniFi network.
+The `unifly tui` subcommand launches a real-time terminal dashboard for monitoring your UniFi network.
 
 ## Launch
 
 ```bash
-unifly-tui                   # Launch with default profile
-unifly-tui -p office         # Use a specific profile
-unifly-tui -v                # Verbose logging to /tmp/unifly-tui.log
+unifly tui                   # Launch with default profile
+unifly tui -p office         # Use a specific profile
+unifly tui -v                # Verbose logging to /tmp/unifly-tui.log
 ```
 
 ## Screens

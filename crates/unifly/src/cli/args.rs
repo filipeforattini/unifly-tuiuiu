@@ -189,6 +189,25 @@ pub enum Command {
     /// Manage WiFi broadcasts (SSIDs)
     #[command(alias = "w")]
     Wifi(WifiArgs),
+
+    /// Launch the real-time terminal dashboard
+    #[cfg(feature = "tui")]
+    Tui(TuiArgs),
+}
+
+// ── TUI Arguments ───────────────────────────────────────────────────
+
+/// Arguments for the `tui` subcommand (real-time terminal dashboard).
+#[cfg(feature = "tui")]
+#[derive(Debug, Args)]
+pub struct TuiArgs {
+    /// Theme name (e.g., nord, dracula, silkcircuit-neon)
+    #[arg(long, env = "UNIFLY_THEME")]
+    pub theme: Option<String>,
+
+    /// Log file path
+    #[arg(long, default_value = "/tmp/unifly-tui.log")]
+    pub log_file: std::path::PathBuf,
 }
 
 // ── Shared List Arguments ────────────────────────────────────────────

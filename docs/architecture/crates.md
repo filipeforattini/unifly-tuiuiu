@@ -45,7 +45,7 @@ Produces two binaries via feature flags (`cli` and `tui`):
 - **Shell completions** — Bash, Zsh, Fish via `clap_complete`
 - **Man pages** — Generated at build time via `clap_mangen`
 
-### TUI (`unifly-tui`)
+### TUI (`unifly tui`)
 
 Real-time dashboard built with `ratatui`:
 

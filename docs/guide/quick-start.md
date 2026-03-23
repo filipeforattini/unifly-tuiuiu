@@ -62,9 +62,9 @@ unifly devices list -o plain         # Plain text
 For real-time monitoring, launch the terminal dashboard:
 
 ```bash
-unifly-tui                   # Default profile
-unifly-tui -p office         # Specific profile
-unifly-tui -v                # Verbose logging to /tmp/unifly-tui.log
+unifly tui                   # Default profile
+unifly tui -p office         # Specific profile
+unifly tui -v                # Verbose logging to /tmp/unifly-tui.log
 ```
 
 Navigate screens with number keys `1`-`8` or `Tab`/`Shift+Tab`. Press `q` to quit.

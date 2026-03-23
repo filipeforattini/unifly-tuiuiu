@@ -4,26 +4,17 @@
 
 ```bash
 brew install hyperb1iss/tap/unifly
-brew install hyperb1iss/tap/unifly-tui
 ```
 
-## Shell Script (Linux / macOS)
+## AUR (Arch Linux)
 
 ```bash
-curl --proto '=https' --tlsv1.2 -LsSf \
-  https://github.com/hyperb1iss/unifly/releases/latest/download/unifly-installer.sh | sh
-
-curl --proto '=https' --tlsv1.2 -LsSf \
-  https://github.com/hyperb1iss/unifly/releases/latest/download/unifly-tui-installer.sh | sh
+yay -S unifly-bin
 ```
 
-## PowerShell (Windows)
+## GitHub Releases
 
-```powershell
-powershell -ExecutionPolicy ByPass -c "irm https://github.com/hyperb1iss/unifly/releases/latest/download/unifly-installer.ps1 | iex"
-
-powershell -ExecutionPolicy ByPass -c "irm https://github.com/hyperb1iss/unifly/releases/latest/download/unifly-tui-installer.ps1 | iex"
-```
+Download the latest binary for your platform from [GitHub Releases](https://github.com/hyperb1iss/unifly/releases/latest).
 
 ## Cargo (from source)
 
@@ -31,14 +22,12 @@ Requires Rust 1.86+ (edition 2024):
 
 ```bash
 cargo install --git https://github.com/hyperb1iss/unifly.git unifly
-cargo install --git https://github.com/hyperb1iss/unifly.git unifly-tui
 ```
 
-Or from crates.io once published:
+Or from crates.io:
 
 ```bash
 cargo install unifly
-cargo install unifly-tui
 ```
 
 ## Build from Source
@@ -49,7 +38,7 @@ cd unifly
 cargo build --workspace --release
 ```
 
-Binaries are placed in `target/release/unifly` and `target/release/unifly-tui`.
+The binary is placed in `target/release/unifly`.
 
 ## Shell Completions
 
@@ -70,5 +59,4 @@ unifly completions fish > ~/.config/fish/completions/unifly.fish
 
 ```bash
 unifly --version
-unifly-tui --version
 ```

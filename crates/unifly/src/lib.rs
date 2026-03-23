@@ -1,8 +1,8 @@
 //! Unified binary crate for UniFi network management.
 //!
-//! Provides two feature-gated binaries:
-//! - `unifly` (CLI) — kubectl-style command-line interface
-//! - `unifly-tui` (TUI) — real-time terminal dashboard
+//! Single binary with feature-gated capabilities:
+//! - CLI commands (feature `cli`) — kubectl-style command-line interface
+//! - `unifly tui` subcommand (feature `tui`) — real-time terminal dashboard
 
 pub mod config;
 

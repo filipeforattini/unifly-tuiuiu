@@ -16,7 +16,7 @@ graph TD
 
 ### Thin Binaries, Fat Library
 
-The `unifly` crate produces two binaries (`unifly` CLI and `unifly-tui` TUI) via feature flags. Both are thin shells — argument parsing and rendering only. All business logic lives in `unifly-api`, which provides the Controller lifecycle, DataStore, entity models, and API transport. Config and profile management lives in the `unifly` crate alongside the binaries.
+The `unifly` crate produces a single binary with CLI commands and a `unifly tui` subcommand, gated by feature flags. Both paths are thin shells over `unifly-api`, which provides the Controller lifecycle, DataStore, entity models, and API transport. Config and profile management lives in the `unifly` crate alongside the binary.
 
 ### Reactive Data Store
 

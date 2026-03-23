@@ -43,7 +43,7 @@ cargo test --workspace
 
 ```bash
 cargo run -p unifly -- devices list
-cargo run -p unifly --bin unifly-tui
+cargo run -p unifly -- tui
 ```
 
 ### Workspace Structure
@@ -51,7 +51,7 @@ cargo run -p unifly --bin unifly-tui
 ```
 crates/
   unifly-api/      # Library — HTTP/WS transport, Controller, DataStore, domain models
-  unifly/          # Binaries — unifly (CLI) + unifly-tui (TUI), config, profiles
+  unifly/          # Single binary: CLI commands + tui subcommand, config, profiles
 ```
 
 Dependency chain: `unifly` depends on `unifly-api`.

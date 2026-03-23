@@ -58,7 +58,9 @@ pub async fn dispatch(
         Command::Wans(args) => wans::handle(controller, args, global).await,
         Command::Topology => topology::handle(controller, global).await,
         Command::Wifi(args) => wifi::handle(controller, args, global).await,
-        // Config and Completions are handled before dispatch
+        // Config, Completions, and Tui are handled before dispatch
         Command::Config(_) | Command::Completions(_) => unreachable!(),
+        #[cfg(feature = "tui")]
+        Command::Tui(_) => unreachable!(),
     }
 }

@@ -54,11 +54,6 @@ name = "unifly"
 path = "src/bin/cli.rs"
 required-features = ["cli"]
 
-[[bin]]
-name = "unifly-tui"
-path = "src/bin/tui.rs"
-required-features = ["tui"]
-
 # ── Shared dependencies (always present) ─────────────────────────
 [dependencies]
 unifly-api         = { workspace = true }
