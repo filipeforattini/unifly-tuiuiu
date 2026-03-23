@@ -41,7 +41,7 @@ A complete command-line toolkit for managing Ubiquiti UniFi network controllers.
 
 > _Manage devices, monitor clients, inspect VLANs, stream events, and watch bandwidth charts, all without leaving your terminal._
 
-The Integration API handles CRUD. The Legacy API fills the gaps with events, statistics, and device commands. WebSocket pushes real-time updates. **unifly** unifies all three into a single, coherent interface.
+UniFi controllers expose multiple APIs with different capabilities. unifly unifies them all into a single, coherent interface so you never have to think about which endpoint to hit. It also ships as an [AI agent skill](#-ai-agent-skill), so your coding assistant can manage your network infrastructure too.
 
 ---
 

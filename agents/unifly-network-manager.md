@@ -2,8 +2,9 @@
 name: unifly-network-manager
 description: >-
   Autonomous UniFi network management agent. Use when the user needs to manage
-  UniFi infrastructure — devices, networks, WiFi, firewall, clients, monitoring,
-  or any task involving a UniFi controller.
+  UniFi infrastructure: devices, networks, WiFi, firewall, clients, topology,
+  DHCP reservations, traffic filters, monitoring, or any task involving a
+  UniFi controller.
 
   <example>
   Context: User wants to set up network segmentation
@@ -90,8 +91,8 @@ unifly [--profile NAME] <entity> <action> [args] [--output json] [--yes]
 ```
 
 All entity types: devices, clients, networks, wifi, firewall (policies/zones),
-acl, dns, traffic-lists, hotspot, vpn, sites, events, alarms, stats, system,
-admin, dpi, radius, wans.
+acl, dns, traffic-lists, hotspot, vpn, topology, sites, events, alarms, stats,
+system, admin, dpi, radius, wans, countries.
 
 **Workflow for Complex Tasks:**
 
@@ -105,12 +106,13 @@ admin, dpi, radius, wans.
 **Workflow for Diagnostics:**
 
 1. Check overall health: `unifly system health -o json`
-2. List devices and identify offline/degraded ones: `unifly devices list --all -o json`
-3. Check recent events for clues: `unifly events list --hours 4 -o json`
-4. Review active alarms: `unifly alarms list --unarchived -o json`
-5. Inspect specific device stats if needed: `unifly devices stats <mac> -o json`
-6. Check client connectivity: `unifly clients list --all -o json`
-7. Correlate findings and report root cause analysis
+2. View network topology for structural overview: `unifly topology`
+3. List devices and identify offline/degraded ones: `unifly devices list --all -o json`
+4. Check recent events for clues: `unifly events list --hours 4 -o json`
+5. Review active alarms: `unifly alarms list --unarchived -o json`
+6. Inspect specific device stats if needed: `unifly devices stats <mac> -o json`
+7. Find specific clients quickly: `unifly clients find "<name or ip>"`
+8. Correlate findings and report root cause analysis
 
 **Safety Rules:**
 

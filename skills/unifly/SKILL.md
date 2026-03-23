@@ -6,7 +6,8 @@ description: >-
   "manage WiFi SSIDs", "view UniFi clients", "adopt a device", "create a VLAN",
   "set up DNS records", "manage hotspot vouchers", "check network health",
   "audit firewall policies", "restart a UniFi device", "block a client",
-  "run a speed test", "create a backup", "check VPN tunnels",
+  "find a client by IP or name", "show network topology", "create DHCP reservations",
+  "manage traffic filters", "run a speed test", "create a backup", "check VPN tunnels",
   "cycle a PoE port", or any task involving UniFi network infrastructure
   management via the unifly CLI. Also triggers on mentions of unifly, UniFi,
   UDM, UCG, USG, USW, UAP, or UniFi controller operations.
@@ -15,7 +16,7 @@ description: >-
 # unifly — UniFi Network Management
 
 unifly is a CLI and TUI for managing Ubiquiti UniFi network infrastructure.
-It provides full CRUD operations across 20+ entity types, real-time monitoring,
+It provides full CRUD operations across 23 entity types, real-time monitoring,
 and automation-friendly output formats. unifly communicates with UniFi controllers
 via dual APIs (Integration API + Legacy API) for maximum coverage.
 
@@ -84,8 +85,9 @@ complete profile example.
 
 Resolution priority: CLI flags > environment variables > config file > defaults.
 
-Key environment variables: `UNIFI_CONTROLLER`, `UNIFI_API_KEY`, `UNIFI_SITE`,
-`UNIFI_USERNAME`, `UNIFI_PASSWORD`.
+Key environment variables: `UNIFI_URL`, `UNIFI_API_KEY`, `UNIFI_SITE`,
+`UNIFI_PROFILE`, `UNIFI_OUTPUT`, `UNIFI_USERNAME`, `UNIFI_PASSWORD`,
+`UNIFI_INSECURE`, `UNIFI_TIMEOUT`.
 
 ## Command Structure
 
@@ -97,30 +99,31 @@ unifly [global-flags] <entity> <action> [args] [flags]
 
 ### Entity Types & Actions
 
-| Entity              | Actions                                                                                                    | Description              |
-| ------------------- | ---------------------------------------------------------------------------------------------------------- | ------------------------ |
-| `devices`           | list, get, adopt, remove, restart, locate, port-cycle, stats, pending, upgrade, provision, speedtest, tags | Network hardware         |
-| `clients`           | list, get, authorize, unauthorize, block, unblock, kick, forget, set-ip, remove-ip                         | Connected endpoints      |
-| `networks`          | list, get, create, update, delete, refs                                                                    | VLANs & subnets          |
-| `wifi`              | list, get, create, update, delete                                                                          | SSIDs & broadcasts       |
-| `firewall policies` | list, get, create, update, patch, delete, reorder                                                          | Traffic rules            |
-| `firewall zones`    | list, get, create, update, delete                                                                          | Security zones           |
-| `acl`               | list, get, create, update, delete, reorder                                                                 | Access control lists     |
-| `dns`               | list, get, create, update, delete                                                                          | Local DNS records        |
-| `traffic-lists`     | list, get, create, update, delete                                                                          | Traffic matching lists   |
-| `hotspot`           | list, create, delete, purge                                                                                | Guest vouchers           |
-| `vpn`               | servers, tunnels                                                                                           | VPN infrastructure       |
-| `sites`             | list, create, delete                                                                                       | Controller sites         |
-| `events`            | list, watch                                                                                                | Event log & stream       |
-| `alarms`            | list, archive, archive-all                                                                                 | Alert management         |
-| `stats`             | site, device, client, gateway, dpi                                                                         | Statistics & reports     |
-| `system`            | info, health, sysinfo, backup, reboot, poweroff                                                            | Controller operations    |
-| `admin`             | list, invite, revoke, update                                                                               | Administrator management |
-| `wans`              | list                                                                                                       | WAN interfaces           |
-| `dpi`               | apps, categories                                                                                           | Deep packet inspection   |
-| `radius`            | profiles                                                                                                   | RADIUS profiles          |
-| `config`            | init, show, set, profiles, use, set-password                                                               | CLI configuration        |
-| `completions`       | bash, zsh, fish, powershell, elvish                                                                        | Shell completions        |
+| Entity              | Aliases      | Actions                                                                                                    | Description              |
+| ------------------- | ------------ | ---------------------------------------------------------------------------------------------------------- | ------------------------ |
+| `devices`           | `dev`, `d`   | list, get, adopt, remove, restart, locate, port-cycle, stats, pending, upgrade, provision, speedtest, tags | Network hardware         |
+| `clients`           | `cl`         | list, find, get, authorize, unauthorize, block, unblock, kick, forget, set-ip, remove-ip                   | Connected endpoints      |
+| `networks`          | `net`, `n`   | list, get, create, update, delete, refs                                                                    | VLANs & subnets          |
+| `wifi`              | `w`          | list, get, create, update, delete                                                                          | SSIDs & broadcasts       |
+| `firewall`          | `fw`         | policies (list/get/create/update/patch/delete/reorder), zones (list/get/create/update/delete)              | Traffic rules & zones    |
+| `acl`               |              | list, get, create, update, delete, reorder                                                                 | Access control lists     |
+| `dns`               |              | list, get, create, update, delete                                                                          | Local DNS records        |
+| `traffic-lists`     |              | list, get, create, update, delete                                                                          | Traffic matching lists   |
+| `hotspot`           |              | list, get, create, delete, purge                                                                           | Guest vouchers           |
+| `vpn`               |              | servers, tunnels                                                                                           | VPN infrastructure       |
+| `topology`          | `topo`       | _(no subcommands)_                                                                                         | Network tree view        |
+| `sites`             |              | list, create, delete                                                                                       | Controller sites         |
+| `events`            |              | list, watch                                                                                                | Event log & stream       |
+| `alarms`            |              | list, archive, archive-all                                                                                 | Alert management         |
+| `stats`             |              | site, device, client, gateway, dpi                                                                         | Statistics & reports     |
+| `system`            | `sys`        | info, health, sysinfo, backup, reboot, poweroff                                                            | Controller operations    |
+| `admin`             |              | list, invite, revoke, update                                                                               | Administrator management |
+| `wans`              |              | list                                                                                                       | WAN interfaces           |
+| `dpi`               |              | apps, categories                                                                                           | Deep packet inspection   |
+| `radius`            |              | profiles                                                                                                   | RADIUS profiles          |
+| `countries`         |              | _(no subcommands)_                                                                                         | Country code lookup      |
+| `config`            |              | init, show, set, profiles, use, set-password                                                               | CLI configuration        |
+| `completions`       |              | bash, zsh, fish, powershell, elvish                                                                        | Shell completions        |
 
 For the complete command reference with all flags and arguments, consult
 `references/commands.md`.
@@ -191,28 +194,38 @@ unifly system health -o json
 unifly devices list -o json
 unifly clients list --all -o json
 
+# Network topology tree (gateway → switches → APs → clients)
+unifly topology
+
+# Find a client by name, IP, hostname, or MAC (case-insensitive substring)
+unifly clients find "macbook"
+unifly clients find "10.4.22"
+
 # Deep dive into a device
 unifly devices get "aa:bb:cc:dd:ee:ff" -o json
 unifly devices stats "aa:bb:cc:dd:ee:ff" -o json
+
+# List available country codes
+unifly countries
 ```
 
 ### Network Configuration
 
 ```bash
 # Create a VLAN network
-unifly networks create --name "IoT" --vlan-id 30 \
-  --management-type gateway --ipv4-host 10.0.30.1 --ipv4-prefix 24 \
-  --dhcp-mode server --dhcp-start 10.0.30.100 --dhcp-end 10.0.30.254
+unifly networks create --name "IoT" --vlan 30 \
+  --management gateway --ipv4-host 10.0.30.1/24 \
+  --dhcp --dhcp-start 10.0.30.100 --dhcp-stop 10.0.30.254
 
 # Create a WiFi SSID on that network
 unifly wifi create --name "IoT-WiFi" --security wpa2-personal \
-  --passphrase "SecurePass123" --network-id "<network-uuid>"
+  --passphrase "SecurePass123" --network "<network-uuid>"
 ```
 
 ### Firewall Management
 
 ```bash
-# List policies (now shows traffic filter summaries)
+# List policies (shows traffic filter summaries)
 unifly firewall policies list -o json
 
 # Get policy with full traffic filter details
@@ -234,12 +247,15 @@ unifly firewall policies update <policy-id> \
   --dst-ip 10.4.20.21 --dst-port 8123
 
 # Quick toggle logging or enabled state
-unifly firewall policies patch <policy-id> --logging false
+unifly firewall policies patch <policy-id> --logging
 unifly firewall policies patch <policy-id> --enabled false
 
-# Reorder policies
+# Get current policy ordering for a zone pair
+unifly firewall policies reorder --source-zone <id> --dest-zone <id> --get
+
+# Set new ordering
 unifly firewall policies reorder --source-zone <id> --dest-zone <id> \
-  --policy-ids "<id1>,<id2>,<id3>"
+  --set "<id1>,<id2>,<id3>"
 ```
 
 ### DHCP Reservations
@@ -295,10 +311,10 @@ unifly stats dpi --group-by app
 
 ```bash
 # Create vouchers (10 vouchers, 24h each)
-unifly hotspot create --count 10 --duration 1440
+unifly hotspot create --name "Conference" --count 10 --minutes 1440
 
 # Authorize a guest client
-unifly clients authorize <client-id> --duration 480
+unifly clients authorize <client-id> --minutes 480
 
 # Revoke guest access
 unifly clients unauthorize <client-id>

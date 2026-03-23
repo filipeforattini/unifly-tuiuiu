@@ -122,8 +122,28 @@ unifly devices tags -o json
 
 List all connected clients.
 
+Aliases: `ls`
+
 ```bash
 unifly clients list [--limit N] [--offset N] [--all] [--filter EXPR] [-o FORMAT]
+```
+
+### `unifly clients find <query>`
+
+Find clients by IP, name, hostname, or MAC address. Case-insensitive
+substring matching across all fields.
+
+Aliases: `search`
+
+```bash
+# Find by partial name
+unifly clients find "macbook"
+
+# Find by IP subnet
+unifly clients find "10.4.22"
+
+# Find by MAC prefix
+unifly clients find "aa:bb:cc"
 ```
 
 ### `unifly clients get <id|mac>`
@@ -140,18 +160,18 @@ Grant guest network access to a client.
 
 ```bash
 unifly clients authorize <client_id> \
-  [--duration MINUTES] \
+  --minutes MINUTES \
   [--data-limit-mb N] \
-  [--upload-limit-kbps N] \
-  [--download-limit-kbps N]
+  [--tx-limit-kbps N] \
+  [--rx-limit-kbps N]
 ```
 
 Flags:
 
-- `--duration` — Access duration in minutes
+- `--minutes` — Access duration in minutes (required)
 - `--data-limit-mb` — Data transfer limit in MB
-- `--upload-limit-kbps` — Upload bandwidth limit
-- `--download-limit-kbps` — Download bandwidth limit
+- `--tx-limit-kbps` — Upload bandwidth limit
+- `--rx-limit-kbps` — Download bandwidth limit
 
 ### `unifly clients unauthorize <client_id>`
 
@@ -245,39 +265,39 @@ Create a new network (VLAN).
 ```bash
 unifly networks create \
   --name "IoT" \
-  --vlan-id 30 \
-  --management-type gateway \
-  --ipv4-host 10.0.30.1 \
-  --ipv4-prefix 24 \
-  --dhcp-mode server \
-  --dhcp-start 10.0.30.100 \
-  --dhcp-end 10.0.30.254 \
+  --vlan 30 \
+  --management gateway \
+  --ipv4-host 10.0.30.1/24 \
+  --dhcp --dhcp-start 10.0.30.100 --dhcp-stop 10.0.30.254 \
   [--zone <zone-id>] \
-  [--isolation true|false]
+  [--isolated]
 ```
 
 Flags:
 
 - `--name` — Network name (required)
-- `--vlan-id` — VLAN ID (1-4094)
-- `--management-type` — `gateway`, `switch`, or `unmanaged`
-- `--ipv4-host` — Gateway IP address
-- `--ipv4-prefix` — Subnet prefix length (e.g., 24 = /24)
-- `--dhcp-mode` — `server`, `relay`, or `none`
+- `--vlan` — VLAN ID (1-4094)
+- `--management` — `gateway`, `switch`, or `unmanaged`
+- `--ipv4-host` — Gateway IP with CIDR prefix (e.g., `10.0.30.1/24`)
+- `--dhcp` — Enable DHCP server
 - `--dhcp-start` — DHCP range start IP
-- `--dhcp-end` — DHCP range end IP
+- `--dhcp-stop` — DHCP range end IP
+- `--dhcp-lease` — Lease time in seconds
 - `--zone` — Firewall zone to attach to
-- `--isolation` — Enable client isolation
+- `--isolated` — Enable client isolation
+- `--internet` — Allow internet access (default: true)
+- `-F` / `--from-file` — Create from JSON file
 
 ### `unifly networks update <id>`
 
-Update an existing network.
+Update an existing network. Supports same flags as create plus `--from-file`.
 
 ```bash
 unifly networks update "network-uuid" \
   [--name "New Name"] \
   [--enabled true|false] \
-  [--vlan-id N]
+  [--vlan N]
+unifly networks update "network-uuid" -F network.json
 ```
 
 ### `unifly networks delete <id>`
@@ -285,10 +305,8 @@ unifly networks update "network-uuid" \
 Delete a network.
 
 ```bash
-unifly networks delete "network-uuid" [--force]
+unifly networks delete "network-uuid"
 ```
-
-- `--force` — Delete even if resources are attached
 
 ### `unifly networks refs <id>`
 
@@ -326,25 +344,27 @@ Create a new WiFi broadcast.
 ```bash
 unifly wifi create \
   --name "Guest WiFi" \
-  --type standard \
+  --broadcast-type standard \
   --security wpa2-personal \
   --passphrase "SecurePass123!" \
-  --network-id "network-uuid" \
-  [--frequency 2.4ghz|5ghz|both] \
-  [--band-steering true|false] \
-  [--fast-roaming true|false]
+  --network "network-uuid" \
+  [--frequencies 2.4,5] \
+  [--band-steering] \
+  [--fast-roaming]
 ```
 
 Flags:
 
 - `--name` — SSID name (required)
-- `--type` — `standard` or `iot`
+- `--broadcast-type` — `standard` or `iot-optimized` (default: standard)
 - `--security` — `open`, `wpa2-personal`, `wpa3-personal`, `wpa2-wpa3-personal`, `wpa2-enterprise`, `wpa3-enterprise`
 - `--passphrase` — WiFi password (required for personal security)
-- `--network-id` — Associated network UUID
-- `--frequency` — Radio frequency band
-- `--band-steering` — Enable band steering
-- `--fast-roaming` — Enable 802.11r fast roaming
+- `--network` — Associated network UUID or name
+- `--frequencies` — Comma-separated radio bands (e.g., `2.4,5`)
+- `--hidden` — Hide SSID from broadcast
+- `--band-steering` — Enable band steering (boolean flag)
+- `--fast-roaming` — Enable 802.11r fast roaming (boolean flag)
+- `-F` / `--from-file` — Create from JSON file
 
 ### `unifly wifi update <id>`
 
@@ -355,6 +375,7 @@ unifly wifi update "wifi-uuid" \
   [--name "New SSID"] \
   [--passphrase "NewPass456!"] \
   [--enabled true|false]
+unifly wifi update "wifi-uuid" -F wifi.json
 ```
 
 ### `unifly wifi delete <id>`
@@ -449,14 +470,25 @@ unifly firewall policies delete "policy-uuid"
 
 #### `unifly firewall policies reorder`
 
-Reorder firewall policies between zone pairs to control evaluation order.
+Get or set the evaluation order of firewall policies between zone pairs.
 
 ```bash
+# Get current ordering
 unifly firewall policies reorder \
-  --source-zone "zone-uuid" \
-  --dest-zone "zone-uuid" \
-  --policy-ids "id1,id2,id3"
+  --source-zone "zone-uuid" --dest-zone "zone-uuid" --get
+
+# Set new ordering (first match wins)
+unifly firewall policies reorder \
+  --source-zone "zone-uuid" --dest-zone "zone-uuid" \
+  --set "id1,id2,id3"
 ```
+
+Flags:
+
+- `--source-zone` — Source zone UUID (required)
+- `--dest-zone` — Destination zone UUID (required)
+- `--get` — Print current policy order (conflicts with `--set`)
+- `--set` — Comma-separated policy IDs in desired order (conflicts with `--get`)
 
 ### Zones
 
@@ -553,10 +585,14 @@ unifly acl delete "acl-uuid"
 
 ### `unifly acl reorder`
 
-Reorder ACL rules.
+Get or set ACL rule evaluation order.
 
 ```bash
-unifly acl reorder --rule-ids "id1,id2,id3"
+# Get current ordering
+unifly acl reorder --get
+
+# Set new ordering
+unifly acl reorder --set "id1,id2,id3"
 ```
 
 ---
@@ -585,7 +621,7 @@ Create a DNS record.
 
 ```bash
 unifly dns create \
-  --type A|AAAA|CNAME|MX|TXT|SRV|Forward \
+  --record-type A|AAAA|CNAME|MX|TXT|SRV|Forward \
   --domain "app.local" \
   --value "10.0.1.50" \
   [--ttl 3600] \
@@ -606,10 +642,10 @@ Supported record types:
 
 ### `unifly dns update <id>`
 
-Update a DNS record.
+Update a DNS record via JSON file.
 
 ```bash
-unifly dns update "dns-uuid" [--value "10.0.1.51"] [--ttl 7200]
+unifly dns update "dns-uuid" -F dns-record.json
 ```
 
 ### `unifly dns delete <id>`
@@ -639,7 +675,7 @@ Create a traffic matching list with port, IPv4, or IPv6 items.
 ```bash
 unifly traffic-lists create \
   --name "Blocked Ports" \
-  --type ports|ipv4|ipv6 \
+  --list-type ports|ipv4|ipv6 \
   --items "80,443,8080"
 ```
 
@@ -671,28 +707,38 @@ List guest vouchers.
 unifly hotspot list [-o FORMAT]
 ```
 
+### `unifly hotspot get <id>`
+
+Get details for a specific voucher.
+
+```bash
+unifly hotspot get "voucher-uuid" -o json
+```
+
 ### `unifly hotspot create`
 
 Generate guest vouchers.
 
 ```bash
 unifly hotspot create \
+  --name "Conference" \
   --count 10 \
-  --duration 1440 \
+  --minutes 1440 \
   [--guest-limit 1] \
   [--data-limit-mb 500] \
-  [--upload-limit-kbps 5000] \
-  [--download-limit-kbps 10000]
+  [--tx-limit-kbps 5000] \
+  [--rx-limit-kbps 10000]
 ```
 
 Flags:
 
-- `--count` — Number of vouchers to generate
-- `--duration` — Duration in minutes (1440 = 24 hours)
+- `--name` — Voucher batch name (required)
+- `--count` — Number of vouchers to generate (default: 1)
+- `--minutes` — Duration in minutes (required, 1440 = 24 hours)
 - `--guest-limit` — Max concurrent guests per voucher
 - `--data-limit-mb` — Data cap in MB
-- `--upload-limit-kbps` — Upload bandwidth cap
-- `--download-limit-kbps` — Download bandwidth cap
+- `--tx-limit-kbps` — Upload bandwidth cap
+- `--rx-limit-kbps` — Download bandwidth cap
 
 ### `unifly hotspot delete <id>`
 
@@ -1037,6 +1083,48 @@ List WAN interfaces.
 ```bash
 unifly wans list [-o FORMAT]
 ```
+
+---
+
+## Topology
+
+### `unifly topology`
+
+Display a network topology tree showing the device hierarchy and connected
+clients. The tree starts at the gateway and branches through switches and
+access points, with clients grouped under their uplink device.
+
+Aliases: `topo`
+
+```bash
+unifly topology
+```
+
+Output includes:
+- Gateway at root with model and IP
+- Infrastructure devices (switches, APs) grouped by type
+- Clients listed under their uplink device
+- VLAN/network labels per client
+- Signal strength for wireless clients
+- Color-coded by device type and connection state
+
+No subcommands or flags beyond the standard global flags.
+
+---
+
+## Countries
+
+### `unifly countries`
+
+List available country/region codes. Useful when configuring WiFi radio
+settings that require a regulatory country code.
+
+```bash
+unifly countries
+unifly countries -o json
+```
+
+Output: two-column table of Code and Name.
 
 ---
 

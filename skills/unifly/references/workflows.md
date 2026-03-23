@@ -27,13 +27,10 @@ Full workflow: network + WiFi + firewall zone.
 # 1. Create the network
 NETWORK_ID=$(unifly networks create \
   --name "IoT" \
-  --vlan-id 30 \
-  --management-type gateway \
-  --ipv4-host 10.0.30.1 \
-  --ipv4-prefix 24 \
-  --dhcp-mode server \
-  --dhcp-start 10.0.30.100 \
-  --dhcp-end 10.0.30.254 \
+  --vlan 30 \
+  --management gateway \
+  --ipv4-host 10.0.30.1/24 \
+  --dhcp --dhcp-start 10.0.30.100 --dhcp-stop 10.0.30.254 \
   -o json | jq -r '.id')
 
 # 2. Create a firewall zone for it
@@ -45,16 +42,16 @@ ZONE_ID=$(unifly firewall zones create \
 # 3. Create WiFi SSID on the network
 unifly wifi create \
   --name "IoT-WiFi" \
-  --type iot \
+  --broadcast-type iot-optimized \
   --security wpa2-personal \
   --passphrase "IoTSecure2024!" \
-  --network-id "$NETWORK_ID"
+  --network "$NETWORK_ID"
 
 # 4. Block IoT zone from reaching Internal zone
 unifly firewall policies create \
   --action block \
   --description "Block IoT to Internal" \
-  --logging true
+  --logging
 ```
 
 ### Bulk DNS Records
@@ -66,6 +63,39 @@ Create multiple DNS records from a list:
 while IFS=',' read -r domain type value; do
   unifly dns create --domain "$domain" --type "$type" --value "$value" --ttl 3600
 done < dns_records.csv
+```
+
+## Network Topology & Discovery
+
+### View Network Topology
+
+Display the full device hierarchy from gateway to clients:
+
+```bash
+# Full topology tree
+unifly topology
+
+# Combine with device details for capacity planning
+unifly topology
+unifly devices list -o json | jq '.[] | {name, model, clients: .num_sta}'
+```
+
+### Find Clients Quickly
+
+Search across IP, name, hostname, and MAC with substring matching:
+
+```bash
+# Find by partial hostname
+unifly clients find "printer"
+
+# Find all clients on a subnet
+unifly clients find "10.4.30"
+
+# Find by vendor MAC prefix
+unifly clients find "dc:a6:32"  # Raspberry Pi devices
+
+# Combine find with JSON for scripting
+unifly clients find "iphone" -o json | jq '.[].mac'
 ```
 
 ## Device Management
@@ -124,7 +154,7 @@ done
 
 ```bash
 # Generate 50 one-day vouchers
-VOUCHERS=$(unifly hotspot create --count 50 --duration 1440 -o json)
+VOUCHERS=$(unifly hotspot create --name "Event" --count 50 --minutes 1440 -o json)
 
 # Extract voucher codes
 echo "$VOUCHERS" | jq -r '.[].code'
@@ -285,11 +315,9 @@ QUARANTINE_ID=$(unifly networks list -o json | \
 if [ -z "$QUARANTINE_ID" ]; then
   QUARANTINE_ID=$(unifly networks create \
     --name "Quarantine" \
-    --vlan-id 999 \
-    --management-type gateway \
-    --ipv4-host 10.0.99.1 \
-    --ipv4-prefix 24 \
-    --dhcp-mode none \
+    --vlan 999 \
+    --management gateway \
+    --ipv4-host 10.0.99.1/24 \
     -o json | jq -r '.id')
 fi
 ```
