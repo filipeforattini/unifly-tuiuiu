@@ -1,0 +1,162 @@
+use ratatui::style::{Modifier, Style};
+use ratatui::text::{Line, Span};
+use ratatui::widgets::{Block, BorderType, Borders, Paragraph};
+
+use unifly_api::DeviceType;
+
+use crate::tui::theme;
+use crate::tui::widgets::bytes_fmt;
+
+use super::super::DashboardScreen;
+use super::super::helpers::{parse_ipv6_from_text, parse_ipv6_from_value, truncate_text};
+
+impl DashboardScreen {
+    /// Gateway panel - WAN connection details with IPv6.
+    #[allow(clippy::too_many_lines)]
+    pub(super) fn render_gateway(&self, frame: &mut ratatui::Frame, area: ratatui::layout::Rect) {
+        let block = Block::default()
+            .title(Span::styled(" Gateway ", theme::title_style()))
+            .borders(Borders::ALL)
+            .border_type(BorderType::Rounded)
+            .border_style(theme::border_default());
+
+        let inner = block.inner(area);
+        frame.render_widget(block, area);
+        let w = usize::from(inner.width);
+
+        let gateway = self
+            .devices
+            .iter()
+            .find(|d| d.device_type == DeviceType::Gateway);
+        let wan_health = self.health.iter().find(|h| h.subsystem == "wan");
+        let www_health = self.health.iter().find(|h| h.subsystem == "www");
+
+        let isp_name = wan_health
+            .and_then(|h| h.extra.get("isp_name").and_then(|v| v.as_str()))
+            .or_else(|| {
+                wan_health.and_then(|h| h.extra.get("isp_organization").and_then(|v| v.as_str()))
+            });
+        let dns = wan_health
+            .and_then(|h| h.extra.get("nameservers").and_then(|v| v.as_array()))
+            .map(|ns| {
+                let servers: Vec<_> = ns.iter().filter_map(|v| v.as_str()).collect();
+                let shown = servers.iter().take(2).copied().collect::<Vec<_>>();
+                let hidden = servers.len().saturating_sub(shown.len());
+                if hidden > 0 {
+                    format!("{}, +{hidden}", shown.join(", "))
+                } else {
+                    shown.join(", ")
+                }
+            });
+        let gw_ip = wan_health
+            .and_then(|h| h.extra.get("gateways").and_then(|v| v.as_array()))
+            .and_then(|a| a.first().and_then(|v| v.as_str()));
+        let wan_ipv6 = wan_health
+            .and_then(|h| {
+                const IPV6_KEYS: &[&str] = &[
+                    "wan_ip6",
+                    "wan_ip6s",
+                    "wan_ipv6",
+                    "wan_ipv6s",
+                    "ipv6",
+                    "ipv6Address",
+                    "ipv6_address",
+                ];
+
+                for key in IPV6_KEYS {
+                    if let Some(ipv6) = h.extra.get(*key).and_then(parse_ipv6_from_value) {
+                        return Some(ipv6);
+                    }
+                }
+
+                if let Some(ipv6) = h
+                    .extra
+                    .get("wan_ip")
+                    .and_then(parse_ipv6_from_value)
+                    .or_else(|| h.wan_ip.as_deref().and_then(parse_ipv6_from_text))
+                {
+                    return Some(ipv6);
+                }
+
+                h.gateways
+                    .as_ref()
+                    .and_then(|gateways| gateways.iter().find_map(|gw| parse_ipv6_from_text(gw)))
+            })
+            .or_else(|| gateway.and_then(|g| g.wan_ipv6.clone()));
+
+        let gw_version =
+            wan_health.and_then(|h| h.extra.get("gw_version").and_then(|v| v.as_str()));
+        let latency = www_health.and_then(|h| h.latency);
+        let uptime = gateway.and_then(|g| g.stats.uptime_secs);
+        let wan_ip = gateway
+            .and_then(|g| g.ip)
+            .map(|ip| ip.to_string())
+            .or_else(|| wan_health.and_then(|h| h.wan_ip.clone()));
+
+        let mut lines = Vec::new();
+
+        if let Some(gw) = gateway {
+            let model = gw.model.as_deref().unwrap_or("Gateway");
+            let fw = gw_version.or(gw.firmware_version.as_deref()).unwrap_or("─");
+            let header = truncate_text(&format!("{model} ({fw})"), w.saturating_sub(4));
+            lines.push(Line::from(vec![
+                Span::styled(" ◈ ", Style::default().fg(theme::accent_primary())),
+                Span::styled(
+                    header,
+                    Style::default()
+                        .fg(theme::accent_secondary())
+                        .add_modifier(Modifier::BOLD),
+                ),
+            ]));
+        } else {
+            lines.push(Line::from(Span::styled(
+                " No gateway",
+                Style::default().fg(theme::border_unfocused()),
+            )));
+        }
+        lines.push(Line::from(""));
+
+        let kv = |label: &str, value: &str, color: ratatui::style::Color| -> Line<'static> {
+            let shown = truncate_text(value, w.saturating_sub(7));
+            Line::from(vec![
+                Span::styled(
+                    format!(" {label:<5}"),
+                    Style::default().fg(theme::text_secondary()),
+                ),
+                Span::styled(shown, Style::default().fg(color)),
+            ])
+        };
+
+        lines.push(kv(
+            "WAN",
+            &wan_ip.unwrap_or_else(|| "─".into()),
+            theme::accent_tertiary(),
+        ));
+        lines.push(kv(
+            "IPv6",
+            wan_ipv6.as_deref().unwrap_or("─"),
+            theme::info(),
+        ));
+
+        if let Some(gw) = gw_ip {
+            lines.push(kv("GW", gw, theme::text_secondary()));
+        }
+        if let Some(ref d) = dns {
+            lines.push(kv("DNS", d, theme::text_secondary()));
+        }
+        if let Some(isp) = isp_name {
+            lines.push(kv("ISP", isp, theme::text_secondary()));
+        }
+
+        let lat_str = latency.map_or_else(|| "─".into(), |l| format!("{l:.0}ms"));
+        let up_str = uptime.map_or_else(|| "─".into(), bytes_fmt::fmt_uptime);
+        lines.push(Line::from(vec![
+            Span::styled(" Lat  ", Style::default().fg(theme::text_secondary())),
+            Span::styled(lat_str, Style::default().fg(theme::accent_secondary())),
+            Span::styled("   Up ", Style::default().fg(theme::text_secondary())),
+            Span::styled(up_str, Style::default().fg(theme::accent_secondary())),
+        ]));
+
+        frame.render_widget(Paragraph::new(lines), inner);
+    }
+}
