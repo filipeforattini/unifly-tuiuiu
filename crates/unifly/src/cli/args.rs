@@ -1643,8 +1643,12 @@ pub enum ConfigCommand {
     /// Store a password in the system keyring
     SetPassword {
         /// Profile name
-        #[arg(long)]
+        #[arg(value_name = "PROFILE", conflicts_with = "profile_flag")]
         profile: Option<String>,
+
+        /// Profile name
+        #[arg(long = "profile", value_name = "PROFILE")]
+        profile_flag: Option<String>,
     },
 }
 

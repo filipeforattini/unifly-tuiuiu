@@ -68,6 +68,51 @@ fn save_config(cfg: &Config) -> Result<(), CliError> {
     Ok(())
 }
 
+/// Construct an empty profile when `config set` targets one that doesn't exist yet.
+fn empty_profile() -> Profile {
+    Profile {
+        controller: String::new(),
+        site: "default".into(),
+        auth_mode: "integration".into(),
+        api_key: None,
+        api_key_env: None,
+        username: None,
+        password: None,
+        ca_cert: None,
+        insecure: None,
+        timeout: None,
+    }
+}
+
+/// Resolve a `config set` key into a concrete profile + field target.
+///
+/// Supported forms:
+/// - `controller` -> active profile field
+/// - `profiles.home.controller` -> named profile field
+fn resolve_set_target(key: &str, active_profile: &str) -> Result<(String, String), CliError> {
+    if let Some(rest) = key.strip_prefix("profiles.") {
+        let mut parts = rest.splitn(2, '.');
+        let Some(profile_name) = parts.next() else {
+            unreachable!("splitn always yields at least one part");
+        };
+        let field = parts.next().ok_or_else(|| CliError::Validation {
+            field: "key".into(),
+            reason: format!("expected profiles.<name>.<key>, got '{key}'"),
+        })?;
+
+        if profile_name.is_empty() || field.is_empty() {
+            return Err(CliError::Validation {
+                field: "key".into(),
+                reason: format!("expected profiles.<name>.<key>, got '{key}'"),
+            });
+        }
+
+        Ok((profile_name.to_owned(), field.to_owned()))
+    } else {
+        Ok((active_profile.to_owned(), key.to_owned()))
+    }
+}
+
 /// Map a dialoguer / interactive I/O failure into CliError.
 fn prompt_err(e: impl std::fmt::Display) -> CliError {
     CliError::Validation {
@@ -300,25 +345,15 @@ pub fn handle(args: ConfigArgs, global: &GlobalOpts) -> Result<(), CliError> {
         // ── Set <key> <value> ───────────────────────────────────────
         ConfigCommand::Set { key, value } => {
             let mut cfg = crate::config::load_config_or_default();
-            let profile_name = resolve::active_profile_name(global, &cfg);
+            let active_profile = resolve::active_profile_name(global, &cfg);
+            let (profile_name, field) = resolve_set_target(&key, &active_profile)?;
 
             let profile = cfg
                 .profiles
                 .entry(profile_name.clone())
-                .or_insert_with(|| Profile {
-                    controller: String::new(),
-                    site: "default".into(),
-                    auth_mode: "integration".into(),
-                    api_key: None,
-                    api_key_env: None,
-                    username: None,
-                    password: None,
-                    ca_cert: None,
-                    insecure: None,
-                    timeout: None,
-                });
+                .or_insert_with(empty_profile);
 
-            match key.as_str() {
+            match field.as_str() {
                 "controller" => profile.controller = value,
                 "site" => profile.site = value,
                 "auth_mode" | "auth-mode" => {
@@ -358,7 +393,7 @@ pub fn handle(args: ConfigArgs, global: &GlobalOpts) -> Result<(), CliError> {
             }
 
             save_config(&cfg)?;
-            eprintln!("✓ Set {key} on profile '{profile_name}'");
+            eprintln!("✓ Set {field} on profile '{profile_name}'");
             Ok(())
         }
 
@@ -400,10 +435,14 @@ pub fn handle(args: ConfigArgs, global: &GlobalOpts) -> Result<(), CliError> {
         }
 
         // ── SetPassword ─────────────────────────────────────────────
-        ConfigCommand::SetPassword { profile } => {
+        ConfigCommand::SetPassword {
+            profile,
+            profile_flag,
+        } => {
             let cfg = crate::config::load_config_or_default();
-            let profile_name =
-                profile.unwrap_or_else(|| resolve::active_profile_name(global, &cfg));
+            let profile_name = profile
+                .or(profile_flag)
+                .unwrap_or_else(|| resolve::active_profile_name(global, &cfg));
 
             let prof = cfg.profiles.get(&profile_name).ok_or_else(|| {
                 let available: Vec<_> = cfg.profiles.keys().cloned().collect();

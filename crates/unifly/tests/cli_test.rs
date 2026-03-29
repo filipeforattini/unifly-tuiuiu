@@ -6,6 +6,7 @@
 
 use assert_cmd::cargo::cargo_bin_cmd;
 use predicates::prelude::*;
+use tempfile::TempDir;
 
 // ── Helpers ─────────────────────────────────────────────────────────
 
@@ -27,6 +28,27 @@ fn unifly_cmd() -> assert_cmd::Command {
         .env_remove("UNIFI_USERNAME")
         .env_remove("UNIFI_PASSWORD");
     cmd
+}
+
+/// Build an isolated [`Command`] that can safely write config into a temp dir.
+fn unifly_cmd_in(config_home: &std::path::Path) -> assert_cmd::Command {
+    let mut cmd = cargo_bin_cmd!("unifly");
+    cmd.env("HOME", config_home)
+        .env("XDG_CONFIG_HOME", config_home)
+        .env_remove("UNIFI_PROFILE")
+        .env_remove("UNIFI_URL")
+        .env_remove("UNIFI_SITE")
+        .env_remove("UNIFI_API_KEY")
+        .env_remove("UNIFI_OUTPUT")
+        .env_remove("UNIFI_INSECURE")
+        .env_remove("UNIFI_TIMEOUT")
+        .env_remove("UNIFI_USERNAME")
+        .env_remove("UNIFI_PASSWORD");
+    cmd
+}
+
+fn written_config(tempdir: &TempDir) -> String {
+    std::fs::read_to_string(tempdir.path().join("unifly").join("config.toml")).unwrap()
 }
 
 /// Concatenate stdout + stderr from a command output for flexible matching.
@@ -141,6 +163,97 @@ fn test_config_profiles_no_config_mentions_unifly() {
         .assert()
         .success()
         .stderr(predicate::str::contains("unifly config init"));
+}
+
+#[test]
+fn test_config_set_supports_profile_dot_path() {
+    let tempdir = tempfile::tempdir().unwrap();
+
+    unifly_cmd_in(tempdir.path())
+        .args([
+            "config",
+            "set",
+            "profiles.home.controller",
+            "https://192.168.1.1",
+        ])
+        .assert()
+        .success()
+        .stderr(predicate::str::contains("Set controller on profile 'home'"));
+
+    let cfg = written_config(&tempdir);
+    assert!(
+        cfg.contains("[profiles.home]"),
+        "Expected home profile in config:\n{cfg}"
+    );
+    assert!(
+        cfg.contains("controller = \"https://192.168.1.1\""),
+        "Expected controller in config:\n{cfg}"
+    );
+}
+
+#[test]
+fn test_config_set_bare_key_still_targets_active_profile() {
+    let tempdir = tempfile::tempdir().unwrap();
+
+    unifly_cmd_in(tempdir.path())
+        .args(["config", "set", "controller", "https://10.0.0.1"])
+        .assert()
+        .success()
+        .stderr(predicate::str::contains(
+            "Set controller on profile 'default'",
+        ));
+
+    let cfg = written_config(&tempdir);
+    assert!(
+        cfg.contains("[profiles.default]"),
+        "Expected default profile in config:\n{cfg}"
+    );
+    assert!(
+        cfg.contains("controller = \"https://10.0.0.1\""),
+        "Expected controller in config:\n{cfg}"
+    );
+}
+
+#[test]
+fn test_config_set_help_mentions_profile_dot_path() {
+    unifly_cmd()
+        .args(["config", "set", "--help"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("profiles.home.controller"));
+}
+
+#[test]
+fn test_config_set_password_accepts_positional_profile() {
+    let output = unifly_cmd()
+        .args(["config", "set-password", "home"])
+        .output()
+        .unwrap();
+    assert!(
+        !output.status.success(),
+        "Expected missing profile failure, not parse success"
+    );
+    let text = combined_output(&output);
+    assert!(
+        !text.contains("unexpected argument"),
+        "Positional profile should parse:\n{text}"
+    );
+    assert!(
+        text.contains("home") || text.contains("profile"),
+        "Expected output to mention the missing profile:\n{text}"
+    );
+}
+
+#[test]
+fn test_config_set_password_help_mentions_positional_and_flag_profile() {
+    unifly_cmd()
+        .args(["config", "set-password", "--help"])
+        .assert()
+        .success()
+        .stdout(
+            predicate::str::contains("[PROFILE]")
+                .and(predicate::str::contains("--profile <PROFILE>")),
+        );
 }
 
 #[test]
