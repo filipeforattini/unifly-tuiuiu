@@ -34,6 +34,7 @@ mod payloads;
 mod query;
 mod refresh;
 mod runtime;
+mod subscriptions;
 mod support;
 
 use self::support::{
