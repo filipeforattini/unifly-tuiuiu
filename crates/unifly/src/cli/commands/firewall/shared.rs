@@ -1,0 +1,125 @@
+use unifly_api::model::FirewallAction as ModelFirewallAction;
+use unifly_api::{EntityId, TrafficFilterSpec};
+
+use crate::cli::args::FirewallAction;
+use crate::cli::error::CliError;
+
+pub(super) fn map_fw_action(action: &FirewallAction) -> ModelFirewallAction {
+    match action {
+        FirewallAction::Allow => ModelFirewallAction::Allow,
+        FirewallAction::Block => ModelFirewallAction::Block,
+        FirewallAction::Reject => ModelFirewallAction::Reject,
+    }
+}
+
+pub(super) fn build_filter_spec(
+    field_prefix: &str,
+    networks: Option<Vec<String>>,
+    ips: Option<Vec<String>>,
+    ports: Option<Vec<String>>,
+) -> Result<Option<TrafficFilterSpec>, CliError> {
+    let selected = [
+        networks.as_ref().map(|_| "network"),
+        ips.as_ref().map(|_| "ip"),
+        ports.as_ref().map(|_| "port"),
+    ]
+    .into_iter()
+    .flatten()
+    .collect::<Vec<_>>();
+
+    if selected.len() > 1 {
+        return Err(CliError::Validation {
+            field: format!("{field_prefix}-filter"),
+            reason: format!(
+                "choose only one of --{field_prefix}-network, --{field_prefix}-ip, or --{field_prefix}-port"
+            ),
+        });
+    }
+
+    Ok(if let Some(network_ids) = networks {
+        Some(TrafficFilterSpec::Network {
+            network_ids,
+            match_opposite: false,
+        })
+    } else if let Some(addresses) = ips {
+        Some(TrafficFilterSpec::IpAddress {
+            addresses,
+            match_opposite: false,
+        })
+    } else {
+        ports.map(|ports| TrafficFilterSpec::Port {
+            ports,
+            match_opposite: false,
+        })
+    })
+}
+
+pub(super) fn parse_reorder_zone_pair(
+    source_zone: Option<&str>,
+    dest_zone: Option<&str>,
+) -> Result<(EntityId, EntityId), CliError> {
+    match (source_zone, dest_zone) {
+        (Some(source_zone), Some(dest_zone)) => {
+            Ok((EntityId::from(source_zone), EntityId::from(dest_zone)))
+        }
+        _ => Err(CliError::Validation {
+            field: "zone-pair".into(),
+            reason: "firewall policy reordering requires both --source-zone and --dest-zone".into(),
+        }),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{build_filter_spec, parse_reorder_zone_pair};
+    use crate::cli::error::CliError;
+    use unifly_api::{EntityId, TrafficFilterSpec};
+
+    #[test]
+    fn build_filter_spec_accepts_single_filter_family() {
+        let spec = build_filter_spec("src", Some(vec!["lan".into()]), None, None);
+        assert!(matches!(spec, Ok(Some(TrafficFilterSpec::Network { .. }))));
+    }
+
+    #[test]
+    fn build_filter_spec_rejects_multiple_filter_families() {
+        let err = build_filter_spec(
+            "src",
+            Some(vec!["lan".into()]),
+            Some(vec!["10.0.0.1".into()]),
+            None,
+        );
+
+        match err {
+            Err(CliError::Validation { field, .. }) => assert_eq!(field, "src-filter"),
+            Ok(_) => panic!("expected validation error, got success"),
+            Err(other) => panic!("expected validation error, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn parse_reorder_zone_pair_requires_both_zones() {
+        let err = parse_reorder_zone_pair(Some("src"), None)
+            .expect_err("missing destination zone should fail");
+        match err {
+            CliError::Validation { field, .. } => assert_eq!(field, "zone-pair"),
+            other => panic!("expected validation error, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn parse_reorder_zone_pair_returns_entity_ids() {
+        let zone_pair = parse_reorder_zone_pair(
+            Some("550e8400-e29b-41d4-a716-446655440000"),
+            Some("550e8400-e29b-41d4-a716-446655440001"),
+        )
+        .expect("zone pair should parse");
+        assert_eq!(
+            zone_pair,
+            (
+                EntityId::from("550e8400-e29b-41d4-a716-446655440000"),
+                EntityId::from("550e8400-e29b-41d4-a716-446655440001"),
+            )
+        );
+    }
+}
