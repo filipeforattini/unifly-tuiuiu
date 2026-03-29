@@ -3,6 +3,7 @@ pub mod app;
 pub mod component;
 pub mod data_bridge;
 pub mod event;
+pub(crate) mod forms;
 pub mod screen;
 pub mod screens;
 pub mod terminal;

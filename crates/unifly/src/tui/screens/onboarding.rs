@@ -16,6 +16,7 @@ use tokio::sync::mpsc::UnboundedSender;
 
 use crate::tui::action::Action;
 use crate::tui::component::Component;
+pub(super) use crate::tui::forms::controller_profile::{AuthMode, ControllerProfileDraft};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) enum WizardStep {
@@ -29,13 +30,6 @@ pub(super) enum WizardStep {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(super) enum AuthMode {
-    ApiKey,
-    Legacy,
-    Hybrid,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) enum CredentialField {
     ApiKey,
     Username,
@@ -46,13 +40,8 @@ pub struct OnboardingScreen {
     focused: bool,
     action_tx: Option<UnboundedSender<Action>>,
     step: WizardStep,
-    url_input: String,
-    auth_mode: AuthMode,
+    draft: ControllerProfileDraft,
     auth_mode_index: usize,
-    api_key_input: String,
-    username_input: String,
-    password_input: String,
-    site_input: String,
     cred_field: CredentialField,
     show_password: bool,
     testing: bool,

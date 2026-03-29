@@ -55,7 +55,7 @@ impl SettingsScreen {
 
                     match field {
                         SettingsField::Insecure => {
-                            self.insecure = !self.insecure;
+                            self.draft.insecure = !self.draft.insecure;
                         }
                         SettingsField::Theme => {
                             self.open_theme_selector();
@@ -148,7 +148,7 @@ impl SettingsScreen {
     fn handle_insecure_key(&mut self, key: KeyEvent) -> Option<Action> {
         match key.code {
             KeyCode::Char(' ') => {
-                self.insecure = !self.insecure;
+                self.draft.insecure = !self.draft.insecure;
                 None
             }
             KeyCode::Tab => {

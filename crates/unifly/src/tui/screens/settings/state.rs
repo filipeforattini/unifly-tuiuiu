@@ -1,32 +1,4 @@
-use super::{AuthMode, SettingsField, SettingsScreen, SettingsState};
-
-impl AuthMode {
-    pub(super) const ALL: [AuthMode; 3] = [Self::ApiKey, Self::Legacy, Self::Hybrid];
-
-    pub(super) fn label(self) -> &'static str {
-        match self {
-            Self::ApiKey => "API Key (Integration API)",
-            Self::Legacy => "Username / Password (Legacy API)",
-            Self::Hybrid => "Hybrid (API Key + Credentials)",
-        }
-    }
-
-    pub(super) fn config_value(self) -> &'static str {
-        match self {
-            Self::ApiKey => "integration",
-            Self::Legacy => "legacy",
-            Self::Hybrid => "hybrid",
-        }
-    }
-
-    pub(super) fn from_config(value: &str) -> Self {
-        match value {
-            "legacy" => Self::Legacy,
-            "hybrid" => Self::Hybrid,
-            _ => Self::ApiKey,
-        }
-    }
-}
+use super::{AuthMode, ControllerProfileDraft, SettingsField, SettingsScreen, SettingsState};
 
 impl SettingsField {
     pub(super) const ALL: [SettingsField; 8] = [
@@ -58,14 +30,8 @@ impl SettingsScreen {
             action_tx: None,
             state: SettingsState::Editing,
             active_field: SettingsField::Url,
-            url_input: "https://192.168.1.1".into(),
-            auth_mode: AuthMode::ApiKey,
+            draft: ControllerProfileDraft::default(),
             auth_mode_index: 0,
-            api_key_input: String::new(),
-            username_input: String::new(),
-            password_input: String::new(),
-            site_input: "default".into(),
-            insecure: true,
             show_password: false,
             profile_name: "default".into(),
             test_error: None,
@@ -88,32 +54,18 @@ impl SettingsScreen {
         };
 
         self.profile_name = profile_name.to_string();
-        self.url_input.clone_from(&profile.controller);
-        self.site_input.clone_from(&profile.site);
-        self.insecure = profile.insecure.unwrap_or(false);
-
-        self.auth_mode = AuthMode::from_config(&profile.auth_mode);
+        self.draft = ControllerProfileDraft::from_profile(profile);
         self.auth_mode_index = AuthMode::ALL
             .iter()
-            .position(|&mode| mode == self.auth_mode)
+            .position(|&mode| mode == self.draft.auth_mode)
             .unwrap_or(0);
-
-        if let Some(ref key) = profile.api_key {
-            self.api_key_input.clone_from(key);
-        }
-        if let Some(ref user) = profile.username {
-            self.username_input.clone_from(user);
-        }
-        if let Some(ref pass) = profile.password {
-            self.password_input.clone_from(pass);
-        }
     }
 
     pub(super) fn visible_fields(&self) -> Vec<SettingsField> {
         SettingsField::ALL
             .iter()
             .copied()
-            .filter(|field| field.visible_for(self.auth_mode))
+            .filter(|field| field.visible_for(self.draft.auth_mode))
             .collect()
     }
 
@@ -150,7 +102,7 @@ impl SettingsScreen {
     }
 
     pub(super) fn clamp_focus(&mut self) {
-        if !self.active_field.visible_for(self.auth_mode) {
+        if !self.active_field.visible_for(self.draft.auth_mode) {
             self.active_field = SettingsField::AuthMode;
         }
     }
@@ -161,7 +113,7 @@ impl SettingsScreen {
         } else {
             self.auth_mode_index -= 1;
         }
-        self.auth_mode = AuthMode::ALL[self.auth_mode_index];
+        self.draft.auth_mode = AuthMode::ALL[self.auth_mode_index];
         self.clamp_focus();
     }
 
@@ -171,17 +123,17 @@ impl SettingsScreen {
         } else {
             self.auth_mode_index = 0;
         }
-        self.auth_mode = AuthMode::ALL[self.auth_mode_index];
+        self.draft.auth_mode = AuthMode::ALL[self.auth_mode_index];
         self.clamp_focus();
     }
 
     pub(super) fn active_input_mut(&mut self) -> Option<&mut String> {
         match self.active_field {
-            SettingsField::Url => Some(&mut self.url_input),
-            SettingsField::ApiKey => Some(&mut self.api_key_input),
-            SettingsField::Username => Some(&mut self.username_input),
-            SettingsField::Password => Some(&mut self.password_input),
-            SettingsField::Site => Some(&mut self.site_input),
+            SettingsField::Url => Some(&mut self.draft.url),
+            SettingsField::ApiKey => Some(&mut self.draft.api_key),
+            SettingsField::Username => Some(&mut self.draft.username),
+            SettingsField::Password => Some(&mut self.draft.password),
+            SettingsField::Site => Some(&mut self.draft.site),
             SettingsField::AuthMode | SettingsField::Insecure | SettingsField::Theme => None,
         }
     }
@@ -194,46 +146,7 @@ impl SettingsScreen {
     }
 
     pub(super) fn validate(&self) -> std::result::Result<(), String> {
-        let trimmed = self.url_input.trim();
-        if trimmed.is_empty() {
-            return Err("URL cannot be empty".into());
-        }
-        if trimmed.parse::<url::Url>().is_err() {
-            return Err("Invalid URL format".into());
-        }
-
-        match self.auth_mode {
-            AuthMode::ApiKey => {
-                if self.api_key_input.trim().is_empty() {
-                    return Err("API key cannot be empty".into());
-                }
-            }
-            AuthMode::Legacy => {
-                if self.username_input.trim().is_empty() {
-                    return Err("Username cannot be empty".into());
-                }
-                if self.password_input.is_empty() {
-                    return Err("Password cannot be empty".into());
-                }
-            }
-            AuthMode::Hybrid => {
-                if self.api_key_input.trim().is_empty() {
-                    return Err("API key cannot be empty".into());
-                }
-                if self.username_input.trim().is_empty() {
-                    return Err("Username cannot be empty".into());
-                }
-                if self.password_input.is_empty() {
-                    return Err("Password cannot be empty".into());
-                }
-            }
-        }
-
-        if self.site_input.trim().is_empty() {
-            return Err("Site name cannot be empty".into());
-        }
-
-        Ok(())
+        self.draft.validate_complete()
     }
 
     pub(super) fn submit_connection_test(&mut self) {
@@ -245,27 +158,7 @@ impl SettingsScreen {
     }
 
     fn build_profile(&self) -> crate::config::Profile {
-        crate::config::Profile {
-            controller: self.url_input.trim().to_string(),
-            site: self.site_input.trim().to_string(),
-            auth_mode: self.auth_mode.config_value().to_string(),
-            api_key: match self.auth_mode {
-                AuthMode::ApiKey | AuthMode::Hybrid => Some(self.api_key_input.trim().to_string()),
-                AuthMode::Legacy => None,
-            },
-            api_key_env: None,
-            username: match self.auth_mode {
-                AuthMode::Legacy | AuthMode::Hybrid => Some(self.username_input.trim().to_string()),
-                AuthMode::ApiKey => None,
-            },
-            password: match self.auth_mode {
-                AuthMode::Legacy | AuthMode::Hybrid => Some(self.password_input.clone()),
-                AuthMode::ApiKey => None,
-            },
-            ca_cert: None,
-            insecure: Some(self.insecure),
-            timeout: None,
-        }
+        self.draft.to_profile()
     }
 
     fn start_connection_test(&mut self) {
@@ -336,12 +229,12 @@ mod tests {
 
     fn test_screen() -> SettingsScreen {
         let mut screen = SettingsScreen::new();
-        screen.url_input = "https://console.example.com".into();
-        screen.api_key_input = "api-key".into();
-        screen.username_input = "bliss".into();
-        screen.password_input = "hunter2".into();
-        screen.site_input = "default".into();
-        screen.auth_mode = AuthMode::ApiKey;
+        screen.draft.url = "https://console.example.com".into();
+        screen.draft.api_key = "api-key".into();
+        screen.draft.username = "bliss".into();
+        screen.draft.password = "hunter2".into();
+        screen.draft.site = "default".into();
+        screen.draft.auth_mode = AuthMode::ApiKey;
         screen.auth_mode_index = 0;
         screen.active_field = SettingsField::Url;
         screen.test_error = None;
@@ -351,7 +244,7 @@ mod tests {
     #[test]
     fn field_layout_hides_unused_credentials() {
         let mut screen = test_screen();
-        screen.auth_mode = AuthMode::Legacy;
+        screen.draft.auth_mode = AuthMode::Legacy;
         screen.auth_mode_index = 1;
 
         let fields: Vec<_> = screen
@@ -368,7 +261,7 @@ mod tests {
     #[test]
     fn build_profile_omits_non_selected_auth_fields() {
         let mut screen = test_screen();
-        screen.auth_mode = AuthMode::ApiKey;
+        screen.draft.auth_mode = AuthMode::ApiKey;
 
         let profile = screen.build_profile();
 
@@ -380,8 +273,8 @@ mod tests {
     #[test]
     fn validate_requires_legacy_credentials() {
         let mut screen = test_screen();
-        screen.auth_mode = AuthMode::Legacy;
-        screen.username_input.clear();
+        screen.draft.auth_mode = AuthMode::Legacy;
+        screen.draft.username.clear();
 
         assert_eq!(screen.validate(), Err("Username cannot be empty".into()));
     }

@@ -18,18 +18,12 @@ use tokio::sync::mpsc::UnboundedSender;
 
 use crate::tui::action::Action;
 use crate::tui::component::Component;
+pub(super) use crate::tui::forms::controller_profile::{AuthMode, ControllerProfileDraft};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) enum SettingsState {
     Editing,
     Testing,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(super) enum AuthMode {
-    ApiKey,
-    Legacy,
-    Hybrid,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -49,14 +43,8 @@ pub struct SettingsScreen {
     action_tx: Option<UnboundedSender<Action>>,
     state: SettingsState,
     active_field: SettingsField,
-    url_input: String,
-    auth_mode: AuthMode,
+    draft: ControllerProfileDraft,
     auth_mode_index: usize,
-    api_key_input: String,
-    username_input: String,
-    password_input: String,
-    site_input: String,
-    insecure: bool,
     show_password: bool,
     profile_name: String,
     test_error: Option<String>,

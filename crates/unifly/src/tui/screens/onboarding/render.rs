@@ -260,7 +260,7 @@ impl OnboardingScreen {
             frame,
             layout[1],
             "  Controller URL",
-            &self.url_input,
+            &self.draft.url,
             true,
             false,
         );
@@ -341,7 +341,7 @@ impl OnboardingScreen {
 
         let mut y_offset = 0u16;
 
-        if matches!(self.auth_mode, AuthMode::ApiKey | AuthMode::Hybrid) {
+        if matches!(self.draft.auth_mode, AuthMode::ApiKey | AuthMode::Hybrid) {
             let input_area = Rect::new(
                 fields_area.x,
                 fields_area.y + y_offset,
@@ -352,14 +352,14 @@ impl OnboardingScreen {
                 frame,
                 input_area,
                 "  API Key",
-                &self.api_key_input,
+                &self.draft.api_key,
                 self.cred_field == CredentialField::ApiKey,
                 true,
             );
             y_offset += 5;
         }
 
-        if matches!(self.auth_mode, AuthMode::Legacy | AuthMode::Hybrid) {
+        if matches!(self.draft.auth_mode, AuthMode::Legacy | AuthMode::Hybrid) {
             let username_area = Rect::new(
                 fields_area.x,
                 fields_area.y + y_offset,
@@ -370,7 +370,7 @@ impl OnboardingScreen {
                 frame,
                 username_area,
                 "  Username",
-                &self.username_input,
+                &self.draft.username,
                 self.cred_field == CredentialField::Username,
                 false,
             );
@@ -386,7 +386,7 @@ impl OnboardingScreen {
                 frame,
                 password_area,
                 "  Password",
-                &self.password_input,
+                &self.draft.password,
                 self.cred_field == CredentialField::Password,
                 !self.show_password,
             );
@@ -412,7 +412,7 @@ impl OnboardingScreen {
             layout[0],
         );
 
-        self.render_input_field(frame, layout[1], "  Site", &self.site_input, true, false);
+        self.render_input_field(frame, layout[1], "  Site", &self.draft.site, true, false);
     }
 
     fn render_testing(&self, frame: &mut Frame, area: Rect) {
@@ -432,7 +432,7 @@ impl OnboardingScreen {
             frame.render_stateful_widget(throbber, layout[0], &mut self.throbber_state.clone());
             frame.render_widget(
                 Paragraph::new(Span::styled(
-                    format!("  Connecting to {}", self.url_input.trim()),
+                    format!("  Connecting to {}", self.draft.url.trim()),
                     Style::default().fg(theme::border_unfocused()),
                 )),
                 layout[1],
@@ -493,7 +493,7 @@ impl OnboardingScreen {
                 Style::default().fg(theme::text_secondary()),
             )),
             Line::from(Span::styled(
-                format!("  Controller: {}", self.url_input.trim()),
+                format!("  Controller: {}", self.draft.url.trim()),
                 Style::default().fg(theme::text_secondary()),
             )),
             Line::from(Span::styled(
