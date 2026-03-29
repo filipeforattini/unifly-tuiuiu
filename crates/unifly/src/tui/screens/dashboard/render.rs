@@ -1,0 +1,1146 @@
+use ratatui::Frame;
+use ratatui::layout::{Constraint, Layout, Rect};
+use ratatui::style::{Modifier, Style};
+use ratatui::symbols::Marker;
+use ratatui::text::{Line, Span};
+use ratatui::widgets::canvas::{Canvas, Line as CanvasLine};
+use ratatui::widgets::{Block, BorderType, Borders, Paragraph};
+
+use unifly_api::model::{EventSeverity, Ipv6Mode};
+use unifly_api::{ClientType, DeviceType};
+
+use crate::tui::theme;
+use crate::tui::widgets::{bytes_fmt, chart};
+
+use super::helpers::{
+    fmt_rate_compact, parse_ipv6_from_text, parse_ipv6_from_value, truncate_text,
+};
+use super::{
+    BANDWIDTH_GUTTER_WIDTH, BANDWIDTH_LABEL_WIDTH, BANDWIDTH_TICK_COUNT, DashboardScreen,
+    LIVE_CHART_WINDOW_SAMPLES, MIN_BANDWIDTH_SCALE,
+};
+
+impl DashboardScreen {
+    /// Hero panel: WAN traffic chart with area fill and Braille line overlay.
+    #[allow(
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        clippy::as_conversions,
+        clippy::too_many_lines
+    )]
+    pub(super) fn render_traffic_chart(&self, frame: &mut Frame, area: Rect) {
+        let (current_tx, current_rx) = self
+            .current_bandwidth()
+            .or_else(|| {
+                Some((
+                    self.bandwidth_tx.last().map(|&(_, value)| value as u64)?,
+                    self.bandwidth_rx.last().map(|&(_, value)| value as u64)?,
+                ))
+            })
+            .unwrap_or((0, 0));
+
+        let title = Line::from(vec![
+            Span::styled(" WAN Traffic ", theme::title_style()),
+            Span::styled("── ", Style::default().fg(theme::border_unfocused())),
+            Span::styled(
+                format!("TX {} ↑", bytes_fmt::fmt_rate(current_tx)),
+                Style::default().fg(theme::accent_secondary()),
+            ),
+            Span::styled("  ", Style::default()),
+            Span::styled(
+                format!("RX {} ↓", bytes_fmt::fmt_rate(current_rx)),
+                Style::default().fg(theme::accent_tertiary()),
+            ),
+            Span::styled(
+                format!(
+                    "  Peak {} ",
+                    bytes_fmt::fmt_rate(self.peak_rx.max(self.peak_tx))
+                ),
+                Style::default().fg(theme::border_unfocused()),
+            ),
+        ]);
+
+        let block = Block::default()
+            .title(title)
+            .borders(Borders::ALL)
+            .border_type(BorderType::Rounded)
+            .border_style(theme::border_default());
+
+        let inner = block.inner(area);
+        frame.render_widget(block, area);
+
+        if self.bandwidth_tx.is_empty() {
+            frame.render_widget(
+                Paragraph::new("  Waiting for data…")
+                    .style(Style::default().fg(theme::border_unfocused())),
+                inner,
+            );
+            return;
+        }
+
+        // Compute axis bounds
+        #[allow(clippy::cast_precision_loss, clippy::as_conversions)]
+        let window_span = LIVE_CHART_WINDOW_SAMPLES.saturating_sub(1) as f64;
+        let x_max = self.sample_counter.max(0.0);
+        let x_min = x_max - window_span;
+        let y_max = self.chart_y_max.max(MIN_BANDWIDTH_SCALE);
+        let axis_style = Style::default().fg(theme::border_unfocused());
+        let chart_layout = Layout::horizontal([
+            Constraint::Length(BANDWIDTH_GUTTER_WIDTH),
+            Constraint::Min(1),
+        ])
+        .split(inner);
+        let gutter_area = chart_layout[0];
+        let plot_area = chart_layout[1];
+
+        let y_labels = chart::rate_axis_labels(
+            y_max,
+            BANDWIDTH_TICK_COUNT,
+            BANDWIDTH_LABEL_WIDTH,
+            axis_style,
+        );
+        let label_steps = BANDWIDTH_TICK_COUNT.saturating_sub(1).max(1);
+        for (idx, label) in y_labels.iter().rev().enumerate() {
+            #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
+            let y_offset = if label_steps == 0 {
+                0
+            } else {
+                let rows = plot_area.height.saturating_sub(1);
+                (u32::from(rows) * idx as u32 / label_steps as u32) as u16
+            };
+            let label_area = Rect {
+                x: gutter_area.x,
+                y: plot_area.y + y_offset,
+                width: gutter_area.width,
+                height: 1,
+            };
+            frame.render_widget(Paragraph::new(Line::from(label.clone())), label_area);
+        }
+
+        let plot_density = (usize::from(plot_area.width.max(1)) * 4).max(160);
+        let rx_path = chart::interpolate_fill(&self.bandwidth_rx, plot_density);
+        let tx_path = chart::interpolate_fill(&self.bandwidth_tx, plot_density);
+
+        let canvas = Canvas::default()
+            .background_color(theme::bg_base())
+            .marker(Marker::Octant)
+            .x_bounds([x_min, x_max])
+            .y_bounds([0.0, y_max])
+            .paint(|ctx| {
+                ctx.draw(&CanvasLine {
+                    x1: x_min,
+                    y1: 0.0,
+                    x2: x_max,
+                    y2: 0.0,
+                    color: theme::border_unfocused(),
+                });
+
+                for &(x, y) in &rx_path {
+                    ctx.draw(&CanvasLine {
+                        x1: x,
+                        y1: 0.0,
+                        x2: x,
+                        y2: y,
+                        color: theme::rx_fill(),
+                    });
+                }
+                for &(x, y) in &tx_path {
+                    ctx.draw(&CanvasLine {
+                        x1: x,
+                        y1: 0.0,
+                        x2: x,
+                        y2: y,
+                        color: theme::tx_fill(),
+                    });
+                }
+
+                ctx.layer();
+
+                for pair in rx_path.windows(2) {
+                    let [(x1, y1), (x2, y2)] = pair else {
+                        continue;
+                    };
+                    ctx.draw(&CanvasLine {
+                        x1: *x1,
+                        y1: *y1,
+                        x2: *x2,
+                        y2: *y2,
+                        color: theme::accent_tertiary(),
+                    });
+                }
+                for pair in tx_path.windows(2) {
+                    let [(x1, y1), (x2, y2)] = pair else {
+                        continue;
+                    };
+                    ctx.draw(&CanvasLine {
+                        x1: *x1,
+                        y1: *y1,
+                        x2: *x2,
+                        y2: *y2,
+                        color: theme::accent_secondary(),
+                    });
+                }
+            });
+
+        frame.render_widget(canvas, plot_area);
+    }
+
+    /// Gateway panel - WAN connection details with IPv6.
+    #[allow(clippy::too_many_lines)]
+    pub(super) fn render_gateway(&self, frame: &mut Frame, area: Rect) {
+        let block = Block::default()
+            .title(Span::styled(" Gateway ", theme::title_style()))
+            .borders(Borders::ALL)
+            .border_type(BorderType::Rounded)
+            .border_style(theme::border_default());
+
+        let inner = block.inner(area);
+        frame.render_widget(block, area);
+        let w = usize::from(inner.width);
+
+        let gateway = self
+            .devices
+            .iter()
+            .find(|d| d.device_type == DeviceType::Gateway);
+        let wan_health = self.health.iter().find(|h| h.subsystem == "wan");
+        let www_health = self.health.iter().find(|h| h.subsystem == "www");
+
+        // Extract from health extra JSON (best-effort)
+        let isp_name = wan_health
+            .and_then(|h| h.extra.get("isp_name").and_then(|v| v.as_str()))
+            .or_else(|| {
+                wan_health.and_then(|h| h.extra.get("isp_organization").and_then(|v| v.as_str()))
+            });
+        let dns = wan_health
+            .and_then(|h| h.extra.get("nameservers").and_then(|v| v.as_array()))
+            .map(|ns| {
+                let servers: Vec<_> = ns.iter().filter_map(|v| v.as_str()).collect();
+                let shown = servers.iter().take(2).copied().collect::<Vec<_>>();
+                let hidden = servers.len().saturating_sub(shown.len());
+                if hidden > 0 {
+                    format!("{}, +{hidden}", shown.join(", "))
+                } else {
+                    shown.join(", ")
+                }
+            });
+        let gw_ip = wan_health
+            .and_then(|h| h.extra.get("gateways").and_then(|v| v.as_array()))
+            .and_then(|a| a.first().and_then(|v| v.as_str()));
+        let wan_ipv6 = wan_health
+            .and_then(|h| {
+                const IPV6_KEYS: &[&str] = &[
+                    "wan_ip6",
+                    "wan_ip6s",
+                    "wan_ipv6",
+                    "wan_ipv6s",
+                    "ipv6",
+                    "ipv6Address",
+                    "ipv6_address",
+                ];
+
+                for key in IPV6_KEYS {
+                    if let Some(ipv6) = h.extra.get(*key).and_then(parse_ipv6_from_value) {
+                        return Some(ipv6);
+                    }
+                }
+
+                if let Some(ipv6) = h
+                    .extra
+                    .get("wan_ip")
+                    .and_then(parse_ipv6_from_value)
+                    .or_else(|| h.wan_ip.as_deref().and_then(parse_ipv6_from_text))
+                {
+                    return Some(ipv6);
+                }
+
+                h.gateways
+                    .as_ref()
+                    .and_then(|gateways| gateways.iter().find_map(|gw| parse_ipv6_from_text(gw)))
+            })
+            .or_else(|| gateway.and_then(|g| g.wan_ipv6.clone()));
+        let gw_version =
+            wan_health.and_then(|h| h.extra.get("gw_version").and_then(|v| v.as_str()));
+        let latency = www_health.and_then(|h| h.latency);
+        let uptime = gateway.and_then(|g| g.stats.uptime_secs);
+        let wan_ip = gateway
+            .and_then(|g| g.ip)
+            .map(|ip| ip.to_string())
+            .or_else(|| wan_health.and_then(|h| h.wan_ip.clone()));
+
+        let mut lines = Vec::new();
+
+        // Header: ◈ Model (firmware)
+        if let Some(gw) = gateway {
+            let model = gw.model.as_deref().unwrap_or("Gateway");
+            let fw = gw_version.or(gw.firmware_version.as_deref()).unwrap_or("─");
+            let header = truncate_text(&format!("{model} ({fw})"), w.saturating_sub(4));
+            lines.push(Line::from(vec![
+                Span::styled(" ◈ ", Style::default().fg(theme::accent_primary())),
+                Span::styled(
+                    header,
+                    Style::default()
+                        .fg(theme::accent_secondary())
+                        .add_modifier(Modifier::BOLD),
+                ),
+            ]));
+        } else {
+            lines.push(Line::from(Span::styled(
+                " No gateway",
+                Style::default().fg(theme::border_unfocused()),
+            )));
+        }
+        lines.push(Line::from(""));
+
+        // Key-value rows
+        let kv = |label: &str, value: &str, color: ratatui::style::Color| -> Line<'static> {
+            let shown = truncate_text(value, w.saturating_sub(7));
+            Line::from(vec![
+                Span::styled(
+                    format!(" {label:<5}"),
+                    Style::default().fg(theme::text_secondary()),
+                ),
+                Span::styled(shown, Style::default().fg(color)),
+            ])
+        };
+
+        lines.push(kv(
+            "WAN",
+            &wan_ip.unwrap_or_else(|| "─".into()),
+            theme::accent_tertiary(),
+        ));
+        lines.push(kv(
+            "IPv6",
+            wan_ipv6.as_deref().unwrap_or("─"),
+            theme::info(),
+        ));
+
+        if let Some(gw) = gw_ip {
+            lines.push(kv("GW", gw, theme::text_secondary()));
+        }
+        if let Some(ref d) = dns {
+            lines.push(kv("DNS", d, theme::text_secondary()));
+        }
+        if let Some(isp) = isp_name {
+            lines.push(kv("ISP", isp, theme::text_secondary()));
+        }
+
+        // Latency + Uptime on one line
+        let lat_str = latency.map_or_else(|| "─".into(), |l| format!("{l:.0}ms"));
+        let up_str = uptime.map_or_else(|| "─".into(), bytes_fmt::fmt_uptime);
+        lines.push(Line::from(vec![
+            Span::styled(" Lat  ", Style::default().fg(theme::text_secondary())),
+            Span::styled(lat_str, Style::default().fg(theme::accent_secondary())),
+            Span::styled("   Up ", Style::default().fg(theme::text_secondary())),
+            Span::styled(up_str, Style::default().fg(theme::accent_secondary())),
+        ]));
+
+        frame.render_widget(Paragraph::new(lines), inner);
+    }
+
+    /// Connectivity card - subsystem state and per-subsystem activity.
+    #[allow(clippy::too_many_lines)]
+    pub(super) fn render_system_health(&self, frame: &mut Frame, area: Rect) {
+        let block = Block::default()
+            .title(Span::styled(" Connectivity ", theme::title_style()))
+            .borders(Borders::ALL)
+            .border_type(BorderType::Rounded)
+            .border_style(theme::border_default());
+
+        let inner = block.inner(area);
+        frame.render_widget(block, area);
+
+        let w = usize::from(inner.width);
+        let content_w = w.saturating_sub(8);
+        let bar_width = u16::try_from(w.saturating_sub(13).clamp(6, 14)).unwrap_or(8);
+        let mut lines = Vec::new();
+
+        let status_color = |sub: &str| -> ratatui::style::Color {
+            match self
+                .health
+                .iter()
+                .find(|h| h.subsystem == sub)
+                .map(|h| h.status.as_str())
+            {
+                Some("ok") => theme::success(),
+                Some("warn" | "warning") => theme::warning(),
+                Some("error") => theme::error(),
+                _ => theme::border_unfocused(),
+            }
+        };
+
+        let status_text = |sub: &str| -> &'static str {
+            match self
+                .health
+                .iter()
+                .find(|h| h.subsystem == sub)
+                .map(|h| h.status.as_str())
+            {
+                Some("ok") => "ok",
+                Some("warn" | "warning") => "warn",
+                Some("error") => "err",
+                _ => "─",
+            }
+        };
+
+        let subsystems = ["wan", "www", "wlan", "lan", "vpn"];
+        let mut primary = vec![Span::raw(" ")];
+        for (i, &sub) in subsystems.iter().take(3).enumerate() {
+            if i > 0 {
+                primary.push(Span::raw("  "));
+            }
+            let dot_color = status_color(sub);
+            primary.push(Span::styled(
+                sub.to_uppercase(),
+                Style::default().fg(theme::text_secondary()),
+            ));
+            primary.push(Span::styled(" ●", Style::default().fg(dot_color)));
+            primary.push(Span::styled(
+                format!(" {}", status_text(sub)),
+                Style::default().fg(dot_color),
+            ));
+        }
+        lines.push(Line::from(primary));
+
+        let mut secondary = vec![Span::raw(" ")];
+        for (i, &sub) in subsystems.iter().skip(3).enumerate() {
+            if i > 0 {
+                secondary.push(Span::raw("  "));
+            }
+            let dot_color = status_color(sub);
+            secondary.push(Span::styled(
+                sub.to_uppercase(),
+                Style::default().fg(theme::text_secondary()),
+            ));
+            secondary.push(Span::styled(" ●", Style::default().fg(dot_color)));
+            secondary.push(Span::styled(
+                format!(" {}", status_text(sub)),
+                Style::default().fg(dot_color),
+            ));
+        }
+        lines.push(Line::from(secondary));
+        lines.push(Line::from(" "));
+
+        let wan_link = self.health.iter().find(|h| h.subsystem == "wan");
+        let wifi_link = self.health.iter().find(|h| h.subsystem == "wlan");
+        let wired_link = self.health.iter().find(|h| h.subsystem == "lan");
+
+        let wan_tx = wan_link.and_then(|h| h.tx_bytes_r).unwrap_or(0);
+        let wan_rx = wan_link.and_then(|h| h.rx_bytes_r).unwrap_or(0);
+        let wlan_tx = wifi_link.and_then(|h| h.tx_bytes_r).unwrap_or(0);
+        let wlan_rx = wifi_link.and_then(|h| h.rx_bytes_r).unwrap_or(0);
+        let lan_tx = wired_link.and_then(|h| h.tx_bytes_r).unwrap_or(0);
+        let lan_rx = wired_link.and_then(|h| h.rx_bytes_r).unwrap_or(0);
+
+        let link_totals = [
+            ("wan", "WAN", wan_tx.saturating_add(wan_rx)),
+            ("wlan", "WLAN", wlan_tx.saturating_add(wlan_rx)),
+            ("lan", "LAN", lan_tx.saturating_add(lan_rx)),
+        ];
+        let max_total = link_totals
+            .iter()
+            .map(|(_, _, total)| *total)
+            .max()
+            .unwrap_or(0);
+
+        let mut push_link_bar = |sub: &str, label: &str, total: u64| {
+            let bar = bytes_fmt::fmt_traffic_bar(total, max_total, bar_width);
+            let rate = if total > 0 {
+                fmt_rate_compact(total)
+            } else {
+                "─".to_owned()
+            };
+            lines.push(Line::from(vec![
+                Span::styled(
+                    format!(" {label:<5}"),
+                    Style::default().fg(theme::text_secondary()),
+                ),
+                Span::styled(bar, Style::default().fg(status_color(sub))),
+                Span::raw(" "),
+                Span::styled(
+                    truncate_text(&rate, content_w.saturating_sub(8 + usize::from(bar_width))),
+                    Style::default()
+                        .fg(theme::accent_secondary())
+                        .add_modifier(Modifier::BOLD),
+                ),
+            ]));
+        };
+
+        for (sub, label, total) in link_totals {
+            push_link_bar(sub, label, total);
+        }
+
+        let total_tx = wan_tx.saturating_add(wlan_tx).saturating_add(lan_tx);
+        let total_rx = wan_rx.saturating_add(wlan_rx).saturating_add(lan_rx);
+        let aggregate = format!(
+            "↑{}  ↓{}",
+            fmt_rate_compact(total_tx),
+            fmt_rate_compact(total_rx)
+        );
+        lines.push(Line::from(vec![
+            Span::styled(" Total", Style::default().fg(theme::text_secondary())),
+            Span::styled(
+                format!(" {}", truncate_text(&aggregate, content_w)),
+                Style::default().fg(theme::info()),
+            ),
+        ]));
+
+        let wlan_ap_count = wifi_link.and_then(|h| h.num_adopted).unwrap_or(0);
+        let lan_sw_count = wired_link.and_then(|h| h.num_adopted).unwrap_or(0);
+        let wireless_clients = self
+            .clients
+            .iter()
+            .filter(|c| c.client_type == ClientType::Wireless)
+            .count();
+        let wired_clients = self
+            .clients
+            .iter()
+            .filter(|c| c.client_type == ClientType::Wired)
+            .count();
+
+        let infra = truncate_text(
+            &format!("AP {wlan_ap_count} · SW {lan_sw_count}"),
+            content_w,
+        );
+        let clients = truncate_text(
+            &format!("WiFi {wireless_clients} · Wired {wired_clients}"),
+            content_w,
+        );
+        lines.push(Line::from(vec![
+            Span::styled(" Infra", Style::default().fg(theme::text_secondary())),
+            Span::styled(
+                format!(" {infra}"),
+                Style::default().fg(theme::accent_secondary()),
+            ),
+        ]));
+        lines.push(Line::from(vec![
+            Span::styled(" Cli  ", Style::default().fg(theme::text_secondary())),
+            Span::styled(
+                format!(" {clients}"),
+                Style::default().fg(theme::accent_secondary()),
+            ),
+        ]));
+
+        frame.render_widget(Paragraph::new(lines), inner);
+    }
+
+    /// Capacity card - CPU/MEM bars, load averages, and fleet counts.
+    #[allow(clippy::cast_possible_truncation)]
+    pub(super) fn render_capacity(&self, frame: &mut Frame, area: Rect) {
+        let block = Block::default()
+            .title(Span::styled(" Capacity ", theme::title_style()))
+            .borders(Borders::ALL)
+            .border_type(BorderType::Rounded)
+            .border_style(theme::border_default());
+
+        let inner = block.inner(area);
+        frame.render_widget(block, area);
+
+        let gateway = self
+            .devices
+            .iter()
+            .find(|d| d.device_type == DeviceType::Gateway);
+        let w = usize::from(inner.width);
+        let content_w = w.saturating_sub(7);
+        let bar_width = u16::try_from(content_w.saturating_sub(9).clamp(6, 18)).unwrap_or(6);
+
+        let pct_bar_color = |pct: f64| -> ratatui::style::Color {
+            if pct > 80.0 {
+                theme::error()
+            } else if pct > 50.0 {
+                theme::warning()
+            } else {
+                theme::accent_secondary()
+            }
+        };
+
+        let mut lines = Vec::new();
+        let mut push_bar = |label: &str, pct: Option<f64>| {
+            let line = if let Some(pct) = pct {
+                let (filled, empty) = bytes_fmt::fmt_pct_bar(pct, bar_width);
+                Line::from(vec![
+                    Span::styled(
+                        format!(" {label:<4}"),
+                        Style::default().fg(theme::text_secondary()),
+                    ),
+                    Span::styled(filled, Style::default().fg(pct_bar_color(pct))),
+                    Span::styled(empty, Style::default().fg(theme::border_unfocused())),
+                    Span::styled(
+                        format!(" {pct:>5.1}%"),
+                        Style::default().fg(theme::text_secondary()),
+                    ),
+                ])
+            } else {
+                Line::from(vec![
+                    Span::styled(
+                        format!(" {label:<4}"),
+                        Style::default().fg(theme::text_secondary()),
+                    ),
+                    Span::styled("─", Style::default().fg(theme::border_unfocused())),
+                ])
+            };
+            lines.push(line);
+        };
+
+        push_bar("CPU", gateway.and_then(|g| g.stats.cpu_utilization_pct));
+        push_bar("MEM", gateway.and_then(|g| g.stats.memory_utilization_pct));
+        lines.push(Line::from(" "));
+
+        if let Some(gw) = gateway
+            && let (Some(l1), Some(l5), Some(l15)) = (
+                gw.stats.load_average_1m,
+                gw.stats.load_average_5m,
+                gw.stats.load_average_15m,
+            )
+        {
+            let load = truncate_text(&format!("{l1:.2} / {l5:.2} / {l15:.2}"), content_w);
+            lines.push(Line::from(vec![
+                Span::styled(" Load ", Style::default().fg(theme::text_secondary())),
+                Span::styled(load, Style::default().fg(theme::accent_secondary())),
+            ]));
+        }
+
+        let total_devices = self.devices.len();
+        let online = self
+            .devices
+            .iter()
+            .filter(|d| d.state == unifly_api::DeviceState::Online)
+            .count();
+        let total_clients = self.clients.len();
+        let wireless = self
+            .clients
+            .iter()
+            .filter(|c| c.client_type == ClientType::Wireless)
+            .count();
+        let wired = self
+            .clients
+            .iter()
+            .filter(|c| c.client_type == ClientType::Wired)
+            .count();
+
+        let dev_summary = truncate_text(
+            &format!("{total_devices} total · {online} online"),
+            content_w,
+        );
+        let cli_summary = truncate_text(
+            &format!("{total_clients} total · {wireless} wifi · {wired} wired"),
+            content_w,
+        );
+
+        lines.push(Line::from(vec![
+            Span::styled(" Dev  ", Style::default().fg(theme::text_secondary())),
+            Span::styled(dev_summary, Style::default().fg(theme::accent_secondary())),
+        ]));
+        lines.push(Line::from(vec![
+            Span::styled(" Cli  ", Style::default().fg(theme::text_secondary())),
+            Span::styled(cli_summary, Style::default().fg(theme::accent_secondary())),
+        ]));
+
+        frame.render_widget(Paragraph::new(lines), inner);
+    }
+
+    /// Networks panel with IPv6 config.
+    #[allow(clippy::cast_possible_truncation, clippy::too_many_lines)]
+    pub(super) fn render_networks(&self, frame: &mut Frame, area: Rect) {
+        let block = Block::default()
+            .title(Span::styled(" Networks ", theme::title_style()))
+            .borders(Borders::ALL)
+            .border_type(BorderType::Rounded)
+            .border_style(theme::border_default());
+
+        let inner = block.inner(area);
+        frame.render_widget(block, area);
+
+        if self.networks.is_empty() {
+            frame.render_widget(
+                Paragraph::new("  No networks")
+                    .style(Style::default().fg(theme::border_unfocused())),
+                inner,
+            );
+            return;
+        }
+
+        let mut sorted: Vec<_> = self.networks.iter().collect();
+        sorted.sort_by_key(|n| n.vlan_id.unwrap_or(0));
+
+        let max_lines = usize::from(inner.height);
+        let mut lines = Vec::new();
+
+        for net in &sorted {
+            if lines.len() >= max_lines {
+                break;
+            }
+
+            let name: String = net.name.chars().take(10).collect();
+            let vlan = net.vlan_id.map_or_else(|| "─".into(), |v| format!("{v}"));
+            let subnet = net.subnet.as_deref().unwrap_or("─");
+
+            // Count clients on this network
+            let client_count = self
+                .clients
+                .iter()
+                .filter(|c| c.vlan.is_some_and(|v| Some(v) == net.vlan_id))
+                .count();
+            let client_str = if client_count > 0 {
+                format!(" {client_count}c")
+            } else {
+                String::new()
+            };
+
+            // Network line: name (cyan), VLAN (coral), subnet (dim), client count
+            lines.push(Line::from(vec![
+                Span::styled(
+                    format!(" {name:<8}"),
+                    Style::default()
+                        .fg(theme::accent_secondary())
+                        .add_modifier(Modifier::BOLD),
+                ),
+                Span::styled(
+                    format!("{vlan:<3}"),
+                    Style::default().fg(theme::accent_tertiary()),
+                ),
+                Span::styled(
+                    subnet.to_string(),
+                    Style::default().fg(theme::text_secondary()),
+                ),
+                Span::styled(client_str, Style::default().fg(theme::warning())),
+            ]));
+
+            // IPv6 sub-line (compact)
+            if lines.len() < max_lines && net.ipv6_enabled {
+                let mode = match net.ipv6_mode {
+                    Some(Ipv6Mode::PrefixDelegation) => "PD",
+                    Some(Ipv6Mode::Static) => "Static",
+                    Some(_) | None => "On",
+                };
+                let prefix = net.ipv6_prefix.as_deref().unwrap_or("─");
+                let mut extras = Vec::new();
+                if net.slaac_enabled {
+                    extras.push("SLAAC");
+                }
+                if net.dhcpv6_enabled {
+                    extras.push("DHCPv6");
+                }
+                let extras_str = if extras.is_empty() {
+                    String::new()
+                } else {
+                    format!(" {}", extras.join("+"))
+                };
+
+                lines.push(Line::from(vec![
+                    Span::styled(" ⬡ ", Style::default().fg(theme::border_unfocused())),
+                    Span::styled(
+                        format!("{mode} {prefix}{extras_str}"),
+                        Style::default().fg(theme::info()),
+                    ),
+                ]));
+            }
+        }
+
+        frame.render_widget(Paragraph::new(lines), inner);
+    }
+
+    /// WiFi / APs panel - tabular layout with header, aligned columns.
+    #[allow(clippy::too_many_lines, clippy::cast_possible_truncation)]
+    pub(super) fn render_wifi_aps(&self, frame: &mut Frame, area: Rect) {
+        let block = Block::default()
+            .title(Span::styled(" WiFi / APs ", theme::title_style()))
+            .borders(Borders::ALL)
+            .border_type(BorderType::Rounded)
+            .border_style(theme::border_default());
+
+        let inner = block.inner(area);
+        frame.render_widget(block, area);
+
+        let aps: Vec<_> = self
+            .devices
+            .iter()
+            .filter(|d| d.device_type == DeviceType::AccessPoint)
+            .collect();
+
+        if aps.is_empty() {
+            frame.render_widget(
+                Paragraph::new("  No APs").style(Style::default().fg(theme::border_unfocused())),
+                inner,
+            );
+            return;
+        }
+
+        let max_rows = usize::from(inner.height);
+        let w = usize::from(inner.width);
+        let mut lines = Vec::new();
+
+        // Check if any AP has radio data for the optional Chan column
+        let has_radios = aps.iter().any(|ap| !ap.radios.is_empty());
+
+        // Column layout: " Name     Cli  Exp [Chan]"
+        let cli_col = 4_usize; // "  XX"
+        let exp_col = 5_usize; // "  XX%"
+        let fixed_cols = 1 + cli_col + exp_col; // leading space + numeric cols
+        let remaining = w.saturating_sub(fixed_cols);
+
+        let (name_width, chan_width) = if has_radios {
+            let nw = remaining.saturating_sub(1).clamp(6, 16);
+            let cw = remaining.saturating_sub(nw + 1);
+            (nw, cw)
+        } else {
+            // No channels - give all space to name
+            (remaining.clamp(6, 24), 0)
+        };
+
+        // ── Header row ──────────────────────────────────────────
+        let mut hdr = vec![
+            Span::styled(
+                format!(" {:<name_width$}", "AP"),
+                Style::default()
+                    .fg(theme::border_unfocused())
+                    .add_modifier(Modifier::BOLD),
+            ),
+            Span::styled(
+                format!("{:>cli_col$}", "Cli"),
+                Style::default()
+                    .fg(theme::border_unfocused())
+                    .add_modifier(Modifier::BOLD),
+            ),
+            Span::styled(
+                format!("{:>exp_col$}", "Exp"),
+                Style::default()
+                    .fg(theme::border_unfocused())
+                    .add_modifier(Modifier::BOLD),
+            ),
+        ];
+        if chan_width >= 4 {
+            hdr.push(Span::styled(
+                format!(" {:<chan_width$}", "Chan"),
+                Style::default()
+                    .fg(theme::border_unfocused())
+                    .add_modifier(Modifier::BOLD),
+            ));
+        }
+        lines.push(Line::from(hdr));
+
+        // Sort by client count descending
+        let mut aps_sorted: Vec<_> = aps.iter().collect();
+        aps_sorted.sort_by(|a, b| {
+            b.client_count
+                .unwrap_or(0)
+                .cmp(&a.client_count.unwrap_or(0))
+        });
+
+        for ap in &aps_sorted {
+            if lines.len() >= max_rows {
+                break;
+            }
+
+            let ap_name: String = ap
+                .name
+                .as_deref()
+                .unwrap_or("AP")
+                .chars()
+                .take(name_width)
+                .collect();
+            let cli = ap.client_count.unwrap_or(0);
+
+            // Channel summary (compact: "5G:44 6G:149")
+            let channels: Vec<String> = ap
+                .radios
+                .iter()
+                .map(|r| {
+                    let ch = r.channel.map_or_else(|| "─".into(), |c| c.to_string());
+                    if r.frequency_ghz >= 5.9 {
+                        format!("6G:{ch}")
+                    } else if r.frequency_ghz >= 4.9 {
+                        format!("5G:{ch}")
+                    } else {
+                        format!("2G:{ch}")
+                    }
+                })
+                .collect();
+            let ch_str: String = channels.join(" ").chars().take(chan_width).collect();
+
+            // Average WiFi experience from connected clients
+            let satisfaction: Vec<u8> = self
+                .clients
+                .iter()
+                .filter(|c| {
+                    c.uplink_device_mac.as_ref() == Some(&ap.mac)
+                        || c.wireless
+                            .as_ref()
+                            .and_then(|wl| wl.bssid.as_ref())
+                            .is_some_and(|bssid| *bssid == ap.mac)
+                })
+                .filter_map(|c| c.wireless.as_ref()?.satisfaction)
+                .collect();
+            let avg_exp = if satisfaction.is_empty() {
+                None
+            } else {
+                Some(
+                    satisfaction.iter().map(|s| u32::from(*s)).sum::<u32>()
+                        / u32::try_from(satisfaction.len()).unwrap_or(1),
+                )
+            };
+
+            let exp_color = |e: u32| -> ratatui::style::Color {
+                if e >= 80 {
+                    theme::success()
+                } else if e >= 50 {
+                    theme::warning()
+                } else {
+                    theme::error()
+                }
+            };
+
+            let mut spans = vec![
+                Span::styled(
+                    format!(" {ap_name:<name_width$}"),
+                    Style::default()
+                        .fg(theme::accent_secondary())
+                        .add_modifier(Modifier::BOLD),
+                ),
+                Span::styled(
+                    format!("{cli:>cli_col$}"),
+                    Style::default().fg(theme::warning()),
+                ),
+            ];
+
+            if let Some(exp) = avg_exp {
+                spans.push(Span::styled(
+                    format!("{exp:>4}%"),
+                    Style::default().fg(exp_color(exp)),
+                ));
+            } else {
+                spans.push(Span::styled(
+                    format!("{:>exp_col$}", "─"),
+                    Style::default().fg(theme::border_unfocused()),
+                ));
+            }
+
+            if chan_width >= 4 {
+                spans.push(Span::styled(
+                    format!(" {ch_str}"),
+                    Style::default().fg(theme::border_unfocused()),
+                ));
+            }
+
+            lines.push(Line::from(spans));
+        }
+
+        frame.render_widget(Paragraph::new(lines), inner);
+    }
+
+    /// Top Clients panel with proportional traffic bars.
+    #[allow(clippy::cast_possible_truncation)]
+    pub(super) fn render_top_clients(&self, frame: &mut Frame, area: Rect) {
+        let block = Block::default()
+            .title(Span::styled(" Top Clients ", theme::title_style()))
+            .borders(Borders::ALL)
+            .border_type(BorderType::Rounded)
+            .border_style(theme::border_default());
+
+        let inner = block.inner(area);
+        frame.render_widget(block, area);
+
+        let max_rows = usize::from(inner.height);
+        let mut sorted: Vec<_> = self.clients.iter().collect();
+        sorted.sort_by(|a, b| {
+            let a_total = a.tx_bytes.unwrap_or(0) + a.rx_bytes.unwrap_or(0);
+            let b_total = b.tx_bytes.unwrap_or(0) + b.rx_bytes.unwrap_or(0);
+            b_total.cmp(&a_total)
+        });
+
+        let visible: Vec<_> = sorted.iter().take(max_rows.min(8)).collect();
+
+        let max_traffic = visible
+            .first()
+            .map_or(1, |c| c.tx_bytes.unwrap_or(0) + c.rx_bytes.unwrap_or(0))
+            .max(1);
+
+        // Layout:  " name  bar  traffic "
+        // traffic label is 7 chars max (e.g. " 33.1G"), padding is 3
+        let traffic_width = 7u16;
+        let padding = 3u16;
+
+        // Dynamic name width: fit the longest visible name up to a cap
+        let longest_name = visible
+            .iter()
+            .map(|c| {
+                c.name
+                    .as_deref()
+                    .or(c.hostname.as_deref())
+                    .unwrap_or("unknown")
+                    .len()
+            })
+            .max()
+            .unwrap_or(8);
+        let name_cap = usize::from(inner.width.saturating_sub(traffic_width + padding + 4));
+        let name_width = longest_name.min(name_cap).max(8);
+
+        // Bar gets whatever is left
+        let bar_width = inner.width.saturating_sub(
+            u16::try_from(name_width).unwrap_or(u16::MAX) + traffic_width + padding + 1,
+        );
+
+        let mut lines = Vec::new();
+        for client in &visible {
+            let name = client
+                .name
+                .as_deref()
+                .or(client.hostname.as_deref())
+                .unwrap_or("unknown");
+            let total = client.tx_bytes.unwrap_or(0) + client.rx_bytes.unwrap_or(0);
+            let traffic = bytes_fmt::fmt_bytes_short(total);
+            let bar = bytes_fmt::fmt_traffic_bar(total, max_traffic, bar_width);
+
+            let display_name: String = name.chars().take(name_width).collect();
+            lines.push(Line::from(vec![
+                Span::styled(
+                    format!(" {display_name:<name_width$}"),
+                    Style::default().fg(theme::accent_secondary()),
+                ),
+                Span::styled(bar, Style::default().fg(theme::accent_primary())),
+                Span::styled(
+                    format!(" {traffic:>6}"),
+                    Style::default().fg(theme::text_secondary()),
+                ),
+            ]));
+        }
+
+        if lines.is_empty() {
+            lines.push(Line::from(Span::styled(
+                "  No clients",
+                Style::default().fg(theme::border_unfocused()),
+            )));
+        }
+
+        frame.render_widget(Paragraph::new(lines), inner);
+    }
+
+    /// Compact Recent Events - single column, most recent first.
+    #[allow(clippy::cast_possible_truncation)]
+    pub(super) fn render_recent_events(&self, frame: &mut Frame, area: Rect) {
+        let event_count = self.events.len();
+        let title = Line::from(vec![Span::styled(" Recent Events ", theme::title_style())]);
+        let footer = if event_count > 0 {
+            Line::from(vec![Span::styled(
+                format!(" ↓ {event_count} event log "),
+                Style::default().fg(theme::border_unfocused()),
+            )])
+        } else {
+            Line::from("")
+        };
+
+        let block = Block::default()
+            .title(title)
+            .title_bottom(footer)
+            .borders(Borders::ALL)
+            .border_type(BorderType::Rounded)
+            .border_style(theme::border_default());
+
+        let inner = block.inner(area);
+        frame.render_widget(block, area);
+
+        let max_rows = usize::from(inner.height);
+        let msg_width = usize::from(inner.width.saturating_sub(10));
+
+        let mut lines = Vec::new();
+        if self.events.is_empty() {
+            lines.push(Line::from(Span::styled(
+                " No events",
+                Style::default().fg(theme::border_unfocused()),
+            )));
+        } else {
+            for evt in self.events.iter().rev().take(max_rows) {
+                let time_str = evt.timestamp.format("%H:%M").to_string();
+                let severity_color = match evt.severity {
+                    EventSeverity::Error | EventSeverity::Critical => theme::error(),
+                    EventSeverity::Warning => theme::warning(),
+                    EventSeverity::Info => theme::accent_secondary(),
+                    _ => theme::text_secondary(),
+                };
+                let dot_color = match evt.severity {
+                    EventSeverity::Error | EventSeverity::Critical => theme::error(),
+                    EventSeverity::Warning => theme::warning(),
+                    _ => theme::success(),
+                };
+                let msg: String = evt.message.chars().take(msg_width).collect();
+                lines.push(Line::from(vec![
+                    Span::raw(" "),
+                    Span::styled(time_str, Style::default().fg(theme::warning())),
+                    Span::styled(" ● ", Style::default().fg(dot_color)),
+                    Span::styled(msg, Style::default().fg(severity_color)),
+                ]));
+            }
+        }
+
+        frame.render_widget(Paragraph::new(lines), inner);
+    }
+
+    pub(super) fn render_dashboard(&self, frame: &mut Frame, area: Rect) {
+        let refresh_str = self.refresh_age_str();
+        let title_line = Line::from(vec![
+            Span::styled(" UniFi Dashboard ", theme::title_style()),
+            Span::styled(
+                format!(" [{refresh_str}] "),
+                Style::default().fg(theme::border_unfocused()),
+            ),
+        ]);
+
+        let block = Block::default()
+            .title(title_line)
+            .borders(Borders::ALL)
+            .border_type(BorderType::Rounded)
+            .border_style(if self.focused {
+                theme::border_focused()
+            } else {
+                theme::border_default()
+            });
+
+        let inner = block.inner(area);
+        frame.render_widget(block, area);
+
+        if inner.width < 40 || inner.height < 10 {
+            let summary = format!(
+                "Devices: {} │ Clients: {}",
+                self.devices.len(),
+                self.clients.len()
+            );
+            frame.render_widget(Paragraph::new(summary).style(theme::table_row()), inner);
+            return;
+        }
+
+        // Proportional 4-row layout - all panels scale with terminal height.
+        // Ratios: chart ~28%, info panels ~32%, networks ~26%, events ~14%.
+        let rows = Layout::vertical([
+            Constraint::Percentage(28), // Row 1: WAN Traffic Chart
+            Constraint::Percentage(32), // Row 2: Gateway | Connectivity | Capacity
+            Constraint::Percentage(26), // Row 3: Networks | WiFi / APs | Top Clients
+            Constraint::Percentage(14), // Row 4: Recent Events
+        ])
+        .split(inner);
+
+        self.render_traffic_chart(frame, rows[0]);
+
+        let mid_row = Layout::horizontal([
+            Constraint::Percentage(33), // Gateway panel
+            Constraint::Percentage(33), // Connectivity panel
+            Constraint::Percentage(34), // Capacity panel
+        ])
+        .split(rows[1]);
+
+        self.render_gateway(frame, mid_row[0]);
+        self.render_system_health(frame, mid_row[1]);
+        self.render_capacity(frame, mid_row[2]);
+
+        let bottom_row = Layout::horizontal([
+            Constraint::Percentage(33), // Networks
+            Constraint::Percentage(33), // WiFi / APs
+            Constraint::Percentage(34), // Top Clients
+        ])
+        .split(rows[2]);
+
+        self.render_networks(frame, bottom_row[0]);
+        self.render_wifi_aps(frame, bottom_row[1]);
+        self.render_top_clients(frame, bottom_row[2]);
+
+        self.render_recent_events(frame, rows[3]);
+    }
+}
