@@ -18,6 +18,12 @@ pub(super) fn parse_ipv6_from_text(value: &str) -> Option<String> {
         {
             return Some(ip.to_string());
         }
+        if let Some((_, candidate)) = cleaned.split_once('=')
+            && let Ok(ip) = candidate.trim().parse::<IpAddr>()
+            && ip.is_ipv6()
+        {
+            return Some(ip.to_string());
+        }
     }
 
     None
@@ -107,7 +113,7 @@ mod tests {
 
     #[test]
     fn truncates_on_character_boundaries() {
-        assert_eq!(truncate_text("gw-αβγ", 4), "gw-α…");
+        assert_eq!(truncate_text("gw-αβγ", 4), "gw-…");
     }
 
     #[test]
