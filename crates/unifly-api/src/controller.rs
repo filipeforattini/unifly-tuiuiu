@@ -39,9 +39,9 @@ mod subscriptions;
 mod support;
 
 use self::support::{
-    build_transport, client_mac, convert_health_summaries, device_mac,
-    parse_legacy_device_wan_ipv6, require_integration, require_legacy, require_uuid,
-    resolve_site_id, tls_to_transport, unsupported,
+    build_transport, client_mac, convert_health_summaries, device_mac, integration_client_context,
+    integration_site_context, parse_legacy_device_wan_ipv6, require_integration, require_legacy,
+    require_uuid, resolve_site_id, tls_to_transport,
 };
 
 const COMMAND_CHANNEL_SIZE: usize = 64;

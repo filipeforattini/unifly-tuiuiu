@@ -160,6 +160,34 @@ pub(super) fn require_integration<'a>(
     Ok((client, sid))
 }
 
+pub(super) async fn integration_client_context(
+    controller: &Controller,
+    operation: &str,
+) -> Result<Arc<IntegrationClient>, CoreError> {
+    controller
+        .inner
+        .integration_client
+        .lock()
+        .await
+        .as_ref()
+        .cloned()
+        .ok_or_else(|| unsupported(operation))
+}
+
+pub(super) async fn integration_site_context(
+    controller: &Controller,
+    operation: &str,
+) -> Result<(Arc<IntegrationClient>, uuid::Uuid), CoreError> {
+    let client = integration_client_context(controller, operation).await?;
+    let site_id = controller
+        .inner
+        .site_id
+        .lock()
+        .await
+        .ok_or_else(|| unsupported(operation))?;
+    Ok((client, site_id))
+}
+
 pub(super) fn unsupported(operation: &str) -> CoreError {
     CoreError::Unsupported {
         operation: operation.into(),
