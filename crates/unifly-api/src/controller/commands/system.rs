@@ -11,6 +11,13 @@ pub(super) async fn route(ctx: &CommandContext, cmd: Command) -> Result<CommandR
     let site_id = ctx.site_id;
 
     match cmd {
+        Command::SetDpiEnabled { enabled } => {
+            let legacy = require_legacy(legacy)?;
+            legacy
+                .set_site_setting("dpi", &serde_json::json!({ "enabled": enabled }))
+                .await?;
+            Ok(CommandResult::Ok)
+        }
         Command::ArchiveAlarm { id } => {
             let legacy = require_legacy(legacy)?;
             legacy.archive_alarm(&id.to_string()).await?;

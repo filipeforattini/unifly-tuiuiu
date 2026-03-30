@@ -1,7 +1,7 @@
 //! DPI reference data command handlers.
 
 use tabled::Tabled;
-use unifly_api::{Controller, DpiApplication, DpiCategory};
+use unifly_api::{Command as CoreCommand, Controller, DpiApplication, DpiCategory};
 
 use crate::cli::args::{DpiArgs, DpiCommand, GlobalOpts};
 use crate::cli::error::CliError;
@@ -82,6 +82,34 @@ pub async fn handle(
                 |a| a.id.to_string(),
             );
             output::print_output(&out, global.quiet);
+            Ok(())
+        }
+
+        DpiCommand::Status => {
+            let enabled = controller.is_dpi_enabled().await?;
+            if !global.quiet {
+                eprintln!("DPI is {}", if enabled { "enabled" } else { "disabled" });
+            }
+            Ok(())
+        }
+
+        DpiCommand::Enable => {
+            controller
+                .execute(CoreCommand::SetDpiEnabled { enabled: true })
+                .await?;
+            if !global.quiet {
+                eprintln!("DPI enabled");
+            }
+            Ok(())
+        }
+
+        DpiCommand::Disable => {
+            controller
+                .execute(CoreCommand::SetDpiEnabled { enabled: false })
+                .await?;
+            if !global.quiet {
+                eprintln!("DPI disabled");
+            }
             Ok(())
         }
 

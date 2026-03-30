@@ -85,6 +85,7 @@ pub(super) async fn route_command(
         | Command::CreateTrafficMatchingList(_)
         | Command::UpdateTrafficMatchingList { .. }
         | Command::DeleteTrafficMatchingList { .. }) => policy::route(&ctx, cmd).await,
+        cmd @ Command::SetDpiEnabled { .. } => system::route(&ctx, cmd).await,
         cmd @ (Command::ArchiveAlarm { .. }
         | Command::ArchiveAllAlarms
         | Command::CreateBackup

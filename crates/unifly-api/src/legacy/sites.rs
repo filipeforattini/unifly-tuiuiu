@@ -20,6 +20,15 @@ impl LegacyClient {
         self.get(url).await
     }
 
+    /// Get all site settings.
+    ///
+    /// `GET /api/s/{site}/rest/setting`
+    pub async fn get_site_settings(&self) -> Result<Vec<serde_json::Value>, Error> {
+        let url = self.site_url("rest/setting");
+        debug!("fetching site settings");
+        self.get(url).await
+    }
+
     /// Create a new site.
     ///
     /// `POST /api/s/{site}/cmd/sitemgr` with `{"cmd": "add-site", "name": "...", "desc": "..."}`
@@ -92,6 +101,20 @@ impl LegacyClient {
                 }),
             )
             .await?;
+        Ok(())
+    }
+
+    /// Update a site setting.
+    ///
+    /// `PUT /api/s/{site}/set/setting/{key}` with an arbitrary JSON body.
+    pub async fn set_site_setting(
+        &self,
+        key: &str,
+        body: &serde_json::Value,
+    ) -> Result<(), Error> {
+        let url = self.site_url(&format!("set/setting/{key}"));
+        debug!(key, "updating site setting");
+        let _: Vec<serde_json::Value> = self.put(url, body).await?;
         Ok(())
     }
 

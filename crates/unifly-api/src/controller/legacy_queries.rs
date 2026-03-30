@@ -120,6 +120,19 @@ impl Controller {
         Ok(legacy.list_users().await?)
     }
 
+    pub async fn is_dpi_enabled(&self) -> Result<bool, CoreError> {
+        let guard = self.inner.legacy_client.lock().await;
+        let legacy = require_legacy(guard.as_ref())?;
+        let settings = legacy.get_site_settings().await?;
+        let enabled = settings
+            .iter()
+            .find(|s| s.get("key").and_then(|v| v.as_str()) == Some("dpi"))
+            .and_then(|s| s.get("enabled"))
+            .and_then(serde_json::Value::as_bool)
+            .unwrap_or(false);
+        Ok(enabled)
+    }
+
     pub async fn list_alarms(&self) -> Result<Vec<Alarm>, CoreError> {
         let guard = self.inner.legacy_client.lock().await;
         let legacy = require_legacy(guard.as_ref())?;
