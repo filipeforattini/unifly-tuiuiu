@@ -13,15 +13,25 @@ pub fn apply_list_args<T>(
         .map(str::trim)
         .filter(|expr| !expr.is_empty());
 
-    let filtered = items.into_iter().filter(|item| match filter {
-        Some(expr) => matches_filter(item, expr),
-        None => true,
-    });
+    let filtered: Vec<T> = items
+        .into_iter()
+        .filter(|item| match filter {
+            Some(expr) => matches_filter(item, expr),
+            None => true,
+        })
+        .skip(offset)
+        .collect();
 
     if list.all {
-        filtered.skip(offset).collect()
+        filtered
+    } else if filtered.len() > limit {
+        eprintln!(
+            "Showing {limit} of {} results. Use --all (-a) to see everything.",
+            filtered.len()
+        );
+        filtered.into_iter().take(limit).collect()
     } else {
-        filtered.skip(offset).take(limit).collect()
+        filtered
     }
 }
 
