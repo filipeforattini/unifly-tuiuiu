@@ -24,6 +24,7 @@ pub(super) fn centered_rect(area: Rect, cols: u16, rows: u16) -> Rect {
 }
 
 impl SettingsScreen {
+    #[allow(clippy::unused_self)]
     pub(super) fn render_centered_panel(&self, frame: &mut Frame, area: Rect) -> Rect {
         let panel = panel_rect(area);
 

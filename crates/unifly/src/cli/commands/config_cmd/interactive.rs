@@ -89,6 +89,7 @@ fn store_secret(key: &str, label: &str) -> Result<(), CliError> {
     Ok(())
 }
 
+#[allow(clippy::too_many_lines)]
 pub(super) fn run_init() -> Result<(), CliError> {
     let config_path = crate::config::config_path();
     eprintln!("✨ UniFi CLI — configuration wizard");

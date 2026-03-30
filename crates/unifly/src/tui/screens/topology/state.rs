@@ -126,6 +126,7 @@ impl TopologyScreen {
 }
 
 #[cfg(test)]
+#[allow(clippy::float_cmp)]
 mod tests {
     use std::sync::Arc;
 
@@ -141,7 +142,6 @@ mod tests {
             DeviceType::Gateway => "Gateway",
             DeviceType::Switch => "Switch",
             DeviceType::AccessPoint => "AccessPoint",
-            DeviceType::Other => "Other",
             _ => "Other",
         };
 

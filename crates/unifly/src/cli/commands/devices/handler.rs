@@ -198,7 +198,7 @@ pub(super) async fn handle(
             let tags = util::apply_list_args(
                 controller.list_device_tags().await?,
                 &list,
-                |value, filter| util::matches_json_filter(value, filter),
+                util::matches_json_filter,
             );
             let out = output::render_list(
                 &global.output,

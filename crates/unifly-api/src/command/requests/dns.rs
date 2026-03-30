@@ -113,7 +113,7 @@ mod tests {
             "value": "192.168.1.20",
             "ttlSeconds": 120
         }))
-        .unwrap();
+        .expect("dns policy request should deserialize");
 
         assert_eq!(request.ttl_seconds, Some(120));
     }

@@ -66,11 +66,11 @@ impl Component for SettingsScreen {
     }
 
     fn handle_key_event(&mut self, key: KeyEvent) -> Result<Option<Action>> {
-        self.handle_key_input(key)
+        Ok(self.handle_key_input(key))
     }
 
     fn handle_mouse_event(&mut self, mouse: MouseEvent) -> Result<Option<Action>> {
-        self.handle_mouse_input(mouse)
+        Ok(self.handle_mouse_input(mouse))
     }
 
     fn update(&mut self, action: &Action) -> Result<Option<Action>> {

@@ -1,17 +1,16 @@
 use super::DevicesScreen;
 
-use color_eyre::eyre::Result;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
 use crate::tui::action::{Action, DeviceDetailTab};
 
 impl DevicesScreen {
-    pub(super) fn handle_key_input(&mut self, key: KeyEvent) -> Result<Option<Action>> {
+    pub(super) fn handle_key_input(&mut self, key: KeyEvent) -> Option<Action> {
         if self.detail_open {
-            return Ok(self.handle_detail_key(key));
+            return self.handle_detail_key(key);
         }
 
-        let action = match key.code {
+        match key.code {
             KeyCode::Char('j') | KeyCode::Down => {
                 self.move_selection(1);
                 None
@@ -40,9 +39,7 @@ impl DevicesScreen {
             KeyCode::Char('R') => self.current_action_device_id().map(Action::RequestRestart),
             KeyCode::Char('L') => self.current_action_device_id().map(Action::RequestLocate),
             _ => None,
-        };
-
-        Ok(action)
+        }
     }
 
     pub(super) fn apply_action(&mut self, action: &Action) {

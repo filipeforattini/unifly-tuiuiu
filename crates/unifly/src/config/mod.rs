@@ -161,11 +161,10 @@ fn default_auth_mode() -> String {
 
 /// Resolve the config file path via XDG conventions (consistent across platforms).
 pub fn config_path() -> PathBuf {
-    let base = std::env::var("XDG_CONFIG_HOME")
-        .map(PathBuf::from)
-        .unwrap_or_else(|_| {
-            PathBuf::from(std::env::var("HOME").unwrap_or_else(|_| ".".into())).join(".config")
-        });
+    let base = std::env::var("XDG_CONFIG_HOME").map_or_else(
+        |_| PathBuf::from(std::env::var("HOME").unwrap_or_else(|_| ".".into())).join(".config"),
+        PathBuf::from,
+    );
     base.join("unifly").join("config.toml")
 }
 

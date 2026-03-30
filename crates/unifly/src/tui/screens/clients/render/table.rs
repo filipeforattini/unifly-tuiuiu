@@ -93,7 +93,7 @@ pub(super) fn render_screen(screen: &ClientsScreen, frame: &mut Frame, area: Rec
         .header(header)
         .row_highlight_style(theme::table_selected());
 
-    let mut state = screen.table_state.clone();
+    let mut state = screen.table_state;
     frame.render_stateful_widget(table, layout[1], &mut state);
 
     let hints = Line::from(vec![
@@ -117,6 +117,7 @@ pub(super) fn render_screen(screen: &ClientsScreen, frame: &mut Frame, area: Rec
     }
 }
 
+#[allow(clippy::too_many_lines)]
 fn render_table_row(
     screen: &ClientsScreen,
     index: usize,
@@ -170,8 +171,7 @@ fn render_table_row(
         || "─".into(),
         |ts| {
             let dur = chrono::Utc::now().signed_duration_since(ts);
-            #[allow(clippy::cast_sign_loss)]
-            let secs = dur.num_seconds().max(0) as u64;
+            let secs = u64::try_from(dur.num_seconds().max(0)).unwrap_or_default();
             bytes_fmt::fmt_uptime(secs)
         },
     );

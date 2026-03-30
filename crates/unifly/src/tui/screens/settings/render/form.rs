@@ -63,6 +63,7 @@ impl SettingsScreen {
         );
     }
 
+    #[allow(clippy::unused_self)]
     pub(super) fn render_toggle(
         &self,
         frame: &mut Frame,

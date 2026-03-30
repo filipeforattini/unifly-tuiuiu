@@ -1,19 +1,18 @@
 use super::NetworksScreen;
 use super::state::NetworkEditState;
 
-use color_eyre::eyre::Result;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
 use crate::tui::action::Action;
 
 impl NetworksScreen {
     #[allow(clippy::too_many_lines, clippy::cognitive_complexity)]
-    pub(super) fn handle_key_input(&mut self, key: KeyEvent) -> Result<Option<Action>> {
+    pub(super) fn handle_key_input(&mut self, key: KeyEvent) -> Option<Action> {
         if self.edit_state.is_some() {
-            return Ok(self.handle_edit_key(key));
+            return self.handle_edit_key(key);
         }
 
-        let action = match key.code {
+        match key.code {
             KeyCode::Char('j') | KeyCode::Down => {
                 self.move_selection(1);
                 None
@@ -56,9 +55,7 @@ impl NetworksScreen {
                 None
             }
             _ => None,
-        };
-
-        Ok(action)
+        }
     }
 
     fn handle_edit_key(&mut self, key: KeyEvent) -> Option<Action> {

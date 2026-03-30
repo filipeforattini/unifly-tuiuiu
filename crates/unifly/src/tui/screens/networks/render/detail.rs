@@ -8,6 +8,7 @@ use unifly_api::Network;
 
 use crate::tui::theme;
 
+#[allow(clippy::too_many_lines)]
 pub(super) fn render_detail(frame: &mut Frame, area: Rect, network: &Network) {
     let block = Block::default()
         .title(format!(" {} — Detail ", network.name))

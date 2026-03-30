@@ -1,4 +1,14 @@
-use super::*;
+use std::net::Ipv6Addr;
+use std::sync::Arc;
+
+use crate::config::{ControllerConfig, TlsVerification};
+use crate::core_error::CoreError;
+use crate::model::{EntityId, HealthSummary, MacAddress};
+use crate::store::DataStore;
+use crate::transport::{TlsMode, TransportConfig};
+use crate::{IntegrationClient, LegacyClient};
+
+use super::Controller;
 
 fn parse_ipv6_text(raw: &str) -> Option<Ipv6Addr> {
     let candidate = raw.trim().split('/').next().unwrap_or(raw).trim();
@@ -137,9 +147,9 @@ pub(super) fn require_uuid(id: &EntityId) -> Result<uuid::Uuid, CoreError> {
     })
 }
 
-pub(super) fn require_legacy<'a>(
-    legacy: Option<&'a Arc<LegacyClient>>,
-) -> Result<&'a LegacyClient, CoreError> {
+pub(super) fn require_legacy(
+    legacy: Option<&Arc<LegacyClient>>,
+) -> Result<&LegacyClient, CoreError> {
     legacy
         .map(Arc::as_ref)
         .ok_or_else(|| CoreError::Unsupported {

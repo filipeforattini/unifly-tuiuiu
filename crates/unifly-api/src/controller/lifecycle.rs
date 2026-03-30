@@ -1,4 +1,17 @@
-use super::*;
+use std::sync::Arc;
+
+use tokio::sync::mpsc;
+use tokio::task::JoinHandle;
+use tokio_util::sync::CancellationToken;
+use tracing::{debug, info, warn};
+
+use crate::config::AuthCredentials;
+use crate::core_error::CoreError;
+use crate::websocket::{ReconnectConfig, WebSocketHandle};
+use crate::{IntegrationClient, LegacyClient};
+
+use super::support::{build_transport, resolve_site_id, tls_to_transport};
+use super::{COMMAND_CHANNEL_SIZE, ConnectionState, Controller, refresh};
 
 impl Controller {
     // ── Connection lifecycle ─────────────────────────────────────

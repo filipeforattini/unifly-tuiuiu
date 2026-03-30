@@ -1,4 +1,6 @@
-use super::super::*;
+use crate::core_error::CoreError;
+
+use super::super::Controller;
 
 impl Controller {
     pub async fn list_pending_devices(&self) -> Result<Vec<serde_json::Value>, CoreError> {

@@ -4,29 +4,18 @@
 // Handles authentication, background refresh, command routing,
 // and reactive data streaming through the DataStore.
 
-use std::net::Ipv6Addr;
 use std::sync::Arc;
 
+use crate::command::{Command, CommandEnvelope, CommandResult};
+use crate::config::ControllerConfig;
+use crate::core_error::CoreError;
+use crate::model::Event;
+use crate::store::DataStore;
+use crate::websocket::WebSocketHandle;
+use crate::{IntegrationClient, LegacyClient};
 use tokio::sync::{Mutex, broadcast, mpsc, watch};
 use tokio::task::JoinHandle;
 use tokio_util::sync::CancellationToken;
-use tracing::{debug, info, warn};
-
-use crate::command::{Command, CommandEnvelope, CommandResult};
-use crate::config::{AuthCredentials, ControllerConfig, TlsVerification};
-use crate::core_error::CoreError;
-use crate::model::{
-    AclRule, Admin, Alarm, Client, Country, Device, DnsPolicy, DpiApplication, DpiCategory,
-    EntityId, Event, FirewallPolicy, FirewallZone, HealthSummary, MacAddress, Network,
-    RadiusProfile, Site, SysInfo, SystemInfo, TrafficMatchingList, Voucher, VpnServer, VpnTunnel,
-    WanInterface, WifiBroadcast,
-};
-use crate::store::{DataStore, event_storage_key};
-use crate::stream::EntityStream;
-
-use crate::transport::{TlsMode, TransportConfig};
-use crate::websocket::{ReconnectConfig, WebSocketHandle};
-use crate::{IntegrationClient, LegacyClient};
 
 mod commands;
 mod legacy_queries;
@@ -39,9 +28,8 @@ mod subscriptions;
 mod support;
 
 use self::support::{
-    build_transport, client_mac, convert_health_summaries, device_mac, integration_client_context,
-    integration_site_context, parse_legacy_device_wan_ipv6, require_integration, require_legacy,
-    require_uuid, resolve_site_id, tls_to_transport,
+    client_mac, device_mac, integration_client_context, integration_site_context,
+    require_integration, require_legacy, require_uuid,
 };
 
 const COMMAND_CHANNEL_SIZE: usize = 64;

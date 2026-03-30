@@ -26,7 +26,7 @@ impl App {
         }
 
         if self.search_active {
-            return self.handle_search_key_event(key);
+            return Ok(self.handle_search_key_event(key));
         }
 
         if self.help_visible {
@@ -65,8 +65,8 @@ impl App {
         Ok(None)
     }
 
-    fn handle_search_key_event(&mut self, key: KeyEvent) -> Result<Option<Action>> {
-        Ok(match key.code {
+    fn handle_search_key_event(&mut self, key: KeyEvent) -> Option<Action> {
+        match key.code {
             KeyCode::Esc => {
                 self.search_query.clear();
                 Some(Action::CloseSearch)
@@ -81,7 +81,7 @@ impl App {
                 Some(Action::SearchInput(self.search_query.clone()))
             }
             _ => None,
-        })
+        }
     }
 
     fn handle_global_key_event(&self, key: KeyEvent) -> Option<Action> {

@@ -88,10 +88,10 @@ pub(super) fn render_screen(screen: &NetworksScreen, frame: &mut Frame, area: Re
     ]);
     frame.render_widget(Paragraph::new(hints), layout[1]);
 
-    if let Some(detail_area) = detail_area {
-        if let Some(network) = screen.networks.get(selected_idx) {
-            render_detail(frame, detail_area, network);
-        }
+    if let Some(detail_area) = detail_area
+        && let Some(network) = screen.networks.get(selected_idx)
+    {
+        render_detail(frame, detail_area, network);
     }
 
     if let Some(edit) = screen.edit_state.as_ref() {

@@ -1,4 +1,14 @@
-use super::*;
+use std::sync::Arc;
+
+use tokio::sync::{broadcast, watch};
+
+use crate::model::{
+    AclRule, Client, Device, DnsPolicy, Event, FirewallPolicy, FirewallZone, HealthSummary,
+    Network, Site, TrafficMatchingList, Voucher, WifiBroadcast,
+};
+use crate::stream::EntityStream;
+
+use super::{ConnectionState, Controller};
 
 impl Controller {
     // ── State observation ────────────────────────────────────────

@@ -43,7 +43,7 @@ mod tests {
             "entries": ["10.0.0.0/8"],
             "items": [{"type": "subnet", "value": "10.0.0.0/8"}]
         }))
-        .unwrap();
+        .expect("traffic matching list request should deserialize");
 
         assert_eq!(request.list_type, "IPV4");
         assert_eq!(request.raw_items.as_ref().map(std::vec::Vec::len), Some(1));

@@ -10,7 +10,7 @@ fn acl_rule_type_name(rule_type: &AclRuleType) -> &'static str {
     }
 }
 
-fn map_acl_action(action: AclAction) -> FirewallAction {
+fn map_acl_action(action: &AclAction) -> FirewallAction {
     match action {
         AclAction::Allow => FirewallAction::Allow,
         AclAction::Block => FirewallAction::Block,
@@ -52,7 +52,7 @@ pub(super) fn build_acl_create_request(
     Ok(CreateAclRuleRequest {
         name,
         rule_type: acl_rule_type_name(&rule_type).into(),
-        action: map_acl_action(action),
+        action: map_acl_action(&action),
         source_zone_id,
         destination_zone_id,
         description: None,
@@ -70,7 +70,7 @@ pub(super) fn build_acl_create_request(
 pub(super) fn build_acl_update_request(
     name: Option<String>,
     rule_type: Option<AclRuleType>,
-    action: Option<AclAction>,
+    action: Option<&AclAction>,
     source_zone: Option<String>,
     dest_zone: Option<String>,
     protocol: Option<String>,
@@ -142,7 +142,7 @@ mod tests {
         let update = build_acl_update_request(
             Some("Updated".into()),
             Some(crate::cli::args::AclRuleType::Ipv4),
-            Some(crate::cli::args::AclAction::Allow),
+            Some(&crate::cli::args::AclAction::Allow),
             Some("src-zone".into()),
             Some("dst-zone".into()),
             Some("UDP".into()),

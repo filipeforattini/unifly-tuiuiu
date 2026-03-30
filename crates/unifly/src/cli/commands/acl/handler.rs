@@ -106,7 +106,7 @@ pub(super) async fn handle(
                 build_acl_update_request(
                     name,
                     rule_type,
-                    action,
+                    action.as_ref(),
                     source_zone,
                     dest_zone,
                     protocol,

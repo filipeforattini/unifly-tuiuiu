@@ -1,17 +1,16 @@
 use super::ClientsScreen;
 
-use color_eyre::eyre::Result;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
 use crate::tui::action::Action;
 
 impl ClientsScreen {
-    pub(super) fn handle_key_input(&mut self, key: KeyEvent) -> Result<Option<Action>> {
+    pub(super) fn handle_key_input(&mut self, key: KeyEvent) -> Option<Action> {
         if self.detail_open {
-            return Ok(self.handle_detail_key(key));
+            return self.handle_detail_key(key);
         }
 
-        let action = match key.code {
+        match key.code {
             KeyCode::Char('j') | KeyCode::Down => {
                 self.move_selection(1);
                 None
@@ -52,9 +51,7 @@ impl ClientsScreen {
             KeyCode::Char('B') => self.selected_client_id().map(Action::RequestUnblockClient),
             KeyCode::Char('x') => self.selected_client_id().map(Action::RequestKickClient),
             _ => None,
-        };
-
-        Ok(action)
+        }
     }
 
     pub(super) fn apply_action(&mut self, action: &Action) {

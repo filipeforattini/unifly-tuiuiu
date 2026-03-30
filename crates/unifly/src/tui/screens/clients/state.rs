@@ -204,8 +204,7 @@ mod tests {
         screen.table_state.select(Some(1));
         assert!(matches!(
             screen
-                .handle_key_input(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE))
-                .unwrap(),
+                .handle_key_input(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE)),
             Some(Action::OpenClientDetail(id)) if id == bravo.id
         ));
 
@@ -218,8 +217,7 @@ mod tests {
 
         assert!(matches!(
             screen
-                .handle_key_input(KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE))
-                .unwrap(),
+                .handle_key_input(KeyEvent::new(KeyCode::Char('x'), KeyModifiers::NONE)),
             Some(Action::RequestKickClient(id)) if id == bravo.id
         ));
     }
@@ -232,9 +230,7 @@ mod tests {
         let mut screen = ClientsScreen::new();
         screen.clients = Arc::new(vec![Arc::clone(&alpha), Arc::clone(&bravo)]);
         screen.table_state.select(Some(1));
-        screen
-            .handle_key_input(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE))
-            .unwrap();
+        let _ = screen.handle_key_input(KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE));
 
         screen.apply_action(&Action::SearchInput("alpha".to_owned()));
 

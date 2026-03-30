@@ -1,12 +1,11 @@
 use super::{AuthMode, OnboardingScreen, WizardStep};
 
-use color_eyre::eyre::Result;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
 use crate::tui::action::Action;
 
 impl OnboardingScreen {
-    pub(super) fn handle_key_input(&mut self, key: KeyEvent) -> Result<Option<Action>> {
+    pub(super) fn handle_key_input(&mut self, key: KeyEvent) -> Option<Action> {
         if key.code != KeyCode::Enter {
             self.error = None;
         }
@@ -32,7 +31,7 @@ impl OnboardingScreen {
             },
         }
 
-        Ok(None)
+        None
     }
 
     pub(super) fn apply_action(&mut self, action: &Action) {

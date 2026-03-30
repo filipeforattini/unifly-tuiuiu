@@ -44,10 +44,10 @@ fn secret(value: &str) -> SecretString {
 }
 
 fn empty_legacy_envelope() -> serde_json::Value {
-    legacy_envelope(json!([]))
+    legacy_envelope(&json!([]))
 }
 
-fn legacy_envelope(data: serde_json::Value) -> serde_json::Value {
+fn legacy_envelope(data: &serde_json::Value) -> serde_json::Value {
     json!({
         "meta": { "rc": "ok" },
         "data": data,
@@ -297,7 +297,7 @@ async fn full_refresh_does_not_rebroadcast_duplicate_legacy_events() {
     mock_legacy_connect_with_events(
         &server,
         legacy_site_envelope(),
-        legacy_envelope(json!([{
+        legacy_envelope(&json!([{
             "_id": "evt-1",
             "key": "EVT_TEST",
             "msg": "Switch lost contact",

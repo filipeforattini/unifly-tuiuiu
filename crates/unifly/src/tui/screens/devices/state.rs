@@ -106,15 +106,12 @@ impl DevicesScreen {
             }
         };
 
-        match next_selection {
-            Some((index, device_id)) => {
-                self.table_state.select(Some(index));
-                self.selected_device_id = Some(device_id);
-            }
-            None => {
-                self.table_state.select(None);
-                self.selected_device_id = None;
-            }
+        if let Some((index, device_id)) = next_selection {
+            self.table_state.select(Some(index));
+            self.selected_device_id = Some(device_id);
+        } else {
+            self.table_state.select(None);
+            self.selected_device_id = None;
         }
     }
 
@@ -194,15 +191,12 @@ impl DevicesScreen {
                 .map(|index| (index, filtered[index].id.clone()))
         };
 
-        match next_selection {
-            Some((index, device_id)) => {
-                self.table_state.select(Some(index));
-                self.selected_device_id = Some(device_id);
-            }
-            None => {
-                self.table_state.select(None);
-                self.selected_device_id = None;
-            }
+        if let Some((index, device_id)) = next_selection {
+            self.table_state.select(Some(index));
+            self.selected_device_id = Some(device_id);
+        } else {
+            self.table_state.select(None);
+            self.selected_device_id = None;
         }
     }
 }

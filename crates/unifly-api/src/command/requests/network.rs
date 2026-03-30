@@ -109,7 +109,7 @@ mod tests {
             "bandSteeringEnabled": true,
             "bssTransitionEnabled": true
         }))
-        .unwrap();
+        .expect("wifi broadcast request should deserialize");
 
         assert!(request.hide_ssid);
         assert!(request.band_steering);

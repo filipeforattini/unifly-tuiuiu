@@ -1,4 +1,12 @@
-use super::super::*;
+use crate::core_error::CoreError;
+use crate::model::{
+    Country, DpiApplication, DpiCategory, EntityId, RadiusProfile, VpnServer, VpnTunnel,
+    WanInterface,
+};
+
+use super::super::{
+    Controller, integration_client_context, integration_site_context, require_uuid,
+};
 
 impl Controller {
     pub async fn list_vpn_servers(&self) -> Result<Vec<VpnServer>, CoreError> {

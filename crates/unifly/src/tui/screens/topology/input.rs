@@ -1,12 +1,11 @@
-use color_eyre::eyre::Result;
 use crossterm::event::{KeyCode, KeyEvent};
 
 use super::TopologyScreen;
 use crate::tui::action::Action;
 
 impl TopologyScreen {
-    pub(super) fn handle_key_input(&mut self, key: KeyEvent) -> Result<Option<Action>> {
-        Ok(match key.code {
+    pub(super) fn handle_key_input(&mut self, key: KeyEvent) -> Option<Action> {
+        match key.code {
             KeyCode::Left => Some(self.pan(-5.0, 0.0)),
             KeyCode::Right => Some(self.pan(5.0, 0.0)),
             KeyCode::Up => Some(self.pan(0.0, 5.0)),
@@ -16,7 +15,7 @@ impl TopologyScreen {
             KeyCode::Char('f') => Some(self.reset_view(Action::TopologyFit)),
             KeyCode::Char('r') => Some(self.reset_view(Action::TopologyReset)),
             _ => None,
-        })
+        }
     }
 
     fn pan(&mut self, delta_x: f64, delta_y: f64) -> Action {

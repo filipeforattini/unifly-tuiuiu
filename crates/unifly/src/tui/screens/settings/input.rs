@@ -1,15 +1,14 @@
 use super::{SettingsField, SettingsScreen, SettingsState};
 
-use color_eyre::eyre::Result;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind};
 use opaline::ThemeSelectorAction;
 
 use crate::tui::action::Action;
 
 impl SettingsScreen {
-    pub(super) fn handle_key_input(&mut self, key: KeyEvent) -> Result<Option<Action>> {
+    pub(super) fn handle_key_input(&mut self, key: KeyEvent) -> Option<Action> {
         if self.handle_theme_selector_key(key) {
-            return Ok(None);
+            return None;
         }
 
         if self.state == SettingsState::Testing {
@@ -17,30 +16,28 @@ impl SettingsScreen {
                 self.state = SettingsState::Editing;
                 self.test_error = None;
             }
-            return Ok(None);
+            return None;
         }
 
         self.test_error = None;
 
-        let action = match self.active_field {
+        match self.active_field {
             SettingsField::AuthMode => self.handle_auth_mode_key(key),
             SettingsField::Insecure => self.handle_insecure_key(key),
             SettingsField::Theme => self.handle_theme_key(key),
             _ => self.handle_text_field_key(key),
-        };
-
-        Ok(action)
+        }
     }
 
-    pub(super) fn handle_mouse_input(&mut self, mouse: MouseEvent) -> Result<Option<Action>> {
+    pub(super) fn handle_mouse_input(&mut self, mouse: MouseEvent) -> Option<Action> {
         if self.state != SettingsState::Editing || self.theme_selector.borrow().is_some() {
-            return Ok(None);
+            return None;
         }
 
         if let MouseEventKind::Down(MouseButton::Left) = mouse.kind {
             let area = self.last_area.get();
             if area.width == 0 {
-                return Ok(None);
+                return None;
             }
 
             let panel = super::render::panel_rect(area);
@@ -77,7 +74,7 @@ impl SettingsScreen {
             }
         }
 
-        Ok(None)
+        None
     }
 
     pub(super) fn apply_action(&mut self, action: &Action) {
@@ -120,11 +117,11 @@ impl SettingsScreen {
 
     fn handle_auth_mode_key(&mut self, key: KeyEvent) -> Option<Action> {
         match key.code {
-            KeyCode::Up | KeyCode::Left | KeyCode::Char('k') | KeyCode::Char('h') => {
+            KeyCode::Up | KeyCode::Left | KeyCode::Char('k' | 'h') => {
                 self.cycle_auth_mode_previous();
                 None
             }
-            KeyCode::Down | KeyCode::Right | KeyCode::Char('j') | KeyCode::Char('l') => {
+            KeyCode::Down | KeyCode::Right | KeyCode::Char('j' | 'l') => {
                 self.cycle_auth_mode_next();
                 None
             }

@@ -156,7 +156,7 @@ mod tests {
             "destination_zone_id": "lan",
             "enabled": true
         }))
-        .unwrap();
+        .expect("acl rule request should deserialize");
 
         assert_eq!(request.rule_type, "IP");
     }
@@ -169,7 +169,7 @@ mod tests {
             ..Default::default()
         };
 
-        let value = serde_json::to_value(&request).unwrap();
+        let value = serde_json::to_value(&request).expect("acl rule request should serialize");
         assert_eq!(
             value.get("type").and_then(serde_json::Value::as_str),
             Some("DEVICE")

@@ -63,7 +63,7 @@ impl Component for OnboardingScreen {
     }
 
     fn handle_key_event(&mut self, key: KeyEvent) -> Result<Option<Action>> {
-        self.handle_key_input(key)
+        Ok(self.handle_key_input(key))
     }
 
     fn update(&mut self, action: &Action) -> Result<Option<Action>> {
