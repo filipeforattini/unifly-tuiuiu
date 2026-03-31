@@ -146,10 +146,12 @@ pub(in super::super) fn build_create_wifi_broadcast_payload(
         body.insert("bandSteeringEnabled".into(), serde_json::Value::Bool(true));
     }
     if let Some(fast_roaming) = req.fast_roaming {
-        body.insert(
-            "bssTransitionEnabled".into(),
-            serde_json::Value::Bool(fast_roaming),
-        );
+        if broadcast_type == "STANDARD" {
+            body.insert(
+                "bssTransitionEnabled".into(),
+                serde_json::Value::Bool(fast_roaming),
+            );
+        }
     }
     if let Some(frequencies) = req.frequencies_ghz.as_ref() {
         body.insert(
