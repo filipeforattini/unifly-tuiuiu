@@ -60,9 +60,18 @@ pub(super) async fn route(
                     "internetAccessEnabled".into(),
                     serde_json::Value::Bool(internet_access_enabled),
                 );
+                extra.insert(
+                    "mdnsForwardingEnabled".into(),
+                    serde_json::Value::Bool(false),
+                );
+                extra.insert(
+                    "cellularBackupEnabled".into(),
+                    serde_json::Value::Bool(false),
+                );
 
                 if let Some(cidr) = subnet {
                     let (host_ip, prefix_len) = parse_ipv4_cidr(&cidr)?;
+                    let lease_secs = dhcp_lease_time.unwrap_or(86400);
                     let mut dhcp_cfg = serde_json::Map::new();
                     dhcp_cfg.insert(
                         "mode".into(),
@@ -70,12 +79,14 @@ pub(super) async fn route(
                             if dhcp_enabled { "SERVER" } else { "NONE" }.into(),
                         ),
                     );
-                    if let Some(lease) = dhcp_lease_time {
-                        dhcp_cfg.insert(
-                            "leaseTimeSeconds".into(),
-                            serde_json::Value::Number(serde_json::Number::from(u64::from(lease))),
-                        );
-                    }
+                    dhcp_cfg.insert(
+                        "leaseTimeSeconds".into(),
+                        serde_json::Value::Number(serde_json::Number::from(u64::from(lease_secs))),
+                    );
+                    dhcp_cfg.insert(
+                        "pingConflictDetectionEnabled".into(),
+                        serde_json::Value::Bool(false),
+                    );
 
                     if let (Some(start), Some(stop)) = (dhcp_range_start, dhcp_range_stop) {
                         dhcp_cfg.insert(
@@ -92,6 +103,7 @@ pub(super) async fn route(
                         serde_json::json!({
                             "hostIpAddress": host_ip.to_string(),
                             "prefixLength": u64::from(prefix_len),
+                            "autoScaleEnabled": false,
                             "dhcpConfiguration": dhcp_cfg
                         }),
                     );
