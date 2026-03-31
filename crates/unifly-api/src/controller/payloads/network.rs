@@ -129,7 +129,7 @@ pub(in super::super) fn build_create_wifi_broadcast_payload(
     if let Some(network_id) = &req.network_id {
         body.insert(
             "network".into(),
-            serde_json::json!({ "id": network_id.to_string() }),
+            serde_json::json!({ "type": "SPECIFIC", "networkId": network_id.to_string() }),
         );
     }
     body.insert("hideName".into(), serde_json::Value::Bool(req.hide_ssid));

@@ -1144,7 +1144,7 @@ impl From<integration_types::WifiBroadcastResponse> for WifiBroadcast {
             network_id: w
                 .network
                 .as_ref()
-                .and_then(|v| v.get("id"))
+                .and_then(|v| v.get("networkId").or_else(|| v.get("id")))
                 .and_then(|v| v.as_str())
                 .and_then(|s| uuid::Uuid::parse_str(s).ok())
                 .map(EntityId::Uuid),
