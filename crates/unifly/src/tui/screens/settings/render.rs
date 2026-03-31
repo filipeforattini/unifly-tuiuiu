@@ -24,11 +24,13 @@ impl SettingsScreen {
         );
 
         let inner = self.render_centered_panel(frame, area);
+
+        // Layout: [padding] [content] [error] [hints]
         let layout = Layout::vertical([
-            Constraint::Length(1),
-            Constraint::Min(1),
-            Constraint::Length(1),
-            Constraint::Length(1),
+            Constraint::Length(1), // top padding
+            Constraint::Min(1),   // content
+            Constraint::Length(1), // error
+            Constraint::Length(1), // key hints
         ])
         .split(inner);
 
@@ -47,6 +49,7 @@ impl SettingsScreen {
             SettingsState::Testing => self.render_testing(frame, layout[1]),
         }
 
+        // Theme selector overlay (on top of everything).
         let mut selector = self.theme_selector.borrow_mut();
         if let Some(ref mut theme_selector) = *selector {
             let overlay = chrome::centered_rect(area, 80, 28);

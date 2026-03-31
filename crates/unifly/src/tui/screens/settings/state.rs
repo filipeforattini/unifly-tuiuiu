@@ -1,4 +1,8 @@
-use super::{AuthMode, ControllerProfileDraft, SettingsField, SettingsScreen, SettingsState};
+use super::{
+    AuthMode, ControllerProfileDraft, FormEntry, SettingsField, SettingsScreen, SettingsState,
+};
+
+// ── Field metadata ──────────────────────────────────────────────────
 
 impl SettingsField {
     pub(super) const ALL: [SettingsField; 9] = [
@@ -13,6 +17,30 @@ impl SettingsField {
         Self::ShowDonate,
     ];
 
+    /// Section label for this field — used to insert dividers.
+    pub(super) fn section(self) -> &'static str {
+        match self {
+            Self::Url
+            | Self::AuthMode
+            | Self::ApiKey
+            | Self::Username
+            | Self::Password
+            | Self::Site
+            | Self::Insecure => "Connection",
+            Self::Theme | Self::ShowDonate => "Appearance",
+        }
+    }
+
+    /// Row height this field occupies.
+    pub(super) fn row_height(self) -> u16 {
+        match self {
+            Self::Insecure | Self::ShowDonate => 1,
+            Self::Theme => 2,
+            _ => 4,
+        }
+    }
+
+    /// Whether this field is visible given the current auth mode.
     pub(super) fn visible_for(self, mode: AuthMode) -> bool {
         match self {
             Self::Url
@@ -28,6 +56,8 @@ impl SettingsField {
         }
     }
 }
+
+// ── Construction & config ───────────────────────────────────────────
 
 impl SettingsScreen {
     pub fn new() -> Self {
@@ -70,42 +100,54 @@ impl SettingsScreen {
             .unwrap_or(0);
     }
 
+    // ── Field navigation ────────────────────────────────────────────
+
+    /// All visible fields in display order.
     pub(super) fn visible_fields(&self) -> Vec<SettingsField> {
         SettingsField::ALL
             .iter()
             .copied()
-            .filter(|field| field.visible_for(self.draft.auth_mode))
+            .filter(|f| f.visible_for(self.draft.auth_mode))
             .collect()
     }
 
-    pub(super) fn field_layout(&self) -> Vec<(SettingsField, u16)> {
-        self.visible_fields()
-            .into_iter()
-            .map(|field| {
-                let height = match field {
-                    SettingsField::Insecure | SettingsField::ShowDonate => 1,
-                    SettingsField::Theme => 2,
-                    _ => 4,
-                };
-                (field, height)
-            })
-            .collect()
+    /// Build the full form layout with section headers interleaved.
+    pub(super) fn form_layout(&self) -> Vec<FormEntry> {
+        let mut entries = Vec::new();
+        let mut current_section = "";
+
+        for field in self.visible_fields() {
+            let section = field.section();
+            if section != current_section {
+                entries.push(FormEntry::Section(section));
+                current_section = section;
+            }
+            entries.push(FormEntry::Field(field, field.row_height()));
+        }
+
+        entries
     }
 
     pub(super) fn focus_next(&mut self) {
         let fields = self.visible_fields();
+        if fields.is_empty() {
+            return;
+        }
         let pos = fields
             .iter()
-            .position(|&field| field == self.active_field)
+            .position(|&f| f == self.active_field)
             .unwrap_or(0);
         self.active_field = fields[(pos + 1) % fields.len()];
     }
 
     pub(super) fn focus_prev(&mut self) {
         let fields = self.visible_fields();
+        if fields.is_empty() {
+            return;
+        }
         let pos = fields
             .iter()
-            .position(|&field| field == self.active_field)
+            .position(|&f| f == self.active_field)
             .unwrap_or(0);
         self.active_field = fields[(pos + fields.len() - 1) % fields.len()];
     }
@@ -115,6 +157,8 @@ impl SettingsScreen {
             self.active_field = SettingsField::AuthMode;
         }
     }
+
+    // ── Auth mode cycling ───────────────────────────────────────────
 
     pub(super) fn cycle_auth_mode_previous(&mut self) {
         if self.auth_mode_index == 0 {
@@ -136,6 +180,8 @@ impl SettingsScreen {
         self.clamp_focus();
     }
 
+    // ── Text input access ───────────────────────────────────────────
+
     pub(super) fn active_input_mut(&mut self) -> Option<&mut String> {
         match self.active_field {
             SettingsField::Url => Some(&mut self.draft.url),
@@ -149,6 +195,8 @@ impl SettingsScreen {
             | SettingsField::ShowDonate => None,
         }
     }
+
+    // ── Preferences persistence ─────────────────────────────────────
 
     pub(super) fn toggle_show_donate(&mut self) {
         self.show_donate = !self.show_donate;
@@ -169,6 +217,8 @@ impl SettingsScreen {
             let _ = crate::config::save_config(&cfg);
         }
     }
+
+    // ── Connection test / apply ─────────────────────────────────────
 
     pub(super) fn validate(&self) -> std::result::Result<(), String> {
         self.draft.validate_complete()
@@ -248,6 +298,8 @@ impl SettingsScreen {
     }
 }
 
+// ── Tests ───────────────────────────────────────────────────────────
+
 #[cfg(test)]
 mod tests {
     use super::{AuthMode, SettingsField, SettingsScreen};
@@ -272,11 +324,7 @@ mod tests {
         screen.draft.auth_mode = AuthMode::Legacy;
         screen.auth_mode_index = 1;
 
-        let fields: Vec<_> = screen
-            .field_layout()
-            .into_iter()
-            .map(|(field, _)| field)
-            .collect();
+        let fields = screen.visible_fields();
 
         assert!(!fields.contains(&SettingsField::ApiKey));
         assert!(fields.contains(&SettingsField::Username));
@@ -302,5 +350,26 @@ mod tests {
         screen.draft.username.clear();
 
         assert_eq!(screen.validate(), Err("Username cannot be empty".into()));
+    }
+
+    #[test]
+    fn sections_group_fields_correctly() {
+        let screen = test_screen();
+
+        let conn: Vec<_> = SettingsField::ALL
+            .iter()
+            .filter(|f| f.section() == "Connection")
+            .collect();
+        assert!(conn.contains(&&SettingsField::Url));
+        assert!(!conn.contains(&&SettingsField::Theme));
+
+        let appearance: Vec<_> = SettingsField::ALL
+            .iter()
+            .filter(|f| f.section() == "Appearance")
+            .collect();
+        assert!(appearance.contains(&&SettingsField::Theme));
+        assert!(appearance.contains(&&SettingsField::ShowDonate));
+
+        drop(screen);
     }
 }

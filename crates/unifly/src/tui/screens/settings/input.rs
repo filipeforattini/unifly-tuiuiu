@@ -1,16 +1,20 @@
-use super::{SettingsField, SettingsScreen, SettingsState};
+use super::{FormEntry, SettingsField, SettingsScreen, SettingsState};
 
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind};
 use opaline::ThemeSelectorAction;
 
 use crate::tui::action::Action;
 
+// ── Keyboard input ──────────────────────────────────────────────────
+
 impl SettingsScreen {
     pub(super) fn handle_key_input(&mut self, key: KeyEvent) -> Option<Action> {
+        // Theme selector overlay captures all input while open.
         if self.handle_theme_selector_key(key) {
             return None;
         }
 
+        // Testing state: only Esc cancels.
         if self.state == SettingsState::Testing {
             if key.code == KeyCode::Esc {
                 self.state = SettingsState::Editing;
@@ -21,83 +25,21 @@ impl SettingsScreen {
 
         self.test_error = None;
 
+        // Delegate to active field's handler.
         match self.active_field {
             SettingsField::AuthMode => self.handle_auth_mode_key(key),
-            SettingsField::Insecure => self.handle_insecure_key(key),
-            SettingsField::ShowDonate => self.handle_show_donate_key(key),
+            SettingsField::Insecure => self.handle_toggle_key(key, |s| {
+                s.draft.insecure = !s.draft.insecure;
+            }),
+            SettingsField::ShowDonate => self.handle_toggle_key(key, |s| {
+                s.toggle_show_donate();
+            }),
             SettingsField::Theme => self.handle_theme_key(key),
             _ => self.handle_text_field_key(key),
         }
     }
 
-    pub(super) fn handle_mouse_input(&mut self, mouse: MouseEvent) -> Option<Action> {
-        if self.state != SettingsState::Editing || self.theme_selector.borrow().is_some() {
-            return None;
-        }
-
-        if let MouseEventKind::Down(MouseButton::Left) = mouse.kind {
-            let area = self.last_area.get();
-            if area.width == 0 {
-                return None;
-            }
-
-            let panel = super::render::panel_rect(area);
-            let content_y = panel.y + 2;
-            let fields_x = panel.x + 2;
-            let fields_w = panel.width.saturating_sub(4);
-
-            let mut y = content_y;
-            for (field, height) in self.field_layout() {
-                if mouse.row >= y && mouse.row < y + height {
-                    self.active_field = field;
-
-                    match field {
-                        SettingsField::Insecure => {
-                            self.draft.insecure = !self.draft.insecure;
-                        }
-                        SettingsField::ShowDonate => {
-                            self.toggle_show_donate();
-                        }
-                        SettingsField::Theme => {
-                            self.open_theme_selector();
-                        }
-                        SettingsField::AuthMode => {
-                            let mid_x = fields_x + fields_w / 2;
-                            if mouse.column < mid_x {
-                                self.cycle_auth_mode_previous();
-                            } else {
-                                self.cycle_auth_mode_next();
-                            }
-                        }
-                        _ => {}
-                    }
-
-                    break;
-                }
-                y += height;
-            }
-        }
-
-        None
-    }
-
-    pub(super) fn apply_action(&mut self, action: &Action) {
-        match action {
-            Action::SettingsTestResult(result) => match result {
-                Ok(()) => self.send_apply(),
-                Err(message) => {
-                    self.state = SettingsState::Editing;
-                    self.test_error = Some(message.clone());
-                }
-            },
-            Action::Tick => {
-                if self.state == SettingsState::Testing {
-                    self.throbber_state.calc_next();
-                }
-            }
-            _ => {}
-        }
-    }
+    // ── Theme selector overlay ──────────────────────────────────────
 
     fn handle_theme_selector_key(&mut self, key: KeyEvent) -> bool {
         let mut selector = self.theme_selector.borrow_mut();
@@ -118,6 +60,8 @@ impl SettingsScreen {
 
         true
     }
+
+    // ── Field-specific key handlers ─────────────────────────────────
 
     fn handle_auth_mode_key(&mut self, key: KeyEvent) -> Option<Action> {
         match key.code {
@@ -146,33 +90,15 @@ impl SettingsScreen {
         }
     }
 
-    fn handle_insecure_key(&mut self, key: KeyEvent) -> Option<Action> {
+    /// Generic handler for checkbox / toggle fields.
+    fn handle_toggle_key(
+        &mut self,
+        key: KeyEvent,
+        toggle: fn(&mut Self),
+    ) -> Option<Action> {
         match key.code {
             KeyCode::Char(' ') => {
-                self.draft.insecure = !self.draft.insecure;
-                None
-            }
-            KeyCode::Tab => {
-                self.focus_next();
-                None
-            }
-            KeyCode::BackTab => {
-                self.focus_prev();
-                None
-            }
-            KeyCode::Enter => {
-                self.submit_connection_test();
-                None
-            }
-            KeyCode::Esc => Some(Action::CloseSettings),
-            _ => None,
-        }
-    }
-
-    fn handle_show_donate_key(&mut self, key: KeyEvent) -> Option<Action> {
-        match key.code {
-            KeyCode::Char(' ') => {
-                self.toggle_show_donate();
+                toggle(self);
                 None
             }
             KeyCode::Tab => {
@@ -249,5 +175,90 @@ impl SettingsScreen {
             opaline::ThemeSelectorState::with_current_selected()
                 .with_derive(crate::tui::theme::derive_tokens),
         );
+    }
+}
+
+// ── Action dispatch ─────────────────────────────────────────────────
+
+impl SettingsScreen {
+    pub(super) fn apply_action(&mut self, action: &Action) {
+        match action {
+            Action::SettingsTestResult(result) => match result {
+                Ok(()) => self.send_apply(),
+                Err(message) => {
+                    self.state = SettingsState::Editing;
+                    self.test_error = Some(message.clone());
+                }
+            },
+            Action::Tick => {
+                if self.state == SettingsState::Testing {
+                    self.throbber_state.calc_next();
+                }
+            }
+            _ => {}
+        }
+    }
+}
+
+// ── Mouse input ─────────────────────────────────────────────────────
+
+impl SettingsScreen {
+    pub(super) fn handle_mouse_input(&mut self, mouse: MouseEvent) -> Option<Action> {
+        if self.state != SettingsState::Editing || self.theme_selector.borrow().is_some() {
+            return None;
+        }
+
+        if let MouseEventKind::Down(MouseButton::Left) = mouse.kind {
+            let area = self.last_area.get();
+            if area.width == 0 {
+                return None;
+            }
+
+            let panel = super::render::panel_rect(area);
+            // inner area starts 1 row below the border, then 1 row padding
+            let content_y = panel.y + 2;
+            let fields_x = panel.x + 2;
+            let fields_w = panel.width.saturating_sub(4);
+
+            let mut y = content_y;
+            for entry in self.form_layout() {
+                match entry {
+                    FormEntry::Section(_) => {
+                        y += 2; // section header height
+                    }
+                    FormEntry::Field(field, height) => {
+                        if mouse.row >= y && mouse.row < y + height {
+                            self.active_field = field;
+
+                            match field {
+                                SettingsField::Insecure => {
+                                    self.draft.insecure = !self.draft.insecure;
+                                }
+                                SettingsField::ShowDonate => {
+                                    self.toggle_show_donate();
+                                }
+                                SettingsField::Theme => {
+                                    self.open_theme_selector();
+                                }
+                                SettingsField::AuthMode => {
+                                    let mid_x = fields_x + fields_w / 2;
+                                    if mouse.column < mid_x {
+                                        self.cycle_auth_mode_previous();
+                                    } else {
+                                        self.cycle_auth_mode_next();
+                                    }
+                                }
+                                _ => {}
+                            }
+
+                            break;
+                        }
+                        y += height;
+                    }
+                }
+            }
+        }
+
+        None
     }
 }

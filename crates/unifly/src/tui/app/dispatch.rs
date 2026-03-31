@@ -30,6 +30,9 @@ impl App {
             Action::ToggleHelp => {
                 self.help_visible = !self.help_visible;
             }
+            Action::ToggleAbout => {
+                self.about_visible = !self.about_visible;
+            }
             Action::OpenSearch => {
                 self.search_active = true;
                 self.search_query.clear();
@@ -123,7 +126,7 @@ impl App {
 }
 
 /// Open a URL in the user's default browser.
-fn open_url(url: &str) {
+pub(super) fn open_url(url: &str) {
     #[cfg(target_os = "macos")]
     {
         let _ = std::process::Command::new("open").arg(url).spawn();

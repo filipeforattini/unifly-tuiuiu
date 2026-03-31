@@ -1,4 +1,4 @@
-use super::super::{SettingsField, SettingsScreen};
+use super::super::{FormEntry, SettingsField, SettingsScreen};
 
 use crate::tui::forms::widgets::render_input_field;
 use crate::tui::theme;
@@ -129,11 +129,38 @@ impl SettingsScreen {
         );
     }
 
+    #[allow(clippy::unused_self)]
+    fn render_section_header(&self, frame: &mut Frame, area: Rect, label: &str) {
+        if area.height < 1 {
+            return;
+        }
+
+        let rule_len = area.width.saturating_sub(u16::try_from(label.len()).unwrap_or(0) + 5);
+        let rule = "\u{2500}".repeat(rule_len as usize);
+
+        frame.render_widget(
+            Paragraph::new(Line::from(vec![
+                Span::styled(
+                    format!(" {label} "),
+                    Style::default()
+                        .fg(theme::accent_secondary())
+                        .add_modifier(Modifier::BOLD),
+                ),
+                Span::styled(rule, Style::default().fg(theme::border_unfocused())),
+            ])),
+            Rect::new(area.x, area.y + 1, area.width, 1),
+        );
+    }
+
     pub(super) fn render_editing(&self, frame: &mut Frame, area: Rect) {
-        let field_layout = self.field_layout();
-        let mut constraints: Vec<_> = field_layout
+        let form_entries = self.form_layout();
+
+        let mut constraints: Vec<_> = form_entries
             .iter()
-            .map(|(_, height)| Constraint::Length(*height))
+            .map(|entry| match entry {
+                FormEntry::Section(_) => Constraint::Length(2),
+                FormEntry::Field(_, height) => Constraint::Length(*height),
+            })
             .collect();
         constraints.push(Constraint::Min(0));
 
@@ -145,64 +172,69 @@ impl SettingsScreen {
         );
         let chunks = Layout::vertical(constraints).split(fields_area);
 
-        for ((field, _), chunk) in field_layout.iter().zip(chunks.iter().copied()) {
-            match field {
-                SettingsField::Url => render_input_field(
-                    frame,
-                    chunk,
-                    "  Controller URL",
-                    &self.draft.url,
-                    self.active_field == SettingsField::Url,
-                    false,
-                ),
-                SettingsField::AuthMode => self.render_auth_selector(frame, chunk),
-                SettingsField::ApiKey => render_input_field(
-                    frame,
-                    chunk,
-                    "  API Key",
-                    &self.draft.api_key,
-                    self.active_field == SettingsField::ApiKey,
-                    true,
-                ),
-                SettingsField::Username => render_input_field(
-                    frame,
-                    chunk,
-                    "  Username",
-                    &self.draft.username,
-                    self.active_field == SettingsField::Username,
-                    false,
-                ),
-                SettingsField::Password => render_input_field(
-                    frame,
-                    chunk,
-                    "  Password",
-                    &self.draft.password,
-                    self.active_field == SettingsField::Password,
-                    !self.show_password,
-                ),
-                SettingsField::Site => render_input_field(
-                    frame,
-                    chunk,
-                    "  Site",
-                    &self.draft.site,
-                    self.active_field == SettingsField::Site,
-                    false,
-                ),
-                SettingsField::Insecure => self.render_toggle(
-                    frame,
-                    chunk,
-                    "Skip TLS verification (insecure)",
-                    self.draft.insecure,
-                    self.active_field == SettingsField::Insecure,
-                ),
-                SettingsField::Theme => self.render_theme_field(frame, chunk),
-                SettingsField::ShowDonate => self.render_toggle(
-                    frame,
-                    chunk,
-                    "Show donate button",
-                    self.show_donate,
-                    self.active_field == SettingsField::ShowDonate,
-                ),
+        for (entry, chunk) in form_entries.iter().zip(chunks.iter().copied()) {
+            match entry {
+                FormEntry::Section(label) => {
+                    self.render_section_header(frame, chunk, label);
+                }
+                FormEntry::Field(field, _) => match field {
+                    SettingsField::Url => render_input_field(
+                        frame,
+                        chunk,
+                        "  Controller URL",
+                        &self.draft.url,
+                        self.active_field == SettingsField::Url,
+                        false,
+                    ),
+                    SettingsField::AuthMode => self.render_auth_selector(frame, chunk),
+                    SettingsField::ApiKey => render_input_field(
+                        frame,
+                        chunk,
+                        "  API Key",
+                        &self.draft.api_key,
+                        self.active_field == SettingsField::ApiKey,
+                        true,
+                    ),
+                    SettingsField::Username => render_input_field(
+                        frame,
+                        chunk,
+                        "  Username",
+                        &self.draft.username,
+                        self.active_field == SettingsField::Username,
+                        false,
+                    ),
+                    SettingsField::Password => render_input_field(
+                        frame,
+                        chunk,
+                        "  Password",
+                        &self.draft.password,
+                        self.active_field == SettingsField::Password,
+                        !self.show_password,
+                    ),
+                    SettingsField::Site => render_input_field(
+                        frame,
+                        chunk,
+                        "  Site",
+                        &self.draft.site,
+                        self.active_field == SettingsField::Site,
+                        false,
+                    ),
+                    SettingsField::Insecure => self.render_toggle(
+                        frame,
+                        chunk,
+                        "Skip TLS verification (insecure)",
+                        self.draft.insecure,
+                        self.active_field == SettingsField::Insecure,
+                    ),
+                    SettingsField::Theme => self.render_theme_field(frame, chunk),
+                    SettingsField::ShowDonate => self.render_toggle(
+                        frame,
+                        chunk,
+                        "Show donate button",
+                        self.show_donate,
+                        self.active_field == SettingsField::ShowDonate,
+                    ),
+                },
             }
         }
     }

@@ -51,6 +51,8 @@ pub struct App {
     connection_status: ConnectionStatus,
     /// Help overlay visibility.
     help_visible: bool,
+    /// About overlay visibility.
+    about_visible: bool,
     /// Search overlay visibility.
     search_active: bool,
     /// Current search query.
@@ -111,6 +113,7 @@ impl App {
             running: true,
             connection_status: ConnectionStatus::default(),
             help_visible: false,
+            about_visible: false,
             search_active: false,
             search_query: String::new(),
             terminal_size: (0, 0),

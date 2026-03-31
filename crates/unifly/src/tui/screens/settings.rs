@@ -1,8 +1,10 @@
-//! Settings screen - edit controller config from within the TUI.
+//! Settings screen — single-panel configuration form.
 //!
-//! Opened with `,`, not in the tab bar. Esc cancels without saving.
-//! On successful connection test, saves config and emits `SettingsApply`
-//! so the app can reconnect with the new configuration.
+//! Opened with `,`, not in the tab bar. Fields are grouped under section
+//! headers (Connection, Appearance). Press `a` to open the About overlay.
+//!
+//! Esc cancels without saving. On successful connection test the config is
+//! persisted and `SettingsApply` is emitted so the app can reconnect.
 
 mod input;
 mod render;
@@ -20,6 +22,8 @@ use crate::tui::action::Action;
 use crate::tui::component::Component;
 pub(super) use crate::tui::forms::controller_profile::{AuthMode, ControllerProfileDraft};
 
+// ── State enums ─────────────────────────────────────────────────────
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) enum SettingsState {
     Editing,
@@ -28,6 +32,7 @@ pub(super) enum SettingsState {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) enum SettingsField {
+    // Connection section
     Url,
     AuthMode,
     ApiKey,
@@ -35,10 +40,21 @@ pub(super) enum SettingsField {
     Password,
     Site,
     Insecure,
+    // Appearance section
     Theme,
     ShowDonate,
 }
 
+/// An entry in the rendered form — either a section divider or a field row.
+#[derive(Debug, Clone, Copy)]
+pub(super) enum FormEntry {
+    Section(&'static str),
+    Field(SettingsField, u16),
+}
+
+// ── Screen struct ───────────────────────────────────────────────────
+
+#[allow(clippy::struct_excessive_bools)]
 pub struct SettingsScreen {
     focused: bool,
     action_tx: Option<UnboundedSender<Action>>,

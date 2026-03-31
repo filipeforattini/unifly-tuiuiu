@@ -36,6 +36,20 @@ impl App {
             });
         }
 
+        if self.about_visible {
+            return Ok(match key.code {
+                KeyCode::Esc | KeyCode::Char('a') => Some(Action::ToggleAbout),
+                KeyCode::Char('d') => Some(Action::OpenDonate),
+                KeyCode::Char('g') => {
+                    super::dispatch::open_url(
+                        "https://github.com/hyperb1iss/unifly",
+                    );
+                    None
+                }
+                _ => None,
+            });
+        }
+
         if let Some(action) = self.handle_global_key_event(key) {
             return Ok(Some(action));
         }
@@ -123,6 +137,7 @@ impl App {
             (KeyModifiers::CONTROL, KeyCode::Char('c'))
             | (KeyModifiers::NONE, KeyCode::Char('q')) => Some(Action::Quit),
             (KeyModifiers::NONE, KeyCode::Char('?')) => Some(Action::ToggleHelp),
+            (KeyModifiers::NONE, KeyCode::Char('a')) => Some(Action::ToggleAbout),
             (KeyModifiers::NONE, KeyCode::Char('/')) => Some(Action::OpenSearch),
             (KeyModifiers::NONE, KeyCode::Char(',')) => Some(Action::OpenSettings),
             (KeyModifiers::NONE, KeyCode::Char(c @ '1'..='8')) => {

@@ -49,6 +49,10 @@ impl App {
             self.render_confirm_dialog(frame, area, confirm);
         }
 
+        if self.about_visible {
+            self.render_about_overlay(frame, area);
+        }
+
         if self.help_visible {
             self.render_help_overlay(frame, area);
         }
@@ -117,7 +121,10 @@ impl App {
             }
         };
 
-        let hints = Span::styled(" │ ? help  / search  , settings  q quit", theme::key_hint());
+        let hints = Span::styled(
+            " │ ? help  a about  / search  , settings  q quit",
+            theme::key_hint(),
+        );
         let line = Line::from(vec![Span::raw(" "), connection_indicator, hints]);
 
         frame.render_widget(Paragraph::new(line), area);
@@ -144,6 +151,94 @@ impl App {
             Span::styled("Donate ", Style::default().fg(theme::text_muted())),
         ]);
         frame.render_widget(Paragraph::new(line), donate_rect);
+    }
+
+    /// Render the About overlay centered on screen.
+    #[allow(clippy::unused_self)]
+    fn render_about_overlay(&self, frame: &mut Frame, area: Rect) {
+        let width = 46u16.min(area.width.saturating_sub(4));
+        let height = 16u16.min(area.height.saturating_sub(4));
+        let x = (area.width.saturating_sub(width)) / 2;
+        let y = (area.height.saturating_sub(height)) / 2;
+        let overlay = Rect::new(area.x + x, area.y + y, width, height);
+
+        frame.render_widget(Clear, overlay);
+        frame.render_widget(
+            Block::default().style(Style::default().bg(theme::bg_base())),
+            overlay,
+        );
+
+        let block = Block::default()
+            .title(" About ")
+            .title_style(theme::title_style())
+            .borders(Borders::ALL)
+            .border_type(BorderType::Rounded)
+            .border_style(theme::border_focused());
+
+        let inner = block.inner(overlay);
+        frame.render_widget(block, overlay);
+
+        let content = vec![
+            Line::from(""),
+            Line::from(Span::styled(
+                "unifly",
+                Style::default()
+                    .fg(theme::accent_primary())
+                    .add_modifier(Modifier::BOLD),
+            )),
+            Line::from(Span::styled(
+                format!("v{}", env!("CARGO_PKG_VERSION")),
+                Style::default().fg(theme::text_muted()),
+            )),
+            Line::from(""),
+            Line::from(Span::styled(
+                "CLI and TUI for managing",
+                Style::default().fg(theme::text_secondary()),
+            )),
+            Line::from(Span::styled(
+                "UniFi network controllers",
+                Style::default().fg(theme::text_secondary()),
+            )),
+            Line::from(""),
+            Line::from(vec![
+                Span::styled("by ", Style::default().fg(theme::text_muted())),
+                Span::styled(
+                    "Stefanie Jane",
+                    Style::default()
+                        .fg(theme::accent_secondary())
+                        .add_modifier(Modifier::BOLD),
+                ),
+            ]),
+            Line::from(""),
+            Line::from(vec![
+                Span::styled(
+                    "\u{2665} ",
+                    Style::default()
+                        .fg(theme::accent_primary())
+                        .add_modifier(Modifier::BOLD),
+                ),
+                Span::styled("d", theme::key_hint_key()),
+                Span::styled("onate", Style::default().fg(theme::text_secondary())),
+                Span::styled("     ", Style::default()),
+                Span::styled("g", theme::key_hint_key()),
+                Span::styled("ithub", Style::default().fg(theme::text_secondary())),
+            ]),
+            Line::from(""),
+            Line::from(Span::styled(
+                "Apache-2.0",
+                Style::default().fg(theme::text_muted()),
+            )),
+            Line::from(""),
+            Line::from(Span::styled(
+                "Esc or a to close",
+                theme::key_hint(),
+            )),
+        ];
+
+        frame.render_widget(
+            Paragraph::new(content).alignment(ratatui::layout::Alignment::Center),
+            inner,
+        );
     }
 
     /// Render the help overlay centered on screen with dimmed background.
@@ -231,7 +326,11 @@ impl App {
             Line::from(vec![
                 Span::styled("  ,           ", theme::key_hint_key()),
                 Span::styled("Settings           ", theme::key_hint()),
-                Span::styled("q  ", theme::key_hint_key()),
+                Span::styled("a  ", theme::key_hint_key()),
+                Span::styled("About", theme::key_hint()),
+            ]),
+            Line::from(vec![
+                Span::styled("  q           ", theme::key_hint_key()),
                 Span::styled("Quit", theme::key_hint()),
             ]),
             Line::from(""),

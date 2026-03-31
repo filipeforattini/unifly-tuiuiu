@@ -56,23 +56,23 @@ impl SettingsScreen {
 
     pub(super) fn render_key_hints(&self, frame: &mut Frame, area: Rect) {
         let hints = match self.state {
+            SettingsState::Testing => "Esc cancel",
             SettingsState::Editing => {
                 if self.active_field == SettingsField::AuthMode {
-                    "\u{25C2}/\u{25B8} select  Tab next  Enter test & save  Esc cancel"
+                    "\u{25C2}/\u{25B8} select  Tab next  Enter test & save  Esc close"
                 } else if matches!(
                     self.active_field,
                     SettingsField::Insecure | SettingsField::ShowDonate
                 ) {
-                    "Space toggle  Tab next  Enter test & save  Esc cancel"
+                    "Space toggle  Tab next  Enter test & save  Esc close"
                 } else if self.active_field == SettingsField::Password {
-                    "Ctrl+U reveal  Tab next  Enter test & save  Esc cancel"
+                    "Ctrl+U reveal  Tab next  Enter test & save  Esc close"
                 } else if self.active_field == SettingsField::Theme {
-                    "Enter choose theme  Tab next  Esc cancel"
+                    "Enter choose theme  Tab next  Esc close"
                 } else {
-                    "Tab next  Shift+Tab prev  Enter test & save  Esc cancel"
+                    "Tab next  Shift+Tab prev  Enter test & save  Esc close"
                 }
             }
-            SettingsState::Testing => "Esc cancel",
         };
 
         frame.render_widget(

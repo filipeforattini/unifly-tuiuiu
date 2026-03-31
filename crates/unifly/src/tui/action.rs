@@ -270,8 +270,9 @@ pub enum Action {
     SearchInput(String),
     SearchSubmit,
 
-    // ── Help ──────────────────────────────────────────────────────
+    // ── Help / About ───────────────────────────────────────────────
     ToggleHelp,
+    ToggleAbout,
 
     // ── Notifications ─────────────────────────────────────────────
     Notify(Notification),
