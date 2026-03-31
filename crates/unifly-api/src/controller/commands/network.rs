@@ -82,7 +82,7 @@ pub(super) async fn route(
                             "ipAddressRange".into(),
                             serde_json::json!({
                                 "start": start,
-                                "end": stop
+                                "stop": stop
                             }),
                         );
                     }
