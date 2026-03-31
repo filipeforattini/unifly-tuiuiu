@@ -37,6 +37,7 @@ pub enum ConnectionStatus {
 }
 
 /// Top-level application state and event loop.
+#[allow(clippy::struct_excessive_bools)]
 pub struct App {
     /// Current active screen.
     active_screen: ScreenId,
@@ -75,12 +76,18 @@ pub struct App {
     last_stats_fetch: Option<std::time::Instant>,
     /// Currently selected stats period — preserved for auto-refresh.
     stats_period: StatsPeriod,
+    /// Whether to show the donate button in the status bar.
+    show_donate: bool,
 }
 
 impl App {
     /// Create a new App with all screens. Optionally accepts a [`Controller`]
     /// for live data — if `None`, the TUI shows the onboarding wizard.
     pub fn new(controller: Option<Controller>) -> Self {
+        let show_donate = crate::config::load_config()
+            .map(|c| c.defaults.show_donate)
+            .unwrap_or(true);
+
         let (action_tx, action_rx) = mpsc::unbounded_channel();
 
         let mut screens: HashMap<ScreenId, Box<dyn Component>> =
@@ -116,6 +123,7 @@ impl App {
             stats_generation: std::sync::Arc::new(std::sync::atomic::AtomicU64::new(0)),
             last_stats_fetch: None,
             stats_period: StatsPeriod::default(),
+            show_donate,
         }
     }
 

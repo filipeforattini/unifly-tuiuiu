@@ -90,6 +90,10 @@ pub struct Defaults {
     /// Theme name for the TUI (e.g., "nord", "dracula", "silkcircuit-neon").
     #[serde(default)]
     pub theme: Option<String>,
+
+    /// Whether to show the donate button in the TUI status bar.
+    #[serde(default = "default_show_donate")]
+    pub show_donate: bool,
 }
 
 impl Default for Defaults {
@@ -100,6 +104,7 @@ impl Default for Defaults {
             insecure: false,
             timeout: default_timeout(),
             theme: None,
+            show_donate: default_show_donate(),
         }
     }
 }
@@ -112,6 +117,9 @@ fn default_color() -> String {
 }
 fn default_timeout() -> u64 {
     30
+}
+fn default_show_donate() -> bool {
+    true
 }
 
 /// A named controller profile.

@@ -59,7 +59,10 @@ impl SettingsScreen {
             SettingsState::Editing => {
                 if self.active_field == SettingsField::AuthMode {
                     "\u{25C2}/\u{25B8} select  Tab next  Enter test & save  Esc cancel"
-                } else if self.active_field == SettingsField::Insecure {
+                } else if matches!(
+                    self.active_field,
+                    SettingsField::Insecure | SettingsField::ShowDonate
+                ) {
                     "Space toggle  Tab next  Enter test & save  Esc cancel"
                 } else if self.active_field == SettingsField::Password {
                     "Ctrl+U reveal  Tab next  Enter test & save  Esc cancel"

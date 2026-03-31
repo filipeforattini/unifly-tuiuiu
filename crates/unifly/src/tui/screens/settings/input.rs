@@ -24,6 +24,7 @@ impl SettingsScreen {
         match self.active_field {
             SettingsField::AuthMode => self.handle_auth_mode_key(key),
             SettingsField::Insecure => self.handle_insecure_key(key),
+            SettingsField::ShowDonate => self.handle_show_donate_key(key),
             SettingsField::Theme => self.handle_theme_key(key),
             _ => self.handle_text_field_key(key),
         }
@@ -53,6 +54,9 @@ impl SettingsScreen {
                     match field {
                         SettingsField::Insecure => {
                             self.draft.insecure = !self.draft.insecure;
+                        }
+                        SettingsField::ShowDonate => {
+                            self.toggle_show_donate();
                         }
                         SettingsField::Theme => {
                             self.open_theme_selector();
@@ -146,6 +150,29 @@ impl SettingsScreen {
         match key.code {
             KeyCode::Char(' ') => {
                 self.draft.insecure = !self.draft.insecure;
+                None
+            }
+            KeyCode::Tab => {
+                self.focus_next();
+                None
+            }
+            KeyCode::BackTab => {
+                self.focus_prev();
+                None
+            }
+            KeyCode::Enter => {
+                self.submit_connection_test();
+                None
+            }
+            KeyCode::Esc => Some(Action::CloseSettings),
+            _ => None,
+        }
+    }
+
+    fn handle_show_donate_key(&mut self, key: KeyEvent) -> Option<Action> {
+        match key.code {
+            KeyCode::Char(' ') => {
+                self.toggle_show_donate();
                 None
             }
             KeyCode::Tab => {

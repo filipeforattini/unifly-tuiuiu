@@ -36,6 +36,7 @@ pub(super) enum SettingsField {
     Site,
     Insecure,
     Theme,
+    ShowDonate,
 }
 
 pub struct SettingsScreen {
@@ -51,6 +52,7 @@ pub struct SettingsScreen {
     throbber_state: throbber_widgets_tui::ThrobberState,
     last_area: Cell<Rect>,
     theme_selector: RefCell<Option<opaline::ThemeSelectorState>>,
+    show_donate: bool,
 }
 
 impl Default for SettingsScreen {

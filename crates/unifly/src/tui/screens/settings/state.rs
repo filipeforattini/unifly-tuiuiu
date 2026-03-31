@@ -1,7 +1,7 @@
 use super::{AuthMode, ControllerProfileDraft, SettingsField, SettingsScreen, SettingsState};
 
 impl SettingsField {
-    pub(super) const ALL: [SettingsField; 8] = [
+    pub(super) const ALL: [SettingsField; 9] = [
         Self::Url,
         Self::AuthMode,
         Self::ApiKey,
@@ -10,11 +10,17 @@ impl SettingsField {
         Self::Site,
         Self::Insecure,
         Self::Theme,
+        Self::ShowDonate,
     ];
 
     pub(super) fn visible_for(self, mode: AuthMode) -> bool {
         match self {
-            Self::Url | Self::AuthMode | Self::Site | Self::Insecure | Self::Theme => true,
+            Self::Url
+            | Self::AuthMode
+            | Self::Site
+            | Self::Insecure
+            | Self::Theme
+            | Self::ShowDonate => true,
             Self::ApiKey => matches!(mode, AuthMode::ApiKey | AuthMode::Hybrid),
             Self::Username | Self::Password => {
                 matches!(mode, AuthMode::Legacy | AuthMode::Hybrid)
@@ -38,6 +44,7 @@ impl SettingsScreen {
             throbber_state: throbber_widgets_tui::ThrobberState::default(),
             last_area: std::cell::Cell::new(ratatui::layout::Rect::default()),
             theme_selector: std::cell::RefCell::new(None),
+            show_donate: true,
         };
         screen.load_from_config();
         screen
@@ -47,6 +54,8 @@ impl SettingsScreen {
         let Ok(cfg) = crate::config::load_config() else {
             return;
         };
+
+        self.show_donate = cfg.defaults.show_donate;
 
         let profile_name = cfg.default_profile.as_deref().unwrap_or("default");
         let Some(profile) = cfg.profiles.get(profile_name) else {
@@ -74,7 +83,7 @@ impl SettingsScreen {
             .into_iter()
             .map(|field| {
                 let height = match field {
-                    SettingsField::Insecure => 1,
+                    SettingsField::Insecure | SettingsField::ShowDonate => 1,
                     SettingsField::Theme => 2,
                     _ => 4,
                 };
@@ -134,7 +143,23 @@ impl SettingsScreen {
             SettingsField::Username => Some(&mut self.draft.username),
             SettingsField::Password => Some(&mut self.draft.password),
             SettingsField::Site => Some(&mut self.draft.site),
-            SettingsField::AuthMode | SettingsField::Insecure | SettingsField::Theme => None,
+            SettingsField::AuthMode
+            | SettingsField::Insecure
+            | SettingsField::Theme
+            | SettingsField::ShowDonate => None,
+        }
+    }
+
+    pub(super) fn toggle_show_donate(&mut self) {
+        self.show_donate = !self.show_donate;
+
+        if let Ok(mut cfg) = crate::config::load_config() {
+            cfg.defaults.show_donate = self.show_donate;
+            let _ = crate::config::save_config(&cfg);
+        }
+
+        if let Some(ref tx) = self.action_tx {
+            let _ = tx.send(crate::tui::action::Action::SetShowDonate(self.show_donate));
         }
     }
 

@@ -107,11 +107,35 @@ impl App {
             Action::DismissNotification => {
                 self.notification = None;
             }
+            Action::OpenDonate => {
+                open_url("https://www.paypal.com/donate/?hosted_button_id=ESL4HTFXW3J74");
+            }
+            Action::SetShowDonate(show) => {
+                self.show_donate = *show;
+            }
             other => {
                 self.forward_to_screen(self.active_screen, other)?;
             }
         }
 
         Ok(())
+    }
+}
+
+/// Open a URL in the user's default browser.
+fn open_url(url: &str) {
+    #[cfg(target_os = "macos")]
+    {
+        let _ = std::process::Command::new("open").arg(url).spawn();
+    }
+    #[cfg(target_os = "linux")]
+    {
+        let _ = std::process::Command::new("xdg-open").arg(url).spawn();
+    }
+    #[cfg(target_os = "windows")]
+    {
+        let _ = std::process::Command::new("cmd")
+            .args(["/c", "start", url])
+            .spawn();
     }
 }

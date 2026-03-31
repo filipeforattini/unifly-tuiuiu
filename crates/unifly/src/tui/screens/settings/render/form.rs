@@ -196,6 +196,13 @@ impl SettingsScreen {
                     self.active_field == SettingsField::Insecure,
                 ),
                 SettingsField::Theme => self.render_theme_field(frame, chunk),
+                SettingsField::ShowDonate => self.render_toggle(
+                    frame,
+                    chunk,
+                    "Show donate button",
+                    self.show_donate,
+                    self.active_field == SettingsField::ShowDonate,
+                ),
             }
         }
     }

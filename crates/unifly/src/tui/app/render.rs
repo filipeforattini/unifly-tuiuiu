@@ -1,7 +1,7 @@
 use ratatui::{
     Frame,
     layout::{Constraint, Layout, Rect},
-    style::Style,
+    style::{Modifier, Style},
     text::{Line, Span},
     widgets::{Block, BorderType, Borders, Clear, Paragraph, Tabs},
 };
@@ -121,6 +121,29 @@ impl App {
         let line = Line::from(vec![Span::raw(" "), connection_indicator, hints]);
 
         frame.render_widget(Paragraph::new(line), area);
+
+        if self.show_donate {
+            self.render_donate_button(frame, area);
+        }
+    }
+
+    /// Render a clickable donate button at the right edge of the status bar.
+    #[allow(clippy::unused_self)]
+    fn render_donate_button(&self, frame: &mut Frame, area: Rect) {
+        let donate_width = 11u16;
+        let x = area.x + area.width.saturating_sub(donate_width);
+        let donate_rect = Rect::new(x, area.y, donate_width, 1);
+
+        let line = Line::from(vec![
+            Span::styled(
+                " ♥ ",
+                Style::default()
+                    .fg(theme::accent_primary())
+                    .add_modifier(Modifier::BOLD),
+            ),
+            Span::styled("Donate ", Style::default().fg(theme::text_muted())),
+        ]);
+        frame.render_widget(Paragraph::new(line), donate_rect);
     }
 
     /// Render the help overlay centered on screen with dimmed background.

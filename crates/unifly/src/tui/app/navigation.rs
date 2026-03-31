@@ -1,5 +1,5 @@
 use color_eyre::eyre::Result;
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseEvent};
+use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseButton, MouseEvent, MouseEventKind};
 
 use super::App;
 use crate::tui::action::Action;
@@ -43,12 +43,46 @@ impl App {
         self.forward_key_to_active_screen(key)
     }
 
-    /// Handle mouse events (delegate to active screen).
+    /// Handle mouse events — check donate button first, then delegate to active screen.
     pub(super) fn handle_mouse_event(&mut self, mouse: MouseEvent) -> Result<Option<Action>> {
+        if let MouseEventKind::Down(MouseButton::Left) = mouse.kind
+            && let Some(action) = self.check_donate_click(mouse.column, mouse.row)
+        {
+            return Ok(Some(action));
+        }
+
         if let Some(screen) = self.screens.get_mut(&self.active_screen) {
             return screen.handle_mouse_event(mouse);
         }
         Ok(None)
+    }
+
+    /// Check if a click landed on the donate button in the status bar.
+    fn check_donate_click(&self, col: u16, row: u16) -> Option<Action> {
+        if !self.show_donate || self.search_active {
+            return None;
+        }
+        if matches!(
+            self.active_screen,
+            ScreenId::Setup | ScreenId::Settings
+        ) {
+            return None;
+        }
+
+        let (w, h) = self.terminal_size;
+        if h == 0 || w == 0 {
+            return None;
+        }
+
+        let donate_width = 11u16;
+        let donate_x = w.saturating_sub(donate_width);
+        let status_y = h.saturating_sub(1);
+
+        if row == status_y && col >= donate_x {
+            Some(Action::OpenDonate)
+        } else {
+            None
+        }
     }
 
     fn handle_special_screen_key_event(&mut self, key: KeyEvent) -> Result<Option<Action>> {

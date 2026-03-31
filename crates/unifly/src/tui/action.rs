@@ -317,4 +317,8 @@ pub enum Action {
         profile_name: String,
         config: Box<unifly_api::ControllerConfig>,
     },
+
+    // ── Donate ───────────────────────────────────────────────────
+    OpenDonate,
+    SetShowDonate(bool),
 }
