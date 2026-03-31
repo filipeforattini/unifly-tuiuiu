@@ -75,12 +75,12 @@ pub struct CreateWifiBroadcastRequest {
     pub enabled: bool,
     #[serde(skip_serializing_if = "Option::is_none", alias = "network")]
     pub network_id: Option<EntityId>,
-    #[serde(alias = "hideName", alias = "hidden")]
+    #[serde(default, alias = "hideName", alias = "hidden")]
     pub hide_ssid: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub broadcast_type: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    #[serde(alias = "broadcastingFrequenciesGHz")]
+    #[serde(alias = "broadcastingFrequenciesGHz", alias = "frequencies")]
     pub frequencies_ghz: Option<Vec<f32>>,
     #[serde(default)]
     #[serde(alias = "bandSteeringEnabled")]
@@ -130,5 +130,22 @@ mod tests {
         assert!(request.hide_ssid);
         assert!(request.band_steering);
         assert_eq!(request.fast_roaming, Some(true));
+    }
+
+    #[test]
+    fn create_wifi_broadcast_request_honors_cli_style_aliases() {
+        let request: CreateWifiBroadcastRequest = serde_json::from_value(serde_json::json!({
+            "name": "Test",
+            "security_mode": "Wpa3Personal",
+            "passphrase": "test1234",
+            "hidden": true,
+            "fast_roaming": true,
+            "frequencies": [2.4]
+        }))
+        .expect("wifi broadcast request should deserialize with CLI-style aliases");
+
+        assert!(request.hide_ssid);
+        assert_eq!(request.fast_roaming, Some(true));
+        assert_eq!(request.frequencies_ghz, Some(vec![2.4]));
     }
 }
