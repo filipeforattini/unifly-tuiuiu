@@ -229,10 +229,7 @@ impl App {
                 Style::default().fg(theme::text_muted()),
             )),
             Line::from(""),
-            Line::from(Span::styled(
-                "Esc or a to close",
-                theme::key_hint(),
-            )),
+            Line::from(Span::styled("Esc or a to close", theme::key_hint())),
         ];
 
         frame.render_widget(

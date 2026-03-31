@@ -41,9 +41,7 @@ impl App {
                 KeyCode::Esc | KeyCode::Char('a') => Some(Action::ToggleAbout),
                 KeyCode::Char('d') => Some(Action::OpenDonate),
                 KeyCode::Char('g') => {
-                    super::dispatch::open_url(
-                        "https://github.com/hyperb1iss/unifly",
-                    );
+                    super::dispatch::open_url("https://github.com/hyperb1iss/unifly");
                     None
                 }
                 _ => None,
@@ -76,10 +74,7 @@ impl App {
         if !self.show_donate || self.search_active {
             return None;
         }
-        if matches!(
-            self.active_screen,
-            ScreenId::Setup | ScreenId::Settings
-        ) {
+        if matches!(self.active_screen, ScreenId::Setup | ScreenId::Settings) {
             return None;
         }
 

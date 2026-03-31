@@ -135,8 +135,10 @@ impl SettingsScreen {
             return;
         }
 
-        let rule_len = area.width.saturating_sub(u16::try_from(label.len()).unwrap_or(0) + 5);
-        let rule = "\u{2500}".repeat(rule_len as usize);
+        let rule_len = area
+            .width
+            .saturating_sub(u16::try_from(label.len()).unwrap_or(0) + 5);
+        let rule = "\u{2500}".repeat(usize::from(rule_len));
 
         frame.render_widget(
             Paragraph::new(Line::from(vec![

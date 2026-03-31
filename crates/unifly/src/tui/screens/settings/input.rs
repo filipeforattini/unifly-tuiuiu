@@ -91,11 +91,7 @@ impl SettingsScreen {
     }
 
     /// Generic handler for checkbox / toggle fields.
-    fn handle_toggle_key(
-        &mut self,
-        key: KeyEvent,
-        toggle: fn(&mut Self),
-    ) -> Option<Action> {
+    fn handle_toggle_key(&mut self, key: KeyEvent, toggle: fn(&mut Self)) -> Option<Action> {
         match key.code {
             KeyCode::Char(' ') => {
                 toggle(self);

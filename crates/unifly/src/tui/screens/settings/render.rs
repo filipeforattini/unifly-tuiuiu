@@ -28,7 +28,7 @@ impl SettingsScreen {
         // Layout: [padding] [content] [error] [hints]
         let layout = Layout::vertical([
             Constraint::Length(1), // top padding
-            Constraint::Min(1),   // content
+            Constraint::Min(1),    // content
             Constraint::Length(1), // error
             Constraint::Length(1), // key hints
         ])
