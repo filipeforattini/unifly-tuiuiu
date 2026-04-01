@@ -165,7 +165,7 @@ pub async fn handle(
                     broadcast_type: Some(map_broadcast_type(&broadcast_type)),
                     frequencies_ghz: frequencies,
                     band_steering,
-                    fast_roaming,
+                    fast_roaming: if fast_roaming { Some(true) } else { None },
                 }
             };
 

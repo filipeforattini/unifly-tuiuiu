@@ -66,14 +66,16 @@ pub struct UpdateNetworkRequest {
 #[allow(clippy::struct_excessive_bools)]
 pub struct CreateWifiBroadcastRequest {
     pub name: String,
+    #[serde(default)]
     pub ssid: String,
     pub security_mode: WifiSecurityMode,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub passphrase: Option<String>,
+    #[serde(default = "default_enabled")]
     pub enabled: bool,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none", alias = "network")]
     pub network_id: Option<EntityId>,
-    #[serde(alias = "hideName")]
+    #[serde(alias = "hideName", alias = "hidden")]
     pub hide_ssid: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub broadcast_type: Option<String>,
@@ -83,9 +85,12 @@ pub struct CreateWifiBroadcastRequest {
     #[serde(default)]
     #[serde(alias = "bandSteeringEnabled")]
     pub band_steering: bool,
-    #[serde(default)]
-    #[serde(alias = "bssTransitionEnabled")]
-    pub fast_roaming: bool,
+    #[serde(default, alias = "bssTransitionEnabled", skip_serializing_if = "Option::is_none")]
+    pub fast_roaming: Option<bool>,
+}
+
+fn default_enabled() -> bool {
+    true
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -124,6 +129,6 @@ mod tests {
 
         assert!(request.hide_ssid);
         assert!(request.band_steering);
-        assert!(request.fast_roaming);
+        assert_eq!(request.fast_roaming, Some(true));
     }
 }

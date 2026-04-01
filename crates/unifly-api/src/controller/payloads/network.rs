@@ -121,6 +121,15 @@ pub(in super::super) fn build_create_wifi_broadcast_payload(
                 })
             });
     }
+    // WPA modes accept fastRoamingEnabled inside securityConfiguration,
+    // but IoT_OPTIMIZED forbids it — only include when explicitly set.
+    if let Some(fast_roaming) = req.fast_roaming {
+        if !matches!(req.security_mode, WifiSecurityMode::Open) {
+            security_configuration
+                .entry("fastRoamingEnabled")
+                .or_insert(serde_json::Value::Bool(fast_roaming));
+        }
+    }
     body.insert(
         "securityConfiguration".into(),
         serde_json::Value::Object(security_configuration),
@@ -136,8 +145,11 @@ pub(in super::super) fn build_create_wifi_broadcast_payload(
     if req.band_steering {
         body.insert("bandSteeringEnabled".into(), serde_json::Value::Bool(true));
     }
-    if req.fast_roaming {
-        body.insert("bssTransitionEnabled".into(), serde_json::Value::Bool(true));
+    if let Some(fast_roaming) = req.fast_roaming {
+        body.insert(
+            "bssTransitionEnabled".into(),
+            serde_json::Value::Bool(fast_roaming),
+        );
     }
     if let Some(frequencies) = req.frequencies_ghz.as_ref() {
         body.insert(
@@ -247,7 +259,7 @@ mod tests {
             broadcast_type: Some("STANDARD".into()),
             frequencies_ghz: Some(vec![2.4, 5.0]),
             band_steering: true,
-            fast_roaming: true,
+            fast_roaming: Some(true),
         });
 
         assert_eq!(payload.name, "Main");
@@ -277,7 +289,7 @@ mod tests {
             broadcast_type: Some("STANDARD".into()),
             frequencies_ghz: Some(vec![2.4, 5.0, 6.0]),
             band_steering: false,
-            fast_roaming: false,
+            fast_roaming: None,
         });
 
         let json = serde_json::to_string(&payload).unwrap();
