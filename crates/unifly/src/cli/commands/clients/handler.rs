@@ -9,7 +9,7 @@ use crate::cli::error::CliError;
 use crate::cli::output;
 
 use super::render::{Reservation, client_row, detail, reservation_row};
-use super::resolve::resolve_network;
+use super::resolve::{resolve_network, resolve_network_by_name};
 
 fn find_client(controller: &Controller, needle: &str) -> Option<Arc<Client>> {
     controller
@@ -224,13 +224,21 @@ pub(super) async fn handle(
             Ok(())
         }
 
-        ClientsCommand::RemoveIp { mac } => {
+        ClientsCommand::RemoveIp { mac, network } => {
+            let network_id = network.as_deref().map(|n| resolve_network_by_name(controller, n)).transpose()?;
             let mac_addr = MacAddress::new(&mac);
             controller
-                .execute(CoreCommand::RemoveClientFixedIp { mac: mac_addr })
+                .execute(CoreCommand::RemoveClientFixedIp {
+                    mac: mac_addr,
+                    network_id,
+                })
                 .await?;
             if !global.quiet {
-                eprintln!("Fixed IP removed for {mac}");
+                if let Some(name) = &network {
+                    eprintln!("Fixed IP removed for {mac} on network {name}");
+                } else {
+                    eprintln!("Fixed IP removed for {mac}");
+                }
             }
             Ok(())
         }

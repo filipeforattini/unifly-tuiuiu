@@ -89,6 +89,7 @@ pub enum Command {
     },
     RemoveClientFixedIp {
         mac: MacAddress,
+        network_id: Option<EntityId>,
     },
 
     // ── Network CRUD ─────────────────────────────────────────────────

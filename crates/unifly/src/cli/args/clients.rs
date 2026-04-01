@@ -103,5 +103,9 @@ pub enum ClientsCommand {
     RemoveIp {
         /// Client MAC address
         mac: String,
+
+        /// Network name or ID (removes from all networks if omitted)
+        #[arg(long)]
+        network: Option<String>,
     },
 }

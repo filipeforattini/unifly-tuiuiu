@@ -4,6 +4,25 @@ use unifly_api::{Controller, EntityId};
 
 use crate::cli::error::CliError;
 
+/// Resolve a network name or ID to an `EntityId`.
+pub(super) fn resolve_network_by_name(
+    controller: &Controller,
+    name_or_id: &str,
+) -> Result<EntityId, CliError> {
+    let networks = controller.networks_snapshot();
+    networks
+        .iter()
+        .find(|network| {
+            network.name.eq_ignore_ascii_case(name_or_id) || network.id.to_string() == name_or_id
+        })
+        .map(|network| network.id.clone())
+        .ok_or_else(|| CliError::NotFound {
+            resource_type: "network".into(),
+            identifier: name_or_id.into(),
+            list_command: "networks list".into(),
+        })
+}
+
 pub(super) fn resolve_network(
     controller: &Controller,
     name_or_id: Option<&str>,

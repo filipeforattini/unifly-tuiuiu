@@ -215,28 +215,48 @@ impl LegacyClient {
 
     /// Remove a fixed IP (DHCP reservation) from a client.
     ///
-    /// Sets `use_fixedip` to false on the existing user entry.
-    pub async fn remove_client_fixed_ip(&self, mac: &str) -> Result<(), Error> {
-        debug!(mac, "removing client fixed IP");
+    /// If `network_id` is provided, only the reservation on that network
+    /// is removed. Otherwise all reservations for the MAC are cleared.
+    pub async fn remove_client_fixed_ip(
+        &self,
+        mac: &str,
+        network_id: Option<&str>,
+    ) -> Result<(), Error> {
+        debug!(mac, ?network_id, "removing client fixed IP");
 
         let users = self.list_users().await?;
         let normalized_mac = mac.to_lowercase();
-        let user = users
+        let matches: Vec<&LegacyUserEntry> = users
             .iter()
-            .find(|u| u.mac.to_lowercase() == normalized_mac)
-            .ok_or_else(|| Error::LegacyApi {
-                message: format!("no known user with MAC {mac}"),
-            })?;
+            .filter(|u| {
+                u.mac.to_lowercase() == normalized_mac
+                    && network_id.map_or(true, |nid| {
+                        u.network_id.as_deref() == Some(nid)
+                    })
+            })
+            .collect();
 
-        let url = self.site_url(&format!("rest/user/{}", user.id));
-        let _: Vec<serde_json::Value> = self
-            .put(
-                url,
-                &json!({
-                    "use_fixedip": false,
-                }),
-            )
-            .await?;
+        if matches.is_empty() {
+            return Err(Error::LegacyApi {
+                message: if let Some(nid) = network_id {
+                    format!("no reservation for MAC {mac} on network {nid}")
+                } else {
+                    format!("no known user with MAC {mac}")
+                },
+            });
+        }
+
+        for user in matches {
+            let url = self.site_url(&format!("rest/user/{}", user.id));
+            let _: Vec<serde_json::Value> = self
+                .put(
+                    url,
+                    &json!({
+                        "use_fixedip": false,
+                    }),
+                )
+                .await?;
+        }
         Ok(())
     }
 }

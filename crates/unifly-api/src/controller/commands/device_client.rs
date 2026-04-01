@@ -181,9 +181,14 @@ pub(super) async fn route(ctx: &CommandContext, cmd: Command) -> Result<CommandR
                 .await?;
             Ok(CommandResult::Ok)
         }
-        Command::RemoveClientFixedIp { mac } => {
+        Command::RemoveClientFixedIp { mac, network_id } => {
             let legacy = require_legacy(legacy)?;
-            legacy.remove_client_fixed_ip(mac.as_str()).await?;
+            legacy
+                .remove_client_fixed_ip(
+                    mac.as_str(),
+                    network_id.as_ref().map(|id| id.to_string()).as_deref(),
+                )
+                .await?;
             Ok(CommandResult::Ok)
         }
         _ => unreachable!("device_client::route received non-device/client command"),
