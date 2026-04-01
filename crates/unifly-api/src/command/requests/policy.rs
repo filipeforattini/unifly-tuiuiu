@@ -7,9 +7,13 @@ use crate::model::{EntityId, FirewallAction};
 pub struct CreateFirewallPolicyRequest {
     pub name: String,
     pub action: FirewallAction,
+    #[serde(alias = "source_zone")]
     pub source_zone_id: EntityId,
+    #[serde(alias = "dest_zone")]
     pub destination_zone_id: EntityId,
+    #[serde(default = "default_true")]
     pub enabled: bool,
+    #[serde(default)]
     pub logging_enabled: bool,
     #[serde(default = "default_true")]
     pub allow_return_traffic: bool,
@@ -78,6 +82,7 @@ pub struct CreateFirewallZoneRequest {
     pub name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
+    #[serde(alias = "networks")]
     pub network_ids: Vec<EntityId>,
 }
 
@@ -87,7 +92,7 @@ pub struct UpdateFirewallZoneRequest {
     pub name: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none", alias = "networks")]
     pub network_ids: Option<Vec<EntityId>>,
 }
 
@@ -97,15 +102,17 @@ pub struct CreateAclRuleRequest {
     #[serde(default = "default_acl_rule_type")]
     pub rule_type: String,
     pub action: FirewallAction,
+    #[serde(alias = "source_zone")]
     pub source_zone_id: EntityId,
+    #[serde(alias = "dest_zone")]
     pub destination_zone_id: EntityId,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub protocol: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none", alias = "src_port")]
     pub source_port: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none", alias = "dst_port")]
     pub destination_port: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub source_filter: Option<TrafficFilterSpec>,
@@ -113,6 +120,7 @@ pub struct CreateAclRuleRequest {
     pub destination_filter: Option<TrafficFilterSpec>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub enforcing_device_filter: Option<Value>,
+    #[serde(default = "default_true")]
     pub enabled: bool,
 }
 
@@ -132,15 +140,15 @@ pub struct UpdateAclRuleRequest {
     pub enabled: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none", alias = "source_zone")]
     pub source_zone_id: Option<EntityId>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none", alias = "dest_zone")]
     pub destination_zone_id: Option<EntityId>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub protocol: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none", alias = "src_port")]
     pub source_port: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(skip_serializing_if = "Option::is_none", alias = "dst_port")]
     pub destination_port: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub source_filter: Option<TrafficFilterSpec>,

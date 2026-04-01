@@ -105,6 +105,7 @@ humantime          = { workspace = true, optional = true }
 indexmap            = { workspace = true, optional = true }
 futures            = { workspace = true, optional = true }
 tokio-util         = { workspace = true, optional = true }
+json_comments = "0.2.2"
 
 [build-dependencies]
 clap               = { workspace = true }

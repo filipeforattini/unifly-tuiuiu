@@ -16,8 +16,9 @@ pub fn confirm(message: &str, yes_flag: bool) -> Result<bool, CliError> {
 }
 
 pub fn read_json_file(path: &Path) -> Result<serde_json::Value, CliError> {
-    let contents = std::fs::read_to_string(path)?;
-    serde_json::from_str(&contents).map_err(|error| CliError::Validation {
+    let file = std::fs::File::open(path)?;
+    let reader = json_comments::StripComments::new(std::io::BufReader::new(file));
+    serde_json::from_reader(reader).map_err(|error| CliError::Validation {
         field: "from-file".into(),
         reason: format!("invalid JSON: {error}"),
     })

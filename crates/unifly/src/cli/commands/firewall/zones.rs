@@ -88,16 +88,24 @@ pub(super) async fn handle(
             Ok(())
         }
 
-        FirewallZonesCommand::Create { name, networks } => {
-            let network_ids = networks
-                .unwrap_or_default()
-                .into_iter()
-                .map(EntityId::from)
-                .collect();
-            let req = CreateFirewallZoneRequest {
-                name,
-                description: None,
-                network_ids,
+        FirewallZonesCommand::Create {
+            name,
+            networks,
+            from_file,
+        } => {
+            let req = if let Some(ref path) = from_file {
+                serde_json::from_value(util::read_json_file(path)?)?
+            } else {
+                let network_ids = networks
+                    .unwrap_or_default()
+                    .into_iter()
+                    .map(EntityId::from)
+                    .collect();
+                CreateFirewallZoneRequest {
+                    name: name.unwrap_or_default(),
+                    description: None,
+                    network_ids,
+                }
             };
             controller
                 .execute(CoreCommand::CreateFirewallZone(req))
@@ -108,19 +116,28 @@ pub(super) async fn handle(
             Ok(())
         }
 
-        FirewallZonesCommand::Update { id, name, networks } => {
-            if name.is_none() && networks.is_none() {
+        FirewallZonesCommand::Update {
+            id,
+            name,
+            networks,
+            from_file,
+        } => {
+            if from_file.is_none() && name.is_none() && networks.is_none() {
                 return Err(CliError::Validation {
                     field: "update".into(),
-                    reason: "at least one of --name or --networks is required".into(),
+                    reason: "at least one of --name, --networks, or --from-file is required".into(),
                 });
             }
 
-            let update = UpdateFirewallZoneRequest {
-                name,
-                description: None,
-                network_ids: networks
-                    .map(|values| values.into_iter().map(EntityId::from).collect()),
+            let update = if let Some(ref path) = from_file {
+                serde_json::from_value(util::read_json_file(path)?)?
+            } else {
+                UpdateFirewallZoneRequest {
+                    name,
+                    description: None,
+                    network_ids: networks
+                        .map(|values| values.into_iter().map(EntityId::from).collect()),
+                }
             };
             controller
                 .execute(CoreCommand::UpdateFirewallZone {

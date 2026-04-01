@@ -227,12 +227,16 @@ pub enum FirewallZonesCommand {
     /// Create a custom firewall zone
     Create {
         /// Zone name
-        #[arg(long, required = true)]
-        name: String,
+        #[arg(long, required_unless_present = "from_file")]
+        name: Option<String>,
 
         /// Network IDs to attach (comma-separated UUIDs)
         #[arg(long, value_delimiter = ',')]
         networks: Option<Vec<String>>,
+
+        /// Create from JSON file (overrides individual flags)
+        #[arg(long, short = 'F', conflicts_with_all = &["name"])]
+        from_file: Option<PathBuf>,
     },
 
     /// Update a firewall zone
@@ -247,6 +251,10 @@ pub enum FirewallZonesCommand {
         /// Network IDs to attach (replaces existing)
         #[arg(long, value_delimiter = ',')]
         networks: Option<Vec<String>>,
+
+        /// Load update payload from JSON file
+        #[arg(long, short = 'F')]
+        from_file: Option<PathBuf>,
     },
 
     /// Delete a custom firewall zone

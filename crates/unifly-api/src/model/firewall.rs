@@ -5,11 +5,29 @@ use serde::{Deserialize, Serialize};
 use super::common::{DataSource, EntityOrigin};
 use super::entity_id::EntityId;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 pub enum FirewallAction {
     Allow,
     Block,
     Reject,
+}
+
+impl<'de> Deserialize<'de> for FirewallAction {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        match s.to_lowercase().as_str() {
+            "allow" => Ok(Self::Allow),
+            "block" => Ok(Self::Block),
+            "reject" => Ok(Self::Reject),
+            _ => Err(serde::de::Error::unknown_variant(
+                &s,
+                &["allow", "block", "reject"],
+            )),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
