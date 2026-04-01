@@ -46,6 +46,16 @@ The original UniFi controller API, session-based with cookie authentication.
 - `cmd/sitemgr` — Device commands (adopt, restart, upgrade)
 - `stat/admin` — Administrator management
 
+### v2 Endpoints
+
+Network Application 9+ exposes a second generation of legacy-authenticated endpoints under `/v2/api/site/{site}/`. These return plain JSON (no `{ meta, data }` envelope).
+
+| Endpoint | Description |
+|---|---|
+| `traffic-flow-latest-statistics` | DPI traffic flow data by application/category |
+
+Unifly's DPI cascade tries the v2 endpoint first, then falls back to `stat/sitedpi` and `stat/dpi` for older firmware.
+
 ### CSRF Token Flow
 
 ```mermaid

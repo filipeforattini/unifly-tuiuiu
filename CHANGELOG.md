@@ -16,6 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - **DHCP reservation management** — create, list, and delete DHCP static mappings
 - **TUI theme selector** — interactive theme picker in settings screen via Opaline engine
 - **Legacy site listing** — `sites list` works with legacy API auth
+- **`api` command** — raw API passthrough for arbitrary GET/POST requests (`unifly api <path>`)
+- **v2 API support** — `site_url_v2` and `get_raw` helpers for Network App 9+ endpoints
+- **DPI multi-endpoint cascade** — tries v2 traffic-flow, then `stat/sitedpi`, then `stat/dpi` fallback
 
 ### Changed
 

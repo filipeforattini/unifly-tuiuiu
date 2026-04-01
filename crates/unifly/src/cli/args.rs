@@ -5,6 +5,8 @@
 
 use clap::{Parser, Subcommand};
 
+#[path = "args/api.rs"]
+mod api;
 #[path = "args/acl.rs"]
 mod acl;
 #[path = "args/admin.rs"]
@@ -48,6 +50,7 @@ mod wans;
 #[path = "args/wifi.rs"]
 mod wifi;
 
+pub use api::*;
 pub use acl::*;
 pub use admin::*;
 pub use alarms::*;
@@ -95,6 +98,9 @@ pub struct Cli {
 
 #[derive(Debug, Subcommand)]
 pub enum Command {
+    /// Send a raw API request (GET or POST) to an arbitrary endpoint
+    Api(ApiArgs),
+
     /// Manage ACL rules
     Acl(AclArgs),
 

@@ -1,5 +1,6 @@
 //! Command dispatch: bridges CLI args -> core Commands -> output formatting.
 
+pub mod api;
 pub mod acl;
 pub mod admin;
 pub mod alarms;
@@ -37,6 +38,7 @@ pub async fn dispatch(
     global: &GlobalOpts,
 ) -> Result<(), CliError> {
     match cmd {
+        Command::Api(args) => api::handle(controller, args, global).await,
         Command::Acl(args) => acl::handle(controller, args, global).await,
         Command::Admin(args) => admin::handle(controller, args, global).await,
         Command::Alarms(args) => alarms::handle(controller, args, global).await,

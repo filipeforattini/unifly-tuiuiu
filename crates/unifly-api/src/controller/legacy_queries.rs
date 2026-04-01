@@ -254,4 +254,26 @@ impl Controller {
             extra: raw,
         })
     }
+
+    /// Send a raw GET request to an arbitrary path on the controller.
+    ///
+    /// The `path` is appended to the controller base URL + platform prefix
+    /// (e.g. `/proxy/network/`). The response is returned as raw JSON
+    /// without legacy envelope unwrapping.
+    pub async fn raw_get(&self, path: &str) -> Result<serde_json::Value, CoreError> {
+        let guard = self.inner.legacy_client.lock().await;
+        let legacy = require_legacy(guard.as_ref())?;
+        Ok(legacy.raw_get(path).await?)
+    }
+
+    /// Send a raw POST request to an arbitrary path on the controller.
+    pub async fn raw_post(
+        &self,
+        path: &str,
+        body: &serde_json::Value,
+    ) -> Result<serde_json::Value, CoreError> {
+        let guard = self.inner.legacy_client.lock().await;
+        let legacy = require_legacy(guard.as_ref())?;
+        Ok(legacy.raw_post(path, body).await?)
+    }
 }

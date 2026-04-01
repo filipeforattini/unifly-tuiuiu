@@ -306,6 +306,52 @@ impl LegacyClient {
         self.parse_envelope(resp).await
     }
 
+    /// Send a raw GET to an arbitrary path (no envelope unwrapping).
+    ///
+    /// The `path` is appended directly after `{base}{prefix}/`.
+    pub async fn raw_get(&self, path: &str) -> Result<serde_json::Value, Error> {
+        let prefix = self.platform.legacy_prefix().unwrap_or("");
+        let base = self.base_url.as_str().trim_end_matches('/');
+        let prefix = prefix.trim_end_matches('/');
+        let url = Url::parse(&format!("{base}{prefix}/{path}")).expect("invalid raw URL");
+        self.get_raw(url).await
+    }
+
+    /// Send a raw POST to an arbitrary path (no envelope unwrapping).
+    pub async fn raw_post(
+        &self,
+        path: &str,
+        body: &serde_json::Value,
+    ) -> Result<serde_json::Value, Error> {
+        let prefix = self.platform.legacy_prefix().unwrap_or("");
+        let base = self.base_url.as_str().trim_end_matches('/');
+        let prefix = prefix.trim_end_matches('/');
+        let url = Url::parse(&format!("{base}{prefix}/{path}")).expect("invalid raw URL");
+        debug!("POST (raw) {}", url);
+
+        let builder = self.apply_csrf(self.http.post(url).json(body));
+        let resp = builder.send().await.map_err(Error::Transport)?;
+        let status = resp.status();
+
+        if status == reqwest::StatusCode::UNAUTHORIZED {
+            return Err(Error::Authentication {
+                message: "session expired or invalid credentials".into(),
+            });
+        }
+        if !status.is_success() {
+            let body = resp.text().await.unwrap_or_default();
+            return Err(Error::LegacyApi {
+                message: format!("HTTP {status}: {}", &body[..body.len().min(200)]),
+            });
+        }
+
+        let body = resp.text().await.map_err(Error::Transport)?;
+        serde_json::from_str(&body).map_err(|e| Error::Deserialization {
+            message: format!("{e}"),
+            body,
+        })
+    }
+
     /// Parse the `{ meta, data }` envelope, returning `data` on success
     /// or an `Error::LegacyApi` if `meta.rc != "ok"`.
     ///

@@ -27,6 +27,7 @@
 | `countries` | | List available country codes |
 | `config` | | Manage CLI configuration |
 | `completions` | | Generate shell completions |
+| `api` | | Send a raw API request to an arbitrary endpoint |
 | `tui` | | Launch the real-time terminal dashboard |
 
 Most resource groups support `list` and `get`; some also expose `create`, `update`, `delete`, `patch`, or specialized actions. Run `unifly <command> --help` for details.
@@ -101,6 +102,14 @@ Intervals: `5m`, `hourly`, `daily`, `monthly`
 
 ```bash
 unifly stats gateway --interval hourly
+```
+
+## Raw API
+
+```bash
+unifly api api/s/default/stat/sitedpi                # GET a legacy endpoint
+unifly api v2/api/site/default/traffic-flow-latest-statistics?period=DAY  # GET a v2 endpoint
+unifly api api/s/default/stat/stadpi -m POST -d '{"type":"by_app"}'       # POST with JSON body
 ```
 
 ## Configuration
