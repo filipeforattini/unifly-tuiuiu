@@ -356,7 +356,7 @@ pub(super) async fn handle(
                     OutputFormat::JsonCompact => {
                         serde_json::to_string(&ordering).unwrap_or_default()
                     }
-                    OutputFormat::Yaml => serde_yml::to_string(&ordering).unwrap_or_default(),
+                    OutputFormat::Yaml => serde_yaml_ng::to_string(&ordering).unwrap_or_default(),
                 };
                 output::print_output(&out, global.quiet);
             }

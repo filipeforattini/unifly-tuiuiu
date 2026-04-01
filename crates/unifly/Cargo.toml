@@ -24,7 +24,7 @@ cli = [
     "dep:dialoguer",
     "dep:indicatif",
     "dep:rpassword",
-    "dep:serde_yml",
+    "dep:serde_yaml_ng",
 ]
 tui = [
     "dep:opaline",
@@ -82,7 +82,7 @@ owo-colors         = { workspace = true, optional = true }
 dialoguer          = { workspace = true, optional = true }
 indicatif          = { workspace = true, optional = true }
 rpassword          = { workspace = true, optional = true }
-serde_yml          = { workspace = true, optional = true }
+serde_yaml_ng      = { workspace = true, optional = true }
 
 # ── TUI-only deps (optional) ─────────────────────────────────────
 opaline            = { workspace = true, optional = true }

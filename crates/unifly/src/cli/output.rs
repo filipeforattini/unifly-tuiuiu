@@ -175,7 +175,7 @@ impl Painter {
 ///
 /// - `table`: uses the `Tabled` derive to build a pretty table
 /// - `json` / `json-compact`: serializes the original data via serde
-/// - `yaml`: serializes via serde_yml
+/// - `yaml`: serializes via serde_yaml_ng
 /// - `plain`: calls `id_fn` on each item to emit one identifier per line
 pub fn render_list<T, R>(
     format: &OutputFormat,
@@ -255,6 +255,38 @@ fn render_json<T: serde::Serialize + ?Sized>(data: &T, compact: bool) -> String 
 }
 
 /// YAML output.
+///
+/// After serialisation, quotes any unquoted scalar values that contain
+/// colons so the output is safe for YAML 1.1 parsers (which interpret
+/// colon-separated digits as sexagesimal numbers).
 pub(crate) fn render_yaml<T: serde::Serialize + ?Sized>(data: &T) -> String {
-    serde_yml::to_string(data).expect("serialization should not fail")
+    let raw = serde_yaml_ng::to_string(data).expect("serialization should not fail");
+    quote_yaml_colons(&raw)
+}
+
+/// Find unquoted YAML values that contain `:` and wrap them in single quotes.
+fn quote_yaml_colons(yaml: &str) -> String {
+    let mut out = String::with_capacity(yaml.len());
+    for line in yaml.lines() {
+        // Only touch "key: value" lines where the value is a bare
+        // (unquoted) string containing at least one colon.
+        if let Some(colon_pos) = line.find(": ") {
+            let value = &line[colon_pos + 2..];
+            let needs_quoting = value.contains(':')
+                && !value.starts_with('\'')
+                && !value.starts_with('"');
+            if needs_quoting {
+                out.push_str(&line[..colon_pos + 2]);
+                out.push('\'');
+                out.push_str(value);
+                out.push('\'');
+            } else {
+                out.push_str(line);
+            }
+        } else {
+            out.push_str(line);
+        }
+        out.push('\n');
+    }
+    out
 }

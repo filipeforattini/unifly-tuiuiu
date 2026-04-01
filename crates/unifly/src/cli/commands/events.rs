@@ -115,7 +115,7 @@ async fn watch_events(
                                     .unwrap_or_else(|_| format!("{event:?}"))
                             }
                             OutputFormat::Yaml => {
-                                serde_yml::to_string(&*event)
+                                serde_yaml_ng::to_string(&*event)
                                     .unwrap_or_else(|_| format!("{event:?}"))
                             }
                             _ => {
