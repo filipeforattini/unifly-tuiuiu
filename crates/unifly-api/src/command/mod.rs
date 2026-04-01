@@ -8,16 +8,17 @@ pub mod requests;
 
 use crate::core_error::CoreError;
 use crate::model::{
-    AclRule, Client, Device, DnsPolicy, EntityId, FirewallPolicy, FirewallZone, MacAddress,
-    Network, TrafficMatchingList, Voucher, WifiBroadcast,
+    AclRule, Client, Device, DnsPolicy, EntityId, FirewallPolicy, FirewallZone, MacAddress, Network,
+    TrafficMatchingList, Voucher, WifiBroadcast,
 };
 
 pub use requests::{
     CreateAclRuleRequest, CreateDnsPolicyRequest, CreateFirewallPolicyRequest,
-    CreateFirewallZoneRequest, CreateNetworkRequest, CreateTrafficMatchingListRequest,
-    CreateVouchersRequest, CreateWifiBroadcastRequest, TrafficFilterSpec, UpdateAclRuleRequest,
-    UpdateDnsPolicyRequest, UpdateFirewallPolicyRequest, UpdateFirewallZoneRequest,
-    UpdateNetworkRequest, UpdateTrafficMatchingListRequest, UpdateWifiBroadcastRequest,
+    CreateFirewallZoneRequest, CreateNatPolicyRequest, CreateNetworkRequest,
+    CreateTrafficMatchingListRequest, CreateVouchersRequest, CreateWifiBroadcastRequest,
+    TrafficFilterSpec, UpdateAclRuleRequest, UpdateDnsPolicyRequest, UpdateFirewallPolicyRequest,
+    UpdateFirewallZoneRequest, UpdateNetworkRequest, UpdateTrafficMatchingListRequest,
+    UpdateWifiBroadcastRequest,
 };
 
 /// A command envelope sent through the command channel.
@@ -137,6 +138,12 @@ pub enum Command {
         update: UpdateFirewallZoneRequest,
     },
     DeleteFirewallZone {
+        id: EntityId,
+    },
+
+    // ── NAT ──────────────────────────────────────────────────────────
+    CreateNatPolicy(CreateNatPolicyRequest),
+    DeleteNatPolicy {
         id: EntityId,
     },
 

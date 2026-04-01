@@ -11,7 +11,8 @@ use tokio::sync::watch;
 use super::collection::EntityCollection;
 use crate::model::{
     AclRule, Client, Device, DnsPolicy, EntityId, Event, FirewallPolicy, FirewallZone,
-    HealthSummary, MacAddress, Network, Site, TrafficMatchingList, Voucher, WifiBroadcast,
+    HealthSummary, MacAddress, NatPolicy, Network, Site, TrafficMatchingList, Voucher,
+    WifiBroadcast,
 };
 use crate::stream::EntityStream;
 
@@ -28,6 +29,7 @@ pub struct DataStore {
     pub(crate) firewall_policies: EntityCollection<FirewallPolicy>,
     pub(crate) firewall_zones: EntityCollection<FirewallZone>,
     pub(crate) acl_rules: EntityCollection<AclRule>,
+    pub(crate) nat_policies: EntityCollection<NatPolicy>,
     pub(crate) dns_policies: EntityCollection<DnsPolicy>,
     pub(crate) vouchers: EntityCollection<Voucher>,
     pub(crate) sites: EntityCollection<Site>,
@@ -52,6 +54,7 @@ impl DataStore {
             firewall_policies: EntityCollection::new(),
             firewall_zones: EntityCollection::new(),
             acl_rules: EntityCollection::new(),
+            nat_policies: EntityCollection::new(),
             dns_policies: EntityCollection::new(),
             vouchers: EntityCollection::new(),
             sites: EntityCollection::new(),
@@ -91,6 +94,10 @@ impl DataStore {
 
     pub fn acl_rules_snapshot(&self) -> Arc<Vec<Arc<AclRule>>> {
         self.acl_rules.snapshot()
+    }
+
+    pub fn nat_policies_snapshot(&self) -> Arc<Vec<Arc<NatPolicy>>> {
+        self.nat_policies.snapshot()
     }
 
     pub fn dns_policies_snapshot(&self) -> Arc<Vec<Arc<DnsPolicy>>> {
@@ -177,6 +184,10 @@ impl DataStore {
 
     pub fn subscribe_acl_rules(&self) -> EntityStream<AclRule> {
         EntityStream::new(self.acl_rules.subscribe())
+    }
+
+    pub fn subscribe_nat_policies(&self) -> EntityStream<NatPolicy> {
+        EntityStream::new(self.nat_policies.subscribe())
     }
 
     pub fn subscribe_dns_policies(&self) -> EntityStream<DnsPolicy> {

@@ -213,6 +213,87 @@ impl FirewallScreen {
         frame.render_stateful_widget(table, area, &mut state);
     }
 
+    fn render_nat_policies(&self, frame: &mut Frame, area: Rect) {
+        let header = Row::new(vec![
+            Cell::from("Enabled").style(theme::table_header()),
+            Cell::from("Name").style(theme::table_header()),
+            Cell::from("Type").style(theme::table_header()),
+            Cell::from("Protocol").style(theme::table_header()),
+            Cell::from("Destination").style(theme::table_header()),
+            Cell::from("Translation").style(theme::table_header()),
+        ]);
+
+        let selected_idx = self.nat_table.selected().unwrap_or(0);
+        let rows: Vec<Row> = self
+            .nat_policies
+            .iter()
+            .enumerate()
+            .map(|(index, policy)| {
+                let is_selected = index == selected_idx;
+                let prefix = if is_selected { "▸" } else { " " };
+                let enabled = if policy.enabled { "✓" } else { "✗" };
+                let nat_type = format!("{:?}", policy.nat_type);
+                let protocol = policy.protocol.as_deref().unwrap_or("-");
+                let destination = match (&policy.dst_address, &policy.dst_port) {
+                    (Some(addr), Some(port)) => format!("{addr}:{port}"),
+                    (Some(addr), None) => addr.clone(),
+                    (None, Some(port)) => format!("*:{port}"),
+                    (None, None) => "─".into(),
+                };
+                let translation = match (&policy.translated_address, &policy.translated_port) {
+                    (Some(addr), Some(port)) => format!("{addr}:{port}"),
+                    (Some(addr), None) => addr.clone(),
+                    (None, Some(port)) => format!("*:{port}"),
+                    (None, None) => "─".into(),
+                };
+
+                let row_style = if is_selected {
+                    theme::table_selected()
+                } else {
+                    theme::table_row()
+                };
+
+                Row::new(vec![
+                    Cell::from(enabled.to_string()).style(Style::default().fg(if policy.enabled {
+                        theme::success()
+                    } else {
+                        theme::border_unfocused()
+                    })),
+                    Cell::from(format!("{prefix}{}", policy.name)).style(
+                        Style::default().fg(theme::accent_secondary()).add_modifier(
+                            if is_selected {
+                                Modifier::BOLD
+                            } else {
+                                Modifier::empty()
+                            },
+                        ),
+                    ),
+                    Cell::from(nat_type),
+                    Cell::from(protocol.to_string()),
+                    Cell::from(destination),
+                    Cell::from(translation),
+                ])
+                .style(row_style)
+            })
+            .collect();
+
+        let widths = [
+            Constraint::Length(7),
+            Constraint::Min(16),
+            Constraint::Length(12),
+            Constraint::Length(10),
+            Constraint::Length(20),
+            Constraint::Length(20),
+        ];
+
+        let table = Table::new(rows, widths)
+            .header(header)
+            .row_highlight_style(theme::table_selected());
+
+        let mut state = self.nat_table;
+        frame.render_stateful_widget(table, area, &mut state);
+    }
+
     pub(super) fn render_screen(&self, frame: &mut Frame, area: Rect) {
         let block = Block::default()
             .title(" Firewall ")
@@ -235,7 +316,7 @@ impl FirewallScreen {
         ])
         .split(inner);
 
-        let tab_labels = &["Policies", "Zones", "ACL Rules"];
+        let tab_labels = &["Policies", "Zones", "ACL Rules", "NAT"];
         let tab_line = sub_tabs::render_sub_tabs(tab_labels, self.sub_tab_index());
         frame.render_widget(Paragraph::new(tab_line), layout[0]);
 
@@ -243,6 +324,7 @@ impl FirewallScreen {
             FirewallSubTab::Policies => self.render_policies(frame, layout[1]),
             FirewallSubTab::Zones => self.render_zones(frame, layout[1]),
             FirewallSubTab::AclRules => self.render_acl_rules(frame, layout[1]),
+            FirewallSubTab::NatPolicies => self.render_nat_policies(frame, layout[1]),
         }
 
         frame.render_widget(Paragraph::new(self.hint_line()), layout[2]);

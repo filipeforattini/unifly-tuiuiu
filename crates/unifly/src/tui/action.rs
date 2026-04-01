@@ -3,7 +3,9 @@
 use std::fmt;
 use std::sync::Arc;
 
-use unifly_api::model::{AclRule, EventCategory, FirewallPolicy, FirewallZone, WifiBroadcast};
+use unifly_api::model::{
+    AclRule, EventCategory, FirewallPolicy, FirewallZone, NatPolicy, WifiBroadcast,
+};
 use unifly_api::{Client, Device, EntityId, Event, Network, Site, UpdateNetworkRequest};
 
 use crate::tui::screen::ScreenId;
@@ -43,6 +45,7 @@ pub enum FirewallSubTab {
     Policies,
     Zones,
     AclRules,
+    NatPolicies,
 }
 
 /// Stats time period.
@@ -215,6 +218,7 @@ pub enum Action {
     FirewallPoliciesUpdated(Arc<Vec<Arc<FirewallPolicy>>>),
     FirewallZonesUpdated(Arc<Vec<Arc<FirewallZone>>>),
     AclRulesUpdated(Arc<Vec<Arc<AclRule>>>),
+    NatPoliciesUpdated(Arc<Vec<Arc<NatPolicy>>>),
     WifiBroadcastsUpdated(Arc<Vec<Arc<WifiBroadcast>>>),
     EventReceived(Arc<Event>),
     HealthUpdated(Arc<Vec<unifly_api::HealthSummary>>),

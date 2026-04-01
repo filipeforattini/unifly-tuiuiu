@@ -6,6 +6,7 @@ use super::CommandContext;
 mod acl;
 mod dns;
 mod firewall;
+mod nat;
 mod traffic_lists;
 
 pub(super) async fn route(ctx: &CommandContext, cmd: Command) -> Result<CommandResult, CoreError> {
@@ -25,6 +26,9 @@ pub(super) async fn route(ctx: &CommandContext, cmd: Command) -> Result<CommandR
         cmd @ (Command::CreateDnsPolicy(_)
         | Command::UpdateDnsPolicy { .. }
         | Command::DeleteDnsPolicy { .. }) => dns::route(ctx, cmd).await,
+        cmd @ (Command::CreateNatPolicy(_) | Command::DeleteNatPolicy { .. }) => {
+            nat::route(ctx, cmd).await
+        }
         cmd @ (Command::CreateTrafficMatchingList(_)
         | Command::UpdateTrafficMatchingList { .. }
         | Command::DeleteTrafficMatchingList { .. }) => traffic_lists::route(ctx, cmd).await,

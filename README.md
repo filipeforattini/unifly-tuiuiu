@@ -37,7 +37,7 @@
 
 ## 💜 What is unifly?
 
-A complete command-line toolkit for managing Ubiquiti UniFi network controllers. One binary with 24 top-level commands for scripting and a built-in TUI dashboard for real-time monitoring, powered by a shared async engine that speaks every UniFi API dialect.
+A complete command-line toolkit for managing Ubiquiti UniFi network controllers. One binary with 25 top-level commands for scripting and a built-in TUI dashboard for real-time monitoring, powered by a shared async engine that speaks every UniFi API dialect.
 
 > _Manage devices, monitor clients, inspect VLANs, stream events, and watch bandwidth charts, all without leaving your terminal._
 
@@ -61,7 +61,7 @@ UniFi controllers expose multiple APIs with different capabilities. unifly unifi
 | --- | --- |
 | 🔮 **Dual API Engine** | Integration API (REST, API key) + Legacy API (session, cookie/CSRF) with automatic Hybrid negotiation |
 | ⚡ **Real-Time TUI** | 8-screen dashboard with area-fill traffic charts, CPU/MEM gauges, live client counts, zoomable topology |
-| 🦋 **24 Top-Level Commands** | Devices, clients, networks, WiFi, firewall policies, zones, ACLs, DNS, VPN, hotspot vouchers, DPI, RADIUS, topology, `tui`... |
+| 🦋 **25 Top-Level Commands** | Devices, clients, networks, WiFi, firewall policies, zones, ACLs, NAT policies, DNS, VPN, hotspot vouchers, DPI, RADIUS, topology, `tui`... |
 | 💎 **Flexible Output** | Table, JSON, compact JSON, YAML, and plain text. Pipe-friendly for scripting |
 | 🔒 **Secure Credentials** | OS keyring storage for API keys and passwords, with plaintext config support when you choose it |
 | 🌐 **Multi-Profile** | Named profiles for multiple controllers. Switch with a single flag |
@@ -181,6 +181,7 @@ Best of both worlds: API key for Integration API CRUD, username/password for Leg
 | `dpi` | | DPI reference data |
 | `events` | | View and stream events |
 | `firewall` | `fw` | Manage firewall policies and zones |
+| `nat` | | Manage NAT policies (masquerade, SNAT, DNAT) |
 | `hotspot` | | Manage hotspot vouchers |
 | `networks` | `net`, `n` | Manage networks and VLANs |
 | `radius` | | View RADIUS profiles |
@@ -250,7 +251,7 @@ Navigate with number keys `1`–`8` or `Tab`/`Shift+Tab`:
 | `2` | **Devices** | Adopted devices with model, IP, CPU/MEM, TX/RX, uptime. 5-tab detail panel (Overview, Performance, Radios, Clients, Ports) |
 | `3` | **Clients** | Connected clients: hostname, IP, MAC, VLAN, signal bars, traffic. Filterable by type (All/Wireless/Wired/VPN/Guest) |
 | `4` | **Networks** | VLAN topology: subnets, DHCP, IPv6, gateway type. Inline edit overlay for live config changes |
-| `5` | **Firewall** | Policies, zones, and ACL rules across three sub-tabs with visual rule reordering |
+| `5` | **Firewall** | Policies, zones, ACL rules, and NAT policies across four sub-tabs with visual rule reordering |
 | `6` | **Topology** | Zoomable network topology tree: gateway → switches → APs, color-coded by type and state |
 | `7` | **Events** | Live event stream with 10K rolling buffer. Pause, scroll back, severity color-coding |
 | `8` | **Stats** | Historical charts: WAN bandwidth area fills, client counts, DPI app/category breakdown (1h/24h/7d/30d) |
@@ -334,7 +335,7 @@ Historical statistics with selectable time windows and dual-API data sourcing:
 | **Clients** | `b` / `B` | Block / unblock client |
 | **Clients** | `x` | Kick client |
 | **Networks** | `e` | Edit selected network |
-| **Firewall** | `h` / `l` | Cycle sub-tabs (Policies / Zones / ACL Rules) |
+| **Firewall** | `h` / `l` | Cycle sub-tabs (Policies / Zones / ACL Rules / NAT) |
 | **Firewall** | `K` / `J` | Reorder policy up / down |
 | **Topology** | `←` `→` `↑` `↓` | Pan canvas |
 | **Topology** | `+` / `-` | Zoom in / out |

@@ -4,7 +4,7 @@ use tokio::sync::{broadcast, watch};
 
 use crate::model::{
     AclRule, Client, Device, DnsPolicy, Event, FirewallPolicy, FirewallZone, HealthSummary,
-    Network, Site, TrafficMatchingList, Voucher, WifiBroadcast,
+    NatPolicy, Network, Site, TrafficMatchingList, Voucher, WifiBroadcast,
 };
 use crate::stream::EntityStream;
 
@@ -51,6 +51,10 @@ impl Controller {
 
     pub fn acl_rules_snapshot(&self) -> Arc<Vec<Arc<AclRule>>> {
         self.inner.store.acl_rules_snapshot()
+    }
+
+    pub fn nat_policies_snapshot(&self) -> Arc<Vec<Arc<NatPolicy>>> {
+        self.inner.store.nat_policies_snapshot()
     }
 
     pub fn dns_policies_snapshot(&self) -> Arc<Vec<Arc<DnsPolicy>>> {
@@ -101,6 +105,10 @@ impl Controller {
 
     pub fn acl_rules(&self) -> EntityStream<AclRule> {
         self.inner.store.subscribe_acl_rules()
+    }
+
+    pub fn nat_policies(&self) -> EntityStream<NatPolicy> {
+        self.inner.store.subscribe_nat_policies()
     }
 
     pub fn dns_policies(&self) -> EntityStream<DnsPolicy> {

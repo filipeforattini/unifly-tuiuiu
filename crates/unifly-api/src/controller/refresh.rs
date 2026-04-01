@@ -9,7 +9,7 @@ use tracing::{debug, info, warn};
 use crate::core_error::CoreError;
 use crate::model::{
     AclRule, Client, Device, DnsPolicy, EntityId, Event, FirewallPolicy, FirewallZone,
-    HealthSummary, Network, Site, TrafficMatchingList, Voucher, WifiBroadcast,
+    HealthSummary, NatPolicy, Network, Site, TrafficMatchingList, Voucher, WifiBroadcast,
 };
 use crate::store::{DataStore, event_storage_key};
 
@@ -140,20 +140,22 @@ impl Controller {
             };
 
             #[allow(clippy::type_complexity)]
-            let (legacy_events, legacy_health, legacy_clients, legacy_devices, legacy_users): (
+            let (legacy_events, legacy_health, legacy_clients, legacy_devices, legacy_users, nat): (
                 Vec<Event>,
                 Vec<HealthSummary>,
                 Vec<crate::legacy::models::LegacyClientEntry>,
                 Vec<crate::legacy::models::LegacyDevice>,
                 Vec<crate::legacy::models::LegacyUserEntry>,
+                Vec<NatPolicy>,
             ) = match self.inner.legacy_client.lock().await.clone() {
                 Some(legacy) => {
-                    let (events_res, health_res, clients_res, devices_res, users_res) = tokio::join!(
+                    let (events_res, health_res, clients_res, devices_res, users_res, nat_res) = tokio::join!(
                         legacy.list_events(Some(100)),
                         legacy.get_health(),
                         legacy.list_clients(),
                         legacy.list_devices(),
                         legacy.list_users(),
+                        legacy.list_nat_rules(),
                     );
 
                     let events = match events_res {
@@ -196,9 +198,20 @@ impl Controller {
                         }
                     };
 
-                    (events, health, legacy_clients, legacy_devices, legacy_users)
+                    let nat = match nat_res {
+                        Ok(raw) => raw
+                            .iter()
+                            .filter_map(crate::convert::nat_policy_from_v2)
+                            .collect(),
+                        Err(error) => {
+                            warn!(error = %error, "v2 NAT fetch failed (non-fatal)");
+                            Vec::new()
+                        }
+                    };
+
+                    (events, health, legacy_clients, legacy_devices, legacy_users, nat)
                 }
-                None => (Vec::new(), Vec::new(), Vec::new(), Vec::new(), Vec::new()),
+                None => (Vec::new(), Vec::new(), Vec::new(), Vec::new(), Vec::new(), Vec::new()),
             };
 
             if !legacy_clients.is_empty() {
@@ -319,6 +332,7 @@ impl Controller {
                     policies,
                     zones,
                     acls,
+                    nat,
                     dns,
                     vouchers,
                     sites,
@@ -361,6 +375,7 @@ impl Controller {
                     policies: Vec::new(),
                     zones: Vec::new(),
                     acls: Vec::new(),
+                    nat: Vec::new(),
                     dns: Vec::new(),
                     vouchers: Vec::new(),
                     sites,

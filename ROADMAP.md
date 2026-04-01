@@ -41,6 +41,7 @@ Fill the gaps in day-to-day network management.
 - ~~SilkCircuit themed CLI output via Opaline~~ ✓
 - ~~Consolidate workspace from 5 crates to 2~~ ✓
 - ~~WebSocket TLS consistency for self-signed certificates~~ ✓
+- ~~NAT policy CRUD (masquerade, source NAT, destination NAT)~~ ✓
 - Port forwarding CRUD (CLI + TUI)
 - Active DHCP lease listing
 - Device radio data parsing from interfaces JSON

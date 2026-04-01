@@ -10,8 +10,8 @@ use chrono::Utc;
 use super::DataStore;
 use super::collection::EntityCollection;
 use crate::model::{
-    AclRule, Client, Device, DnsPolicy, EntityId, Event, FirewallPolicy, FirewallZone, Network,
-    Site, TrafficMatchingList, Voucher, WifiBroadcast,
+    AclRule, Client, Device, DnsPolicy, EntityId, Event, FirewallPolicy, FirewallZone, NatPolicy,
+    Network, Site, TrafficMatchingList, Voucher, WifiBroadcast,
 };
 
 /// Upsert all incoming entities, then prune any existing keys not in the
@@ -44,6 +44,7 @@ pub(crate) struct RefreshSnapshot {
     pub policies: Vec<FirewallPolicy>,
     pub zones: Vec<FirewallZone>,
     pub acls: Vec<AclRule>,
+    pub nat: Vec<NatPolicy>,
     pub dns: Vec<DnsPolicy>,
     pub vouchers: Vec<Voucher>,
     pub sites: Vec<Site>,
@@ -181,6 +182,18 @@ impl DataStore {
         );
 
         upsert_and_prune(
+            &self.nat_policies,
+            snap.nat
+                .into_iter()
+                .map(|n| {
+                    let key = format!("nat:{}", n.id);
+                    let id = n.id.clone();
+                    (key, id, n)
+                })
+                .collect(),
+        );
+
+        upsert_and_prune(
             &self.dns_policies,
             snap.dns
                 .into_iter()
@@ -286,6 +299,7 @@ mod tests {
             policies: Vec::new(),
             zones: Vec::new(),
             acls: Vec::new(),
+            nat: Vec::new(),
             dns: Vec::new(),
             vouchers: Vec::new(),
             sites: Vec::new(),

@@ -79,6 +79,8 @@ pub(super) async fn route_command(
         | Command::UpdateAclRule { .. }
         | Command::DeleteAclRule { .. }
         | Command::ReorderAclRules { .. }
+        | Command::CreateNatPolicy(_)
+        | Command::DeleteNatPolicy { .. }
         | Command::CreateDnsPolicy(_)
         | Command::UpdateDnsPolicy { .. }
         | Command::DeleteDnsPolicy { .. }

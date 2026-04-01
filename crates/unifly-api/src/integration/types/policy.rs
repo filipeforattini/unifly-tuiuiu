@@ -502,6 +502,58 @@ pub struct VoucherDeletionResults {
     pub fields: HashMap<String, Value>,
 }
 
+// ── NAT Policies ────────────────────────────────────────────────────
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NatPolicyResponse {
+    pub id: Uuid,
+    pub name: String,
+    #[serde(default)]
+    pub description: Option<String>,
+    pub enabled: bool,
+    #[serde(rename = "type")]
+    pub nat_type: String,
+    #[serde(default)]
+    pub interface_id: Option<Uuid>,
+    #[serde(default)]
+    pub protocol: Option<String>,
+    #[serde(default)]
+    pub source: Option<Value>,
+    #[serde(default)]
+    pub destination: Option<Value>,
+    #[serde(default)]
+    pub translated_address: Option<String>,
+    #[serde(default)]
+    pub translated_port: Option<String>,
+    pub metadata: Option<Value>,
+    #[serde(flatten)]
+    pub extra: HashMap<String, Value>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NatPolicyCreateUpdate {
+    pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+    pub enabled: bool,
+    #[serde(rename = "type")]
+    pub nat_type: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub interface_id: Option<Uuid>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub protocol: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub source: Option<Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub destination: Option<Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub translated_address: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub translated_port: Option<String>,
+}
+
 #[cfg(test)]
 #[allow(clippy::unwrap_used)]
 mod tests {

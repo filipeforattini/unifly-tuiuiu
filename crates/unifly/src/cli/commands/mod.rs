@@ -13,6 +13,7 @@ pub mod dpi;
 pub mod events;
 pub mod firewall;
 pub mod hotspot;
+pub mod nat;
 pub mod networks;
 pub mod radius;
 pub mod sites;
@@ -50,6 +51,7 @@ pub async fn dispatch(
         Command::Events(args) => events::handle(controller, args, global).await,
         Command::Firewall(args) => firewall::handle(controller, args, global).await,
         Command::Hotspot(args) => hotspot::handle(controller, args, global).await,
+        Command::Nat(args) => nat::handle(controller, args, global).await,
         Command::Networks(args) => networks::handle(controller, args, global).await,
         Command::Radius(args) => radius::handle(controller, args, global).await,
         Command::Sites(args) => sites::handle(controller, args, global).await,

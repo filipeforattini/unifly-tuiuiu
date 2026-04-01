@@ -20,7 +20,7 @@ Navigate with number keys `1`-`8` or `Tab`/`Shift+Tab`:
 | `2` | **Devices** | Adopted devices — model, firmware, IP, uptime, CPU/MEM |
 | `3` | **Clients** | Connected clients — hostname, IP, MAC, VLAN, signal, traffic |
 | `4` | **Networks** | VLAN topology — subnets, DHCP, IPv6 config |
-| `5` | **Firewall** | Policies and zones with rule counts |
+| `5` | **Firewall** | Policies, zones, ACL rules, and NAT policies |
 | `6` | **Topology** | Network topology tree view |
 | `7` | **Events** | Live event stream with severity indicators |
 | `8` | **Stats** | Historical charts — WAN bandwidth, client counts, DPI |

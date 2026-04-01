@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - **TUI theme selector** — interactive theme picker in settings screen via Opaline engine
 - **Legacy site listing** — `sites list` works with legacy API auth
 - **`api` command** — raw API passthrough for arbitrary GET/POST requests (`unifly api <path>`)
+- **NAT policy management** — `nat policies` CRUD for masquerade, source NAT, and destination NAT rules (CLI + TUI)
 - **v2 API support** — `site_url_v2` and `get_raw` helpers for Network App 9+ endpoints
 - **DPI multi-endpoint cascade** — tries v2 traffic-flow, then `stat/sitedpi`, then `stat/dpi` fallback
 
@@ -28,6 +29,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Fixed
 
+- **Client MAC addresses** — read `macAddress` from top-level Integration API field instead of `access` object (was showing UUID as MAC)
+- **YAML quoting** — values containing colons (MACs, timestamps) are now quoted for YAML 1.1 parser compatibility
+- **NAT policy CRUD** — use v2 API (`/v2/api/site/{site}/nat`) instead of non-existent Integration API endpoint
+- **Replaced `serde_yml`** — switched to maintained `serde_yaml_ng` fork (serde_yml is archived with unsoundness issues)
 - Integration API paths aligned with OpenAPI spec
 - Store batch refresh snapshot rebuilds
 - CLI rejects empty update requests and unavailable integration surfaces

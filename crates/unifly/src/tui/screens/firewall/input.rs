@@ -38,15 +38,17 @@ impl FirewallScreen {
                 self.sub_tab = match self.sub_tab {
                     FirewallSubTab::Policies => FirewallSubTab::Zones,
                     FirewallSubTab::Zones => FirewallSubTab::AclRules,
-                    FirewallSubTab::AclRules => FirewallSubTab::Policies,
+                    FirewallSubTab::AclRules => FirewallSubTab::NatPolicies,
+                    FirewallSubTab::NatPolicies => FirewallSubTab::Policies,
                 };
                 Some(Action::FirewallSubTab(self.sub_tab))
             }
             KeyCode::Char('h') => {
                 self.sub_tab = match self.sub_tab {
-                    FirewallSubTab::Policies => FirewallSubTab::AclRules,
+                    FirewallSubTab::Policies => FirewallSubTab::NatPolicies,
                     FirewallSubTab::Zones => FirewallSubTab::Policies,
                     FirewallSubTab::AclRules => FirewallSubTab::Zones,
+                    FirewallSubTab::NatPolicies => FirewallSubTab::AclRules,
                 };
                 Some(Action::FirewallSubTab(self.sub_tab))
             }

@@ -352,6 +352,68 @@ impl LegacyClient {
         })
     }
 
+    /// Send a raw PUT to an arbitrary path (no envelope unwrapping).
+    pub async fn raw_put(
+        &self,
+        path: &str,
+        body: &serde_json::Value,
+    ) -> Result<serde_json::Value, Error> {
+        let prefix = self.platform.legacy_prefix().unwrap_or("");
+        let base = self.base_url.as_str().trim_end_matches('/');
+        let prefix = prefix.trim_end_matches('/');
+        let url = Url::parse(&format!("{base}{prefix}/{path}")).expect("invalid raw URL");
+        debug!("PUT (raw) {}", url);
+
+        let builder = self.apply_csrf(self.http.put(url).json(body));
+        let resp = builder.send().await.map_err(Error::Transport)?;
+        let status = resp.status();
+
+        if status == reqwest::StatusCode::UNAUTHORIZED {
+            return Err(Error::Authentication {
+                message: "session expired or invalid credentials".into(),
+            });
+        }
+        if !status.is_success() {
+            let body = resp.text().await.unwrap_or_default();
+            return Err(Error::LegacyApi {
+                message: format!("HTTP {status}: {}", &body[..body.len().min(200)]),
+            });
+        }
+
+        let body = resp.text().await.map_err(Error::Transport)?;
+        serde_json::from_str(&body).map_err(|e| Error::Deserialization {
+            message: format!("{e}"),
+            body,
+        })
+    }
+
+    /// Send a raw DELETE to an arbitrary path (no envelope unwrapping).
+    pub async fn raw_delete(&self, path: &str) -> Result<(), Error> {
+        let prefix = self.platform.legacy_prefix().unwrap_or("");
+        let base = self.base_url.as_str().trim_end_matches('/');
+        let prefix = prefix.trim_end_matches('/');
+        let url = Url::parse(&format!("{base}{prefix}/{path}")).expect("invalid raw URL");
+        debug!("DELETE (raw) {}", url);
+
+        let builder = self.apply_csrf(self.http.delete(url));
+        let resp = builder.send().await.map_err(Error::Transport)?;
+        let status = resp.status();
+
+        if status == reqwest::StatusCode::UNAUTHORIZED {
+            return Err(Error::Authentication {
+                message: "session expired or invalid credentials".into(),
+            });
+        }
+        if !status.is_success() {
+            let body = resp.text().await.unwrap_or_default();
+            return Err(Error::LegacyApi {
+                message: format!("HTTP {status}: {}", &body[..body.len().min(200)]),
+            });
+        }
+
+        Ok(())
+    }
+
     /// Parse the `{ meta, data }` envelope, returning `data` on success
     /// or an `Error::LegacyApi` if `meta.rc != "ok"`.
     ///

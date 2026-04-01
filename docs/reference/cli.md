@@ -9,6 +9,7 @@
 | `networks` | `n` | Manage networks and VLANs |
 | `wifi` | `w` | Manage WiFi broadcasts (SSIDs) |
 | `firewall` | `fw` | Manage firewall policies and zones |
+| `nat` | | Manage NAT policies (masquerade, SNAT, DNAT) |
 | `acl` | | Manage ACL rules |
 | `dns` | | Manage DNS policies (local records) |
 | `traffic-lists` | | Manage traffic matching lists |
@@ -80,6 +81,30 @@ unifly wifi delete <ID>
 unifly firewall policies list         # List firewall policies
 unifly firewall zones list            # List firewall zones
 unifly firewall policies get <ID>     # Policy details
+```
+
+## NAT
+
+```bash
+unifly nat policies list              # List NAT policies
+unifly nat policies get <ID>          # NAT policy details
+unifly nat policies create -F nat.jsonc  # Create from JSONC file
+unifly nat policies delete <ID>       # Delete a NAT policy
+```
+
+NAT types: `masquerade`, `source`, `destination`. Create from CLI flags or a JSONC file:
+
+```jsonc
+{
+  "name": "DNS DNAT to Pi-hole",
+  "type": "destination",
+  "interface_id": "<network-uuid>",
+  "protocol": "tcp_udp",
+  "dst_address": "10.0.15.52",
+  "dst_port": "53",
+  "translated_address": "192.168.6.252",
+  "translated_port": "53"
+}
 ```
 
 ## Events

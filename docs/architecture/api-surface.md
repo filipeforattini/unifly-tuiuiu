@@ -53,8 +53,9 @@ Network Application 9+ exposes a second generation of legacy-authenticated endpo
 | Endpoint | Description |
 |---|---|
 | `traffic-flow-latest-statistics` | DPI traffic flow data by application/category |
+| `nat` | NAT rule CRUD (DNAT, SNAT, masquerade) |
 
-Unifly's DPI cascade tries the v2 endpoint first, then falls back to `stat/sitedpi` and `stat/dpi` for older firmware.
+Unifly's DPI cascade tries the v2 endpoint first, then falls back to `stat/sitedpi` and `stat/dpi` for older firmware. NAT rules use the v2 endpoint exclusively — the Integration API does not expose NAT on Network Application 10.1.89.
 
 ### CSRF Token Flow
 
@@ -80,7 +81,7 @@ When configured with both an API key and credentials, unifly uses each API for w
 
 | Operation | API Used |
 |---|---|
-| List/get/create/update/delete resources | Integration API |
+| List/get/create/update/delete resources | Integration API (NAT uses v2) |
 | Stream events | Legacy API (WebSocket) |
 | Query statistics | Legacy API |
 | Device commands | Legacy API |

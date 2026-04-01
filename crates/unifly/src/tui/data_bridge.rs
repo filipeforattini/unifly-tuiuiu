@@ -50,6 +50,7 @@ pub async fn spawn_data_bridge(
     let mut fw_policies = controller.firewall_policies();
     let mut fw_zones = controller.firewall_zones();
     let mut acl_rules = controller.acl_rules();
+    let mut nat_policies = controller.nat_policies();
     let mut wifi = controller.wifi_broadcasts();
     let mut events = controller.events();
     let mut conn_state = controller.connection_state();
@@ -64,6 +65,9 @@ pub async fn spawn_data_bridge(
     ));
     let _ = action_tx.send(Action::FirewallZonesUpdated(fw_zones.current().clone()));
     let _ = action_tx.send(Action::AclRulesUpdated(acl_rules.current().clone()));
+    let _ = action_tx.send(Action::NatPoliciesUpdated(
+        nat_policies.current().clone(),
+    ));
     let _ = action_tx.send(Action::WifiBroadcastsUpdated(wifi.current().clone()));
 
     // Push initial events from the DataStore snapshot (the broadcast channel
@@ -102,6 +106,9 @@ pub async fn spawn_data_bridge(
             }
             Some(a) = acl_rules.changed() => {
                 let _ = action_tx.send(Action::AclRulesUpdated(a));
+            }
+            Some(n) = nat_policies.changed() => {
+                let _ = action_tx.send(Action::NatPoliciesUpdated(n));
             }
             Some(w) = wifi.changed() => {
                 let _ = action_tx.send(Action::WifiBroadcastsUpdated(w));

@@ -249,6 +249,39 @@ pub struct FirewallPolicy {
     pub(crate) data_source: DataSource,
 }
 
+// ── NAT Policy types ────────────────────────────────────────────────
+
+/// NAT policy type.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum NatType {
+    Masquerade,
+    Source,
+    Destination,
+}
+
+/// NAT Policy -- masquerade, source NAT, or destination NAT rule.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NatPolicy {
+    pub id: EntityId,
+    pub name: String,
+    pub description: Option<String>,
+    pub enabled: bool,
+    pub nat_type: NatType,
+    pub interface_id: Option<EntityId>,
+    pub protocol: Option<String>,
+    pub src_address: Option<String>,
+    pub src_port: Option<String>,
+    pub dst_address: Option<String>,
+    pub dst_port: Option<String>,
+    pub translated_address: Option<String>,
+    pub translated_port: Option<String>,
+    pub origin: Option<EntityOrigin>,
+
+    #[serde(skip)]
+    #[allow(dead_code)]
+    pub(crate) data_source: DataSource,
+}
+
 /// ACL Rule action.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum AclAction {

@@ -31,6 +31,8 @@ mod events;
 mod firewall;
 #[path = "args/hotspot.rs"]
 mod hotspot;
+#[path = "args/nat.rs"]
+mod nat;
 #[path = "args/networks.rs"]
 mod networks;
 #[path = "args/radius.rs"]
@@ -63,6 +65,7 @@ pub use dpi::*;
 pub use events::*;
 pub use firewall::*;
 pub use hotspot::*;
+pub use nat::*;
 pub use networks::*;
 pub use radius::*;
 pub use sites::*;
@@ -142,6 +145,9 @@ pub enum Command {
 
     /// Manage hotspot vouchers
     Hotspot(HotspotArgs),
+
+    /// Manage NAT policies (masquerade, source NAT, destination NAT)
+    Nat(NatArgs),
 
     /// Manage networks and VLANs
     #[command(alias = "net", alias = "n")]

@@ -15,9 +15,11 @@ impl FirewallScreen {
             policies: Arc::new(Vec::new()),
             zones: Arc::new(Vec::new()),
             acl_rules: Arc::new(Vec::new()),
+            nat_policies: Arc::new(Vec::new()),
             policy_table: TableState::default(),
             zone_table: TableState::default(),
             acl_table: TableState::default(),
+            nat_table: TableState::default(),
         }
     }
 
@@ -26,6 +28,7 @@ impl FirewallScreen {
             FirewallSubTab::Policies => &mut self.policy_table,
             FirewallSubTab::Zones => &mut self.zone_table,
             FirewallSubTab::AclRules => &mut self.acl_table,
+            FirewallSubTab::NatPolicies => &mut self.nat_table,
         }
     }
 
@@ -34,6 +37,7 @@ impl FirewallScreen {
             FirewallSubTab::Policies => self.policies.len(),
             FirewallSubTab::Zones => self.zones.len(),
             FirewallSubTab::AclRules => self.acl_rules.len(),
+            FirewallSubTab::NatPolicies => self.nat_policies.len(),
         }
     }
 
@@ -42,6 +46,7 @@ impl FirewallScreen {
             FirewallSubTab::Policies => self.policy_table.selected().unwrap_or(0),
             FirewallSubTab::Zones => self.zone_table.selected().unwrap_or(0),
             FirewallSubTab::AclRules => self.acl_table.selected().unwrap_or(0),
+            FirewallSubTab::NatPolicies => self.nat_table.selected().unwrap_or(0),
         }
     }
 
@@ -70,6 +75,7 @@ impl FirewallScreen {
             FirewallSubTab::Policies => 0,
             FirewallSubTab::Zones => 1,
             FirewallSubTab::AclRules => 2,
+            FirewallSubTab::NatPolicies => 3,
         }
     }
 
@@ -83,6 +89,9 @@ impl FirewallScreen {
             }
             Action::AclRulesUpdated(rules) => {
                 self.acl_rules = Arc::clone(rules);
+            }
+            Action::NatPoliciesUpdated(policies) => {
+                self.nat_policies = Arc::clone(policies);
             }
             Action::FirewallSubTab(tab) => {
                 self.sub_tab = *tab;
