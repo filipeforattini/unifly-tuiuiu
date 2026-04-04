@@ -74,8 +74,16 @@ UniFi controllers expose multiple APIs with different capabilities. unifly unifi
 
 ## ⚡ Install
 
+### Linux / macOS
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/hyperb1iss/unifly/main/install.sh | sh
+```
+
+### Windows (PowerShell)
+
+```powershell
+irm https://raw.githubusercontent.com/hyperb1iss/unifly/main/install.ps1 | iex
 ```
 
 ### Other Methods
@@ -214,6 +222,9 @@ unifly completions zsh > ~/.zfunc/_unifly
 
 # Fish
 unifly completions fish > ~/.config/fish/completions/unifly.fish
+
+# PowerShell
+unifly completions powershell | Out-String | Invoke-Expression
 ```
 
 ---
@@ -381,7 +392,13 @@ The `Controller` (in `unifly-api`) wraps `Arc<ControllerInner>` for cheap clonin
 
 ## ⚙️ Configuration
 
-Config lives at `~/.config/unifly/config.toml`:
+Config lives in your platform-standard config directory:
+
+| OS | Path |
+| --- | --- |
+| Linux | `~/.config/unifly/config.toml` |
+| macOS | `~/Library/Application Support/unifly/config.toml` |
+| Windows | `%APPDATA%\unifly\config.toml` |
 
 ```toml
 default_profile = "home"

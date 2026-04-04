@@ -18,6 +18,9 @@ fn unifly_cmd() -> assert_cmd::Command {
     let mut cmd = cargo_bin_cmd!("unifly");
     cmd.env("HOME", "/tmp/unifly-test-nonexistent")
         .env("XDG_CONFIG_HOME", "/tmp/unifly-test-nonexistent")
+        .env("APPDATA", "/tmp/unifly-test-nonexistent")
+        .env("LOCALAPPDATA", "/tmp/unifly-test-nonexistent")
+        .env("USERPROFILE", "/tmp/unifly-test-nonexistent")
         .env_remove("UNIFI_PROFILE")
         .env_remove("UNIFI_URL")
         .env_remove("UNIFI_SITE")
@@ -35,6 +38,9 @@ fn unifly_cmd_in(config_home: &std::path::Path) -> assert_cmd::Command {
     let mut cmd = cargo_bin_cmd!("unifly");
     cmd.env("HOME", config_home)
         .env("XDG_CONFIG_HOME", config_home)
+        .env("APPDATA", config_home)
+        .env("LOCALAPPDATA", config_home)
+        .env("USERPROFILE", config_home)
         .env_remove("UNIFI_PROFILE")
         .env_remove("UNIFI_URL")
         .env_remove("UNIFI_SITE")
@@ -117,6 +123,18 @@ fn test_completions_fish() {
         .assert()
         .success()
         .stdout(predicate::str::is_empty().not());
+}
+
+#[test]
+fn test_completions_powershell_use_unifly_command_name() {
+    unifly_cmd()
+        .args(["completions", "powershell"])
+        .assert()
+        .success()
+        .stdout(
+            predicate::str::contains("Register-ArgumentCompleter")
+                .and(predicate::str::contains("unifly")),
+        );
 }
 
 // ── Error cases ─────────────────────────────────────────────────────

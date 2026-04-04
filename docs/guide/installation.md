@@ -8,6 +8,14 @@ curl -fsSL https://raw.githubusercontent.com/hyperb1iss/unifly/main/install.sh |
 
 Detects your platform, downloads the latest release binary, and installs to `/usr/local/bin` (or `~/.local/bin`).
 
+## Quick Install (Windows PowerShell)
+
+```powershell
+irm https://raw.githubusercontent.com/hyperb1iss/unifly/main/install.ps1 | iex
+```
+
+Installs `unifly.exe` into `%LOCALAPPDATA%\unifly\bin` and adds that directory to your user `PATH` if needed.
+
 ## Homebrew (macOS / Linux)
 
 ```bash
@@ -61,6 +69,11 @@ unifly completions zsh > ~/.zfunc/_unifly
 
 # Fish
 unifly completions fish > ~/.config/fish/completions/unifly.fish
+```
+
+```powershell
+# PowerShell
+unifly completions powershell | Out-String | Invoke-Expression
 ```
 
 ## Verify Installation

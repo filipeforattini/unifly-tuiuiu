@@ -2,7 +2,13 @@
 
 ## Config File
 
-Configuration lives at `~/.config/unifly/config.toml`:
+Configuration lives in your platform-standard config directory:
+
+| OS | Path |
+|---|---|
+| Linux | `~/.config/unifly/config.toml` |
+| macOS | `~/Library/Application Support/unifly/config.toml` |
+| Windows | `%APPDATA%\unifly\config.toml` |
 
 ```toml
 default_profile = "home"

@@ -47,7 +47,7 @@ async fn run(cli: Cli) -> Result<(), CliError> {
             use clap_complete::generate;
 
             let mut cmd = Cli::command();
-            generate(args.shell, &mut cmd, "unifi", &mut std::io::stdout());
+            generate(args.shell, &mut cmd, "unifly", &mut std::io::stdout());
             Ok(())
         }
 

@@ -117,8 +117,13 @@ pub struct TuiArgs {
     pub theme: Option<String>,
 
     /// Log file path
-    #[arg(long, default_value = "/tmp/unifly-tui.log")]
+    #[arg(long, default_value_os_t = default_tui_log_path())]
     pub log_file: std::path::PathBuf,
+}
+
+#[cfg(feature = "tui")]
+fn default_tui_log_path() -> std::path::PathBuf {
+    std::env::temp_dir().join("unifly-tui.log")
 }
 
 /// Shell to generate completions for.

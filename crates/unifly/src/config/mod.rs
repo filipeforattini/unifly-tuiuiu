@@ -10,6 +10,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use std::time::Duration;
 
+use directories::ProjectDirs;
 use figment::{
     Figment,
     providers::{Env, Format, Serialized, Toml},
@@ -173,13 +174,38 @@ fn default_auth_mode() -> String {
 
 // ── Config file path ────────────────────────────────────────────────
 
-/// Resolve the config file path via XDG conventions (consistent across platforms).
+/// Resolve the config file path via platform-native conventions.
 pub fn config_path() -> PathBuf {
-    let base = std::env::var("XDG_CONFIG_HOME").map_or_else(
-        |_| PathBuf::from(std::env::var("HOME").unwrap_or_else(|_| ".".into())).join(".config"),
-        PathBuf::from,
-    );
-    base.join("unifly").join("config.toml")
+    ProjectDirs::from("", "", "unifly")
+        .map(|dirs| dirs.config_dir().join("config.toml"))
+        .unwrap_or_else(fallback_config_path)
+}
+
+fn fallback_config_path() -> PathBuf {
+    fallback_config_dir().join("config.toml")
+}
+
+#[cfg(windows)]
+fn fallback_config_dir() -> PathBuf {
+    std::env::var_os("APPDATA")
+        .map(PathBuf::from)
+        .or_else(|| {
+            std::env::var_os("USERPROFILE")
+                .map(PathBuf::from)
+                .map(|home| home.join("AppData").join("Roaming"))
+        })
+        .unwrap_or_else(|| PathBuf::from("."))
+        .join("unifly")
+}
+
+#[cfg(not(windows))]
+fn fallback_config_dir() -> PathBuf {
+    std::env::var_os("XDG_CONFIG_HOME")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| {
+            PathBuf::from(std::env::var_os("HOME").unwrap_or_else(|| ".".into())).join(".config")
+        })
+        .join("unifly")
 }
 
 // ── Config loading ──────────────────────────────────────────────────

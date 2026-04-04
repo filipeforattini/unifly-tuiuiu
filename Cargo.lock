@@ -4308,6 +4308,7 @@ dependencies = [
  "color-eyre",
  "crossterm 0.29.0",
  "dialoguer",
+ "directories",
  "figment",
  "futures",
  "human-panic",
