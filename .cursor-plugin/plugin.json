@@ -1,10 +1,11 @@
 {
   "name": "unifly",
+  "displayName": "unifly",
   "version": "0.7.0",
-  "description": "UniFi network management CLI, TUI, and AI agent skill — full infrastructure control",
+  "description": "UniFi network management CLI, TUI, and AI agent skill for full infrastructure control",
   "author": {
     "name": "Stefanie Jane",
-    "url": "https://hyperbliss.tech"
+    "email": "stef@hyperbliss.tech"
   },
   "homepage": "https://github.com/hyperb1iss/unifly",
   "repository": "https://github.com/hyperb1iss/unifly",
@@ -18,5 +19,13 @@
     "automation",
     "firewall",
     "wifi"
-  ]
+  ],
+  "category": "developer-tools",
+  "tags": [
+    "networking",
+    "cli",
+    "tui",
+    "infrastructure"
+  ],
+  "skills": "./skills/"
 }
