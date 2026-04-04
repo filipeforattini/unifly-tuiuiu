@@ -241,14 +241,16 @@ unifly clients set-ip "00:11:22:33:44:55" --ip 10.4.22.11
 unifly clients set-ip "00:11:22:33:44:55" --ip 10.4.22.11 --network IoT
 ```
 
-### `unifly clients remove-ip <mac>`
+### `unifly clients remove-ip <mac> [--network <name|id>]`
 
-Remove a DHCP reservation from a client.
+Remove a DHCP reservation from a client. When `--network` is omitted, all
+reservations for that MAC are removed.
 
 Aliases: `unreserve`
 
 ```bash
 unifly clients remove-ip "00:11:22:33:44:55"
+unifly clients remove-ip "00:11:22:33:44:55" --network IoT
 ```
 
 ---

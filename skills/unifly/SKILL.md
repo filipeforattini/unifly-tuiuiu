@@ -273,8 +273,9 @@ unifly clients set-ip <mac> --ip <ipv4>
 # Set with explicit network
 unifly clients set-ip 00:11:22:33:44:55 --ip 10.4.22.11 --network IoT
 
-# Remove a reservation
+# Remove a reservation (all networks by default, or scope it)
 unifly clients remove-ip <mac>
+unifly clients remove-ip <mac> --network IoT
 
 # List all reservations (including offline clients)
 unifly clients reservations
