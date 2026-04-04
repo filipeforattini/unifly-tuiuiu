@@ -45,6 +45,16 @@ UniFi controllers expose multiple APIs with different capabilities. unifly unifi
 
 ---
 
+> ### 🤖 Are you an AI Agent?
+>
+> unifly ships with an **[agent skill](skills/unifly/SKILL.md)**: full CLI reference, automation workflows, and a ready-made network manager agent. One command to install:
+>
+> ```bash
+> npx skills add hyperb1iss/unifly
+> ```
+
+---
+
 ## ✦ Features
 
 | Capability | What You Get |
@@ -454,35 +464,21 @@ Full API documentation on [docs.rs/unifly-api](https://docs.rs/unifly-api).
 
 ## 🤖 AI Agent Skill
 
-unifly ships an AI agent skill that teaches coding assistants how to manage UniFi infrastructure. It includes a comprehensive CLI reference, automation workflows, and an autonomous network manager agent.
+unifly ships an AI agent skill that teaches coding assistants how to manage UniFi infrastructure: CLI reference, automation workflows, and an autonomous network manager agent.
 
-### Install via npx (Vercel Skills)
+### Install
 
 Works with Claude Code, Cursor, Copilot, Codex, Gemini, and more:
 
 ```bash
-npx skills add hyperb1iss/unifly
+npx skills add hyperb1iss/unifly                    # All supported agents
+npx skills add hyperb1iss/unifly -a claude-code     # Target a specific one
 ```
 
-Target a specific agent:
-
-```bash
-npx skills add hyperb1iss/unifly -a claude-code
-npx skills add hyperb1iss/unifly -a cursor
-npx skills add hyperb1iss/unifly -a copilot
-```
-
-### Install via Claude Code Plugin
+Or add it as a Claude Code plugin:
 
 ```bash
 /plugin marketplace add hyperb1iss/unifly
-```
-
-### Manual Installation
-
-```bash
-git clone https://github.com/hyperb1iss/unifly.git
-ln -s $(pwd)/unifly ~/.claude/plugins/unifly
 ```
 
 ### What's Included
@@ -490,10 +486,10 @@ ln -s $(pwd)/unifly ~/.claude/plugins/unifly
 | Component | Description |
 | --- | --- |
 | **unifly skill** | Complete CLI reference, command patterns, output formats, automation tips |
-| **Network Manager agent** | Autonomous agent for infrastructure provisioning, diagnostics, and security audits |
-| **Reference docs** | Detailed command reference, UniFi networking concepts, workflow patterns |
+| **Network Manager agent** | Autonomous agent for provisioning, diagnostics, and security audits |
+| **Reference docs** | Command reference, UniFi networking concepts, workflow patterns |
 
-The skill enables agents to create VLANs, manage firewall policies, provision WiFi, diagnose connectivity issues, generate guest vouchers, and more, all through the unifly CLI.
+Agents can create VLANs, manage firewall policies, provision WiFi, diagnose connectivity, generate guest vouchers, and more, all through the unifly CLI.
 
 ---
 
