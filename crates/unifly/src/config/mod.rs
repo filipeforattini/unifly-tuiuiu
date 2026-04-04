@@ -176,8 +176,9 @@ fn default_auth_mode() -> String {
 
 /// Resolve the config file path via platform-native conventions.
 pub fn config_path() -> PathBuf {
-    ProjectDirs::from("", "", "unifly")
-        .map_or_else(fallback_config_path, |dirs| dirs.config_dir().join("config.toml"))
+    ProjectDirs::from("", "", "unifly").map_or_else(fallback_config_path, |dirs| {
+        dirs.config_dir().join("config.toml")
+    })
 }
 
 fn fallback_config_path() -> PathBuf {
@@ -202,7 +203,8 @@ fn fallback_config_dir() -> PathBuf {
     std::env::var_os("XDG_CONFIG_HOME")
         .map_or_else(
             || {
-            PathBuf::from(std::env::var_os("HOME").unwrap_or_else(|| ".".into())).join(".config")
+                PathBuf::from(std::env::var_os("HOME").unwrap_or_else(|| ".".into()))
+                    .join(".config")
             },
             PathBuf::from,
         )

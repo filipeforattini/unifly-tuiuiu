@@ -41,17 +41,21 @@ A complete command-line toolkit for managing Ubiquiti UniFi network controllers.
 
 > _Manage devices, monitor clients, inspect VLANs, stream events, and watch bandwidth charts, all without leaving your terminal._
 
-UniFi controllers expose multiple APIs with different capabilities. unifly unifies them all into a single, coherent interface so you never have to think about which endpoint to hit. It also ships as an [AI agent skill](#-ai-agent-skill), so your coding assistant can manage your network infrastructure too.
+UniFi controllers expose multiple APIs with different capabilities. unifly unifies them all into a single, coherent interface so you never have to think about which endpoint to hit.
 
 ---
 
-> ### 🤖 Are you an AI Agent?
+> ### 🤖 AI Agent? 👤 Human? Both Welcome.
 >
-> unifly ships with an **[agent skill](skills/unifly/SKILL.md)**: full CLI reference, automation workflows, and a ready-made network manager agent. One command to install:
+> unifly speaks fluent silicon *and* carbon.
+>
+> **Coding agents** get a dedicated [skill bundle](skills/unifly/SKILL.md): full CLI reference, automation workflows, and a ready-made network manager agent that can provision VLANs, audit firewalls, and diagnose connectivity without asking permission for every command. One command to install:
 >
 > ```bash
 > npx skills add hyperb1iss/unifly
 > ```
+>
+> **Humans** get a gorgeous 8-screen TUI, shell completions, pipe-friendly output, and the quiet satisfaction of never opening the UniFi web UI again. Keep scrolling to [Install](#-install).
 
 ---
 
@@ -482,21 +486,12 @@ Full API documentation on [docs.rs/unifly-api](https://docs.rs/unifly-api).
 
 ## 🤖 AI Agent Skill
 
-unifly ships an AI agent skill that teaches coding assistants how to manage UniFi infrastructure: CLI reference, automation workflows, and an autonomous network manager agent.
-
-### Install
-
-Works with Claude Code, Cursor, Copilot, Codex, Gemini, and more:
+### Install Options
 
 ```bash
-npx skills add hyperb1iss/unifly                    # All supported agents
-npx skills add hyperb1iss/unifly -a claude-code     # Target a specific one
-```
-
-Or add it as a Claude Code plugin:
-
-```bash
-/plugin marketplace add hyperb1iss/unifly
+npx skills add hyperb1iss/unifly                    # Claude Code, Cursor, Copilot, Codex, Gemini, ...
+npx skills add hyperb1iss/unifly -a claude-code     # Target a specific agent
+/plugin marketplace add hyperb1iss/unifly           # As a Claude Code plugin
 ```
 
 ### What's Included
@@ -506,8 +501,6 @@ Or add it as a Claude Code plugin:
 | **unifly skill** | Complete CLI reference, command patterns, output formats, automation tips |
 | **Network Manager agent** | Autonomous agent for provisioning, diagnostics, and security audits |
 | **Reference docs** | Command reference, UniFi networking concepts, workflow patterns |
-
-Agents can create VLANs, manage firewall policies, provision WiFi, diagnose connectivity, generate guest vouchers, and more, all through the unifly CLI.
 
 ---
 
