@@ -97,7 +97,7 @@ impl App {
                     .map(|app| (app.name, app.tx_bytes + app.rx_bytes))
                     .filter(|(_, bytes)| *bytes > 0)
                     .collect();
-                app_list.sort_by(|a, b| b.1.cmp(&a.1));
+                app_list.sort_by_key(|item| std::cmp::Reverse(item.1));
                 app_list.truncate(10);
                 data.dpi_apps = app_list;
             }
@@ -115,7 +115,7 @@ impl App {
                     .map(|category| (category.name, category.tx_bytes + category.rx_bytes))
                     .filter(|(_, bytes)| *bytes > 0)
                     .collect();
-                category_list.sort_by(|a, b| b.1.cmp(&a.1));
+                category_list.sort_by_key(|item| std::cmp::Reverse(item.1));
                 data.dpi_categories = category_list;
             }
             if data.dpi_categories.is_empty()
@@ -186,7 +186,7 @@ fn parse_legacy_dpi_apps(raw: &[serde_json::Value]) -> Vec<(String, u64)> {
             }
         }
     }
-    apps.sort_by(|a, b| b.1.cmp(&a.1));
+    apps.sort_by_key(|item| std::cmp::Reverse(item.1));
     apps.truncate(10);
     apps
 }
@@ -216,6 +216,6 @@ fn parse_legacy_dpi_categories(raw: &[serde_json::Value]) -> Vec<(String, u64)> 
             }
         }
     }
-    categories.sort_by(|a, b| b.1.cmp(&a.1));
+    categories.sort_by_key(|item| std::cmp::Reverse(item.1));
     categories
 }

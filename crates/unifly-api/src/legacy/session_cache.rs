@@ -120,8 +120,7 @@ pub fn jwt_expiry(token: &str) -> Option<u64> {
 pub fn fallback_expiry() -> u64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .map(|d| d.as_secs() + 2 * 3600)
-        .unwrap_or(0)
+        .map_or(0, |d| d.as_secs() + 2 * 3600)
 }
 
 /// Safety margin subtracted from JWT expiry (60 seconds).

@@ -86,9 +86,7 @@ impl App {
     /// Create a new App with all screens. Optionally accepts a [`Controller`]
     /// for live data — if `None`, the TUI shows the onboarding wizard.
     pub fn new(controller: Option<Controller>) -> Self {
-        let show_donate = crate::config::load_config()
-            .map(|c| c.defaults.show_donate)
-            .unwrap_or(true);
+        let show_donate = crate::config::load_config().map_or(true, |c| c.defaults.show_donate);
 
         let (action_tx, action_rx) = mpsc::unbounded_channel();
 

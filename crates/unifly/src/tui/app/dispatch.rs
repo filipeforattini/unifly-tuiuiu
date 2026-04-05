@@ -62,7 +62,7 @@ impl App {
 
                 if self.active_screen == ScreenId::Stats
                     && let Some(last) = self.last_stats_fetch
-                    && last.elapsed() > Duration::from_secs(60)
+                    && last.elapsed() > Duration::from_mins(1)
                 {
                     let _ = self.action_tx.send(Action::RequestStats(self.stats_period));
                 }
