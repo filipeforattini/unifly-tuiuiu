@@ -36,13 +36,19 @@ pub(super) fn handle(args: ConfigArgs, global: &GlobalOpts) -> Result<(), CliErr
                 "controller" => profile.controller = value,
                 "site" => profile.site = value,
                 "auth_mode" | "auth-mode" => {
-                    if !matches!(value.as_str(), "integration" | "session" | "hybrid") {
+                    // Normalize "legacy" → "session" for backwards compat
+                    let normalized = if value == "legacy" {
+                        "session".into()
+                    } else {
+                        value
+                    };
+                    if !matches!(normalized.as_str(), "integration" | "session" | "hybrid") {
                         return Err(CliError::Validation {
                             field: "auth_mode".into(),
                             reason: "must be 'integration', 'session', or 'hybrid'".into(),
                         });
                     }
-                    profile.auth_mode = value;
+                    profile.auth_mode = normalized;
                 }
                 "api_key" | "api-key" => profile.api_key = Some(value),
                 "api_key_env" | "api-key-env" => profile.api_key_env = Some(value),

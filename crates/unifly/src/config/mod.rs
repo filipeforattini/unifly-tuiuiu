@@ -322,7 +322,8 @@ pub fn resolve_auth(profile: &Profile, profile_name: &str) -> Result<AuthCredent
             let secret = resolve_api_key(profile, profile_name)?;
             Ok(AuthCredentials::ApiKey(secret))
         }
-        "session" => {
+        // Accept "legacy" as a backwards-compatible alias for "session"
+        "session" | "legacy" => {
             let (username, password) = resolve_session_credentials(profile, profile_name)?;
             Ok(AuthCredentials::Credentials { username, password })
         }

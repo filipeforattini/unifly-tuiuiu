@@ -48,7 +48,7 @@ pub fn resolve_profile(
             let secret = resolve_api_key_with_flag(profile, profile_name, global)?;
             AuthCredentials::ApiKey(secret)
         }
-        "session" => {
+        "session" | "legacy" => {
             let (username, password) = config::resolve_session_credentials(profile, profile_name)?;
             AuthCredentials::Credentials { username, password }
         }
