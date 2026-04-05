@@ -327,3 +327,51 @@ impl Controller {
         Ok(session.raw_post(path, body).await?)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::sync::Arc;
+
+    use super::Controller;
+    use crate::config::ControllerConfig;
+    use crate::model::HealthSummary;
+
+    #[test]
+    fn get_vpn_health_reads_cached_store_snapshot() {
+        let controller = Controller::new(ControllerConfig::default());
+        let summaries = Arc::new(vec![
+            HealthSummary {
+                subsystem: "wan".into(),
+                status: "ok".into(),
+                num_adopted: Some(1),
+                num_sta: Some(5),
+                tx_bytes_r: Some(100),
+                rx_bytes_r: Some(200),
+                latency: Some(1.0),
+                wan_ip: Some("198.51.100.1".into()),
+                gateways: Some(vec!["gw".into()]),
+                extra: serde_json::Value::Null,
+            },
+            HealthSummary {
+                subsystem: "vpn".into(),
+                status: "warn".into(),
+                num_adopted: None,
+                num_sta: Some(2),
+                tx_bytes_r: Some(300),
+                rx_bytes_r: Some(400),
+                latency: Some(2.5),
+                wan_ip: None,
+                gateways: None,
+                extra: serde_json::json!({ "source": "cache" }),
+            },
+        ]);
+        let _previous = controller.inner.store.site_health.send_replace(summaries);
+
+        let vpn_health = controller.get_vpn_health().expect("vpn summary");
+
+        assert_eq!(vpn_health.subsystem, "vpn");
+        assert_eq!(vpn_health.status, "warn");
+        assert_eq!(vpn_health.num_sta, Some(2));
+        assert_eq!(vpn_health.extra["source"], "cache");
+    }
+}
