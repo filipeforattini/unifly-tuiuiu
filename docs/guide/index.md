@@ -1,4 +1,4 @@
-# Introduction
+# ⚡ Introduction
 
 Stop context-switching to the UniFi web dashboard. Unifly puts your entire network at your fingertips from the terminal you're already in.
 
@@ -7,7 +7,7 @@ Stop context-switching to the UniFi web dashboard. Unifly puts your entire netwo
 
 Both are powered by a shared async engine that speaks every UniFi API dialect, so you never have to think about which endpoint to hit.
 
-## The Problem
+## 🔮 The Problem
 
 UniFi controllers expose two completely different APIs:
 
@@ -40,7 +40,7 @@ graph LR
 
 Most tools only speak one dialect. The web dashboard is slow and can't be scripted. Unifly handles the routing, authentication, and data merging automatically.
 
-## What You Can Do
+## 🦋 What You Can Do
 
 | Capability                | Description                                                           |
 | ------------------------- | --------------------------------------------------------------------- |
@@ -55,7 +55,7 @@ Most tools only speak one dialect. The web dashboard is slow and can't be script
 | **Raw API Access**        | Hit any controller endpoint directly with `unifly api`                |
 | **Real-Time Dashboard**   | Monitor everything with live Braille charts and status bars           |
 
-## Architecture at a Glance
+## 🏗️ Architecture at a Glance
 
 ```mermaid
 graph TD
@@ -72,7 +72,7 @@ graph TD
 
 Two crates with a clean dependency chain. The library is published independently for Rust developers building custom integrations. See the [Architecture](/architecture/) section for the full picture.
 
-## Next Steps
+## 🎯 Next Steps
 
 - [Installation](/guide/installation): get unifly on your system
 - [Quick Start](/guide/quick-start): configure and run your first commands

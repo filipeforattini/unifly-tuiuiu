@@ -1,4 +1,4 @@
-# Architecture
+# 🏗️ Architecture
 
 Unifly is a two-crate Rust workspace with a clean dependency chain.
 

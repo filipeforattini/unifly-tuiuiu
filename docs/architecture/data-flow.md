@@ -1,4 +1,4 @@
-# Data Flow
+# 🌊 Data Flow
 
 ## Connection Lifecycle
 

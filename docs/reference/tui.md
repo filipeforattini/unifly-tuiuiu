@@ -1,4 +1,4 @@
-# TUI Dashboard
+# 🖥️ TUI Dashboard
 
 The `unifly tui` subcommand launches a real-time terminal dashboard for monitoring your UniFi network. Ten screens cover everything from live bandwidth charts to firewall policy management.
 
@@ -134,7 +134,7 @@ The TUI uses the [Opaline](https://crates.io/crates/opaline) theme engine with t
 Controller reconnect after a network interruption is currently broken. If the connection drops, restart the TUI to reconnect.
 :::
 
-## Next Steps
+## 🎯 Next Steps
 
 - [CLI Commands](/reference/cli): the full command reference
 - [Authentication](/guide/authentication): understand what each auth mode enables in the TUI

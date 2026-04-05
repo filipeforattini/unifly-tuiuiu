@@ -1,90 +1,87 @@
-# Installation
+# 💎 Installation
 
-## Quick Install (Linux / macOS)
+## Quick Install
 
-```bash
+::: code-group
+
+```bash [Linux / macOS]
 curl -fsSL https://raw.githubusercontent.com/hyperb1iss/unifly/main/install.sh | sh
 ```
 
-Detects your platform, downloads the latest release binary, and installs to `/usr/local/bin` (or `~/.local/bin`).
-
-## Quick Install (Windows PowerShell)
-
-```powershell
+```powershell [Windows]
 irm https://raw.githubusercontent.com/hyperb1iss/unifly/main/install.ps1 | iex
 ```
 
-Installs `unifly.exe` into `%LOCALAPPDATA%\unifly\bin` and adds that directory to your user `PATH` if needed.
+:::
 
-## Homebrew (macOS / Linux)
+The installer detects your platform, downloads the latest release binary, and adds it to your `PATH`.
 
-```bash
+## Package Managers
+
+::: code-group
+
+```bash [Homebrew]
 brew install hyperb1iss/tap/unifly
 ```
 
-## AUR (Arch Linux)
-
-```bash
+```bash [AUR (Arch)]
 yay -S unifly-bin
 ```
 
-## GitHub Releases
-
-Download the latest binary for your platform from [GitHub Releases](https://github.com/hyperb1iss/unifly/releases/latest).
-
-## Cargo (from source)
-
-Requires Rust 1.94+ (edition 2024):
-
-```bash
-cargo install --git https://github.com/hyperb1iss/unifly.git unifly
-```
-
-Or from crates.io:
-
-```bash
+```bash [Cargo]
 cargo install unifly
 ```
 
-## Build from Source
+:::
+
+## From Source
+
+Requires Rust 1.94+ (edition 2024):
 
 ```bash
 git clone https://github.com/hyperb1iss/unifly.git
 cd unifly
 cargo build --workspace --release
+# Binary at target/release/unifly
 ```
 
-The binary is placed in `target/release/unifly`.
+Or install directly from git:
+
+```bash
+cargo install --git https://github.com/hyperb1iss/unifly.git unifly
+```
 
 ## Shell Completions
 
-Generate completions for your shell after installation:
+::: code-group
 
-```bash
-# Bash
+```bash [Bash]
 unifly completions bash > ~/.local/share/bash-completion/completions/unifly
+```
 
-# Zsh
+```bash [Zsh]
 unifly completions zsh > ~/.zfunc/_unifly
+```
 
-# Fish
+```bash [Fish]
 unifly completions fish > ~/.config/fish/completions/unifly.fish
 ```
 
-```powershell
-# PowerShell
+```powershell [PowerShell]
 unifly completions powershell | Out-String | Invoke-Expression
 ```
 
-## Verify Installation
+:::
+
+## Verify
 
 ```bash
 unifly --version
 ```
 
-## Next Steps
+## 🎯 Next Steps
 
-You're installed! Now configure your first controller profile:
+You're in! Now configure your first controller profile:
 
 - [Quick Start](/guide/quick-start): run `unifly config init` and explore your network
 - [Authentication](/guide/authentication): choose the right auth mode

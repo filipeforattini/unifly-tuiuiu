@@ -1,8 +1,8 @@
-# Troubleshooting
+# 🔧 Troubleshooting
 
 Common issues and how to fix them.
 
-## Connection Problems
+## 🌐 Connection Problems
 
 ### "Connection refused" or timeout
 
@@ -50,7 +50,7 @@ unifly --no-cache devices list
 
 If it persists, check that your credentials are still valid on the controller.
 
-## Authentication Issues
+## 🔑 Authentication Issues
 
 ### "Unsupported { required: Integration API }"
 
@@ -102,7 +102,7 @@ export UNIFI_API_KEY="your-key"
 export UNIFI_URL="https://192.168.1.1"
 ```
 
-## Missing or Empty Data
+## 📊 Missing or Empty Data
 
 ### Client list missing traffic/hostname/VLAN columns
 
@@ -134,7 +134,7 @@ unifly devices list --all
 unifly clients list --limit 200
 ```
 
-## TUI Issues
+## 🖥️ TUI Issues
 
 ### TUI crashes or shows garbled output
 
@@ -171,7 +171,7 @@ UNIFLY_THEME=silkcircuit unifly tui
 # Or use the theme selector: press , in the TUI to open Settings
 ```
 
-## MFA / TOTP
+## 🔐 MFA / TOTP
 
 ### "TOTP required but not provided"
 
@@ -193,7 +193,7 @@ UNIFI_TOTP=$(op read "op://Vault/UniFi/one-time password") unifly devices list
 `totp_env` must be set directly in `config.toml`. It is not yet supported by `unifly config set`.
 :::
 
-## Common Gotchas
+## 🎭 Common Gotchas
 
 - **`events watch --types`** takes category names (`Device`, `Client`, `Network`), not `EVT_*` glob patterns
 - **`nat policies`** has no `update` subcommand. Delete and recreate to modify a NAT rule
@@ -208,7 +208,7 @@ UNIFI_TOTP=$(op read "op://Vault/UniFi/one-time password") unifly devices list
 - Check [GitHub Issues](https://github.com/hyperb1iss/unifly/issues) for known problems
 - Open a new issue with your unifly version, controller model/firmware, and the verbose output
 
-## Next Steps
+## 🎯 Next Steps
 
 - [Configuration](/guide/configuration): check your profile settings
 - [Authentication](/guide/authentication): review which auth mode you need

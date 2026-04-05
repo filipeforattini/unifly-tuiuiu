@@ -1,4 +1,4 @@
-# AI Agent Skill
+# 🪄 AI Agent Skill
 
 Unifly ships with a dedicated skill bundle that teaches AI coding agents how to manage your UniFi network infrastructure. Your agent gets the full CLI reference, automation workflows, and a ready-made network manager agent.
 
@@ -83,7 +83,7 @@ Once the skill is installed, try these with your coding agent:
 
 The agent will use `unifly` commands with `-o json` output, parse the results, and orchestrate multi-step workflows automatically.
 
-## Next Steps
+## 🎯 Next Steps
 
 - [Quick Start](/guide/quick-start): make sure unifly is configured before using the skill
 - [Authentication](/guide/authentication): the agent needs Hybrid mode for full access

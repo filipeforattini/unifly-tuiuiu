@@ -1,4 +1,4 @@
-# Library (unifly-api)
+# 🧪 Library (unifly-api)
 
 [![Crates.io](https://img.shields.io/crates/v/unifly-api.svg)](https://crates.io/crates/unifly-api)
 [![docs.rs](https://docs.rs/unifly-api/badge.svg)](https://docs.rs/unifly-api)
@@ -131,7 +131,7 @@ graph TD
 
 See [docs.rs/unifly-api](https://docs.rs/unifly-api) for the complete API reference with all types, methods, and examples.
 
-## Next Steps
+## 🎯 Next Steps
 
 - [Architecture Overview](/architecture/): how the crates fit together
 - [Data Flow](/architecture/data-flow): connection lifecycle and DataStore design

@@ -1,4 +1,4 @@
-# Configuration
+# ⚙️ Configuration
 
 ## Config File
 
@@ -207,7 +207,7 @@ Unifly caches Legacy API sessions across commands for speed. If you rotate a pas
 unifly --no-cache devices list    # Force a fresh login
 ```
 
-## Next Steps
+## 🎯 Next Steps
 
 - [Authentication](/guide/authentication): understand API key vs password vs hybrid
 - [CLI Commands](/reference/cli): full command reference

@@ -1,4 +1,4 @@
-# CLI Reference
+# 💜 CLI Reference
 
 Every command supports `--help` for exhaustive flag listings. This page documents subcommands, key flags, and gotchas you won't find in `--help`.
 
@@ -6,34 +6,34 @@ Every command supports `--help` for exhaustive flag listings. This page document
 
 ## Commands
 
-| Command | Alias | API | Description |
-| --- | --- | --- | --- |
-| `devices` | `dev`, `d` | H | Manage adopted and pending devices |
-| `clients` | `cl` | H | Manage connected clients and DHCP reservations |
-| `networks` | `net`, `n` | I | Manage networks and VLANs |
-| `wifi` | `w` | I | Manage WiFi broadcasts (SSIDs) |
-| `firewall` | `fw` | I | Manage firewall policies and zones |
-| `nat` | | L | Manage NAT policies (masquerade, SNAT, DNAT) |
-| `acl` | | I | Manage ACL rules |
-| `dns` | | I | Manage DNS policies (local records) |
-| `traffic-lists` | | I | Manage traffic matching lists |
-| `hotspot` | | I | Manage hotspot vouchers |
-| `vpn` | | I | View VPN servers and tunnels |
-| `events` | | L | View and stream events |
-| `alarms` | | L | Manage alarms |
-| `stats` | | L | Query statistics and reports |
-| `sites` | | L | Manage sites |
-| `admin` | | L | Administrator management |
-| `system` | `sys` | Mixed | System operations and info |
-| `topology` | `topo` | H | Show network topology tree |
-| `dpi` | | Mixed | DPI reference data and control |
-| `radius` | | I | View RADIUS profiles |
-| `wans` | | I | View WAN interfaces |
-| `countries` | | I | List available country codes |
-| `config` | | Local | Manage CLI configuration |
-| `completions` | | Local | Generate shell completions |
-| `api` | | L | Raw API passthrough (GET/POST any endpoint) |
-| `tui` | | H | Launch the real-time terminal dashboard |
+| Command         | Alias      | API   | Description                                    |
+| --------------- | ---------- | ----- | ---------------------------------------------- |
+| `devices`       | `dev`, `d` | H     | Manage adopted and pending devices             |
+| `clients`       | `cl`       | H     | Manage connected clients and DHCP reservations |
+| `networks`      | `net`, `n` | I     | Manage networks and VLANs                      |
+| `wifi`          | `w`        | I     | Manage WiFi broadcasts (SSIDs)                 |
+| `firewall`      | `fw`       | I     | Manage firewall policies and zones             |
+| `nat`           |            | L     | Manage NAT policies (masquerade, SNAT, DNAT)   |
+| `acl`           |            | I     | Manage ACL rules                               |
+| `dns`           |            | I     | Manage DNS policies (local records)            |
+| `traffic-lists` |            | I     | Manage traffic matching lists                  |
+| `hotspot`       |            | I     | Manage hotspot vouchers                        |
+| `vpn`           |            | I     | View VPN servers and tunnels                   |
+| `events`        |            | L     | View and stream events                         |
+| `alarms`        |            | L     | Manage alarms                                  |
+| `stats`         |            | L     | Query statistics and reports                   |
+| `sites`         |            | L     | Manage sites                                   |
+| `admin`         |            | L     | Administrator management                       |
+| `system`        | `sys`      | Mixed | System operations and info                     |
+| `topology`      | `topo`     | H     | Show network topology tree                     |
+| `dpi`           |            | Mixed | DPI reference data and control                 |
+| `radius`        |            | I     | View RADIUS profiles                           |
+| `wans`          |            | I     | View WAN interfaces                            |
+| `countries`     |            | I     | List available country codes                   |
+| `config`        |            | Local | Manage CLI configuration                       |
+| `completions`   |            | Local | Generate shell completions                     |
+| `api`           |            | L     | Raw API passthrough (GET/POST any endpoint)    |
+| `tui`           |            | H     | Launch the real-time terminal dashboard        |
 
 ::: tip
 List commands default to 25 rows. Pass `--all` or `--limit 200` for complete results.
@@ -367,20 +367,20 @@ Only Integration API commands respect `--filter`.
 
 ## Output Formats
 
-| Format | Flag | Best For |
-| --- | --- | --- |
-| Table | `-o table` | Human reading (default) |
-| JSON | `-o json` | Scripting, agent use |
+| Format       | Flag              | Best For                        |
+| ------------ | ----------------- | ------------------------------- |
+| Table        | `-o table`        | Human reading (default)         |
+| JSON         | `-o json`         | Scripting, agent use            |
 | Compact JSON | `-o json-compact` | Line-oriented processing, pipes |
-| YAML | `-o yaml` | Config-style output |
-| Plain | `-o plain` | IDs for `xargs` pipelines |
+| YAML         | `-o yaml`         | Config-style output             |
+| Plain        | `-o plain`        | IDs for `xargs` pipelines       |
 
 ```bash
 # Pipe plain IDs into another command
 unifly clients list -o plain | xargs -n1 unifly clients get
 ```
 
-## Next Steps
+## 🎯 Next Steps
 
 - [TUI Dashboard](/reference/tui): real-time monitoring with keybindings
 - [Authentication](/guide/authentication): which auth mode enables which commands

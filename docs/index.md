@@ -4,7 +4,7 @@ layout: home
 hero:
   name: Unifly
   text: Your UniFi Network, at Your Fingertips
-  tagline: "26 commands, 10 TUI screens, dual-API engine. Manage your entire UniFi network from the terminal."
+  tagline: "26 commands, 10 TUI screens, dual-API engine. Manage your entire UniFi network from the terminal, or have an AI agent do it for you."
   actions:
     - theme: brand
       text: Get Started
@@ -14,22 +14,22 @@ hero:
       link: https://github.com/hyperb1iss/unifly
 
 features:
-  - icon: "\u26A1"
+  - icon: ⚡
     title: Dual API Engine
     details: Speaks both Integration API (REST, API key) and Legacy API (session, cookie/CSRF). You never think about which endpoint to hit.
-  - icon: "\uD83D\uDCCA"
+  - icon: 📊
     title: 10-Screen TUI
     details: btop-inspired dashboard with Braille traffic charts, CPU/MEM bars, zoomable topology, and live event streaming.
-  - icon: "\uD83E\uDDE0"
+  - icon: 🧠
     title: 26 Top-Level Commands
     details: Devices, clients, networks, WiFi, firewall, NAT, DNS, DPI, topology, raw API passthrough, and more.
-  - icon: "\uD83D\uDD12"
+  - icon: 🔒
     title: Secure Credentials
     details: OS keyring by default for API keys and passwords. Plaintext config available as an opt-in fallback.
-  - icon: "\uD83C\uDF10"
+  - icon: 🌐
     title: Multi-Profile
     details: Named profiles for multiple controllers with instant switching. Great for managing home, office, and remote sites.
-  - icon: "\uD83E\uDD16"
+  - icon: 🤖
     title: AI Agent Skill
     details: Ships with a skill bundle that teaches coding agents to provision VLANs, audit firewalls, and diagnose connectivity.
 ---

@@ -1,4 +1,4 @@
-# API Surface
+# ⚡ API Surface
 
 Unifly communicates with UniFi controllers through two distinct API interfaces, each with different authentication mechanisms and capabilities.
 

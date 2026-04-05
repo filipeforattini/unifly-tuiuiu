@@ -1,4 +1,4 @@
-# Authentication
+# 🔑 Authentication
 
 Unifly supports three authentication modes. The right choice depends on what you need to do.
 
@@ -10,7 +10,7 @@ flowchart TD
     Q1 -->|"No, just CRUD"| APIKEY["API Key Mode"]
     Q1 -->|"Yes"| Q2{"Do you also need<br/>network/WiFi/firewall CRUD?"}
     Q2 -->|"No"| LEGACY["Username/Password Mode"]
-    Q2 -->|"Yes"| HYBRID["Hybrid Mode ✨"]
+    Q2 -->|"Yes"| HYBRID["Hybrid Mode 💜"]
 
     style HYBRID fill:#50fa7b,color:#0a0a0f
     style APIKEY fill:#80ffea,color:#0a0a0f
@@ -135,7 +135,7 @@ UNIFI_TOTP=$(op read "op://Personal/UniFi/one-time password") \
 The `totp_env` setting must be edited directly in `config.toml`. It is not yet supported by `unifly config set`.
 :::
 
-## Next Steps
+## 🎯 Next Steps
 
 - [Configuration](/guide/configuration): full profile reference, environment variables, and precedence rules
 - [CLI Commands](/reference/cli): what you can do with each auth mode

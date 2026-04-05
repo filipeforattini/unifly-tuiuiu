@@ -1,4 +1,4 @@
-# Quick Start
+# 🔮 Quick Start
 
 ## Prerequisites
 
@@ -111,7 +111,7 @@ unifly config use office              # Switch default profile
 unifly -p home devices list           # One-off override
 ```
 
-## Next Steps
+## 🎯 Next Steps
 
 - [Configuration](/guide/configuration): all config options, environment variables, and profiles
 - [Authentication](/guide/authentication): API key vs password vs hybrid
