@@ -68,7 +68,8 @@ important operational knowledge for agents.
 
 ### Legacy API
 
-- **Auth:** Session cookie plus CSRF token (username + password login)
+- **Auth:** Session cookie plus CSRF token for session login. On UniFi OS,
+  legacy HTTP endpoints also accept `X-API-KEY`; legacy WebSocket does not.
 - **Base path:** `/proxy/network/api/` and `/proxy/network/v2/api/`
 - **Format:** Envelope-wrapped JSON (`{"meta": {...}, "data": [...]}`)
 - **Returns:** Everything the controller web UI sees, including fields the
@@ -83,18 +84,19 @@ Hybrid merges both clients at login time. On every `devices list` or
 `clients list`, unifly fetches the Integration API first, then supplements
 each record with Legacy fields: `tx_bytes`/`rx_bytes`, `hostname`,
 `wireless`, `uplink_device_mac`, `vlan`, `client_count` (mapped from Legacy
-`num_sta`). Without Hybrid, these fields are silently absent.
+`num_sta`). The same merge also works in API key mode on UniFi OS because
+the controller accepts `X-API-KEY` on legacy HTTP routes.
 
-Hybrid is the recommended default for agent use unless the task is
-strictly configuration CRUD and controller credentials are intentionally
-unavailable.
+Hybrid is still the safest default when you need live WebSocket features
+(`events watch`) or maximum compatibility across controller variants.
 
 ## Command Authentication Gate Matrix
 
-Each unifly command calls either `ensure_integration_access` or
-`ensure_legacy_access` (or both) before running. Commands in the wrong mode
-fail with `Unsupported { required: "..." }`. Use this matrix to pick the
-right `auth_mode`.
+Only Integration-only commands call `ensure_integration_access`. Legacy-backed
+commands fail naturally when the legacy client is unavailable. On UniFi OS,
+API key mode instantiates both the Integration client and a legacy HTTP
+client, so most HTTP commands work without username/password. Use this
+matrix to pick the right `auth_mode`.
 
 ### Integration API required (API key)
 
@@ -111,7 +113,7 @@ right `auth_mode`.
 - `countries`
 - `radius profiles`
 
-### Legacy API required (username + password)
+### Legacy HTTP-backed (username + password, or API key on UniFi OS)
 
 - `admin` (list/invite/revoke/update): `/rest/admin`
 - `alarms` (list/archive/archive-all)
@@ -121,12 +123,19 @@ right `auth_mode`.
 - `clients` authorize, unauthorize, block, unblock, kick, forget (via
   `cmd/stamgr`)
 - `dpi status | enable | disable`: `/set/setting/dpi`
-- `events list`, `events watch`: `/stat/event` and WebSocket
+- `events list`: `/stat/event`
 - `sites create | delete`
 - `stats site | device | client | gateway | dpi`: `/stat/report/*`
 - `system health | sysinfo | backup | reboot | poweroff`
 
-### Hybrid-enriched (works in any mode, but richer in Hybrid)
+### Legacy WebSocket required (session-backed auth)
+
+- `events watch`
+
+The TUI can still launch without WebSocket auth, but live event streaming
+falls back to polling when no session cookie is available.
+
+### Enriched when legacy HTTP is available
 
 - `clients list`: Integration fetch, Legacy fields merged by IP match
 - `clients find`: inherits the merged view
@@ -135,19 +144,22 @@ right `auth_mode`.
 
 ### Raw API escape hatch
 
-- `api <path>`: Routes through the Legacy client (handles CSRF and session
-  automatically). Can reach Legacy, v2 (`v2/api/site/...`), and Integration
-  (`integration/v1/...`) endpoints regardless of auth mode.
+- `api <path>`: Routes through the Legacy client and handles auth
+  automatically (API key on UniFi OS, or CSRF/session for legacy login). Can
+  reach Legacy, v2 (`v2/api/site/...`), and Integration (`integration/v1/...`)
+  endpoints regardless of auth mode.
 
 ## Auth Mode Decision Tree
 
-1. **"I only have an API key"** → `auth_mode = "integration"`. Configuration
-   CRUD works. Events, stats, device commands will not.
+1. **"I only have an API key"** → `auth_mode = "integration"`. On UniFi OS,
+   most HTTP commands work, including stats, device commands, reservations,
+   admin operations, and enriched `clients list` / `devices list`. Live
+   `events watch` still will not.
 2. **"I have username + password only"** → `auth_mode = "legacy"`. Events,
    stats, device commands work. Modern entities (DNS policies, NAT policies,
    traffic lists, ACL) require Integration and will fail.
-3. **"I have both"** → `auth_mode = "hybrid"`. **Recommended default.**
-   Everything works, client and device records are enriched.
+3. **"I have both"** → `auth_mode = "hybrid"`. Recommended when the task
+   needs live WebSocket streaming or maximum controller compatibility.
 4. **"Agent will manage multiple sites/controllers"** → Use named profiles
    (`-p home`, `-p office`) with Hybrid on each. Credentials go in the OS
    keyring via `unifly config set-password --profile <name>`.

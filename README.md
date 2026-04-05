@@ -117,7 +117,7 @@ Once configured:
 unifly devices list          # All adopted devices
 unifly clients list          # Connected clients
 unifly networks list         # VLANs and subnets
-unifly events watch          # Live event feed
+unifly events watch          # Live event feed (requires session auth or Hybrid)
 ```
 
 ```
@@ -134,16 +134,24 @@ unifly events watch          # Live event feed
 
 ### API Key (recommended)
 
-Generate a key on your controller under **Settings > Integrations**. Full CRUD access via the Integration API.
+Generate a key on your controller under **Settings > Integrations**. On UniFi
+OS controllers, the same key also authenticates legacy HTTP endpoints, so API
+key mode covers most CLI automation: CRUD, device commands, stats, DHCP
+reservations, admin operations, and `events list`.
 
 ```bash
 unifly config init                     # Select "API Key" during setup
 unifly --api-key <KEY> devices list    # Or pass directly
 ```
 
+Live WebSocket features still need a session cookie, so `events watch`
+requires **Username/Password** or **Hybrid**.
+
 ### Username / Password
 
-Legacy session-based auth with cookie and CSRF token handling. Required for events, statistics, and device commands not yet in the Integration API.
+Legacy session-based auth with cookie and CSRF token handling. Use this when
+you need live WebSocket features (`events watch`) or when your controller does
+not accept API keys on legacy HTTP endpoints.
 
 ```bash
 unifly config init                     # Select "Username/Password" during setup
@@ -151,7 +159,9 @@ unifly config init                     # Select "Username/Password" during setup
 
 ### Hybrid Mode
 
-Best of both worlds: API key for Integration API CRUD, username/password for Legacy API features. The wizard offers this when both are available.
+Best of both worlds: API key for Integration API plus legacy HTTP, and
+username/password for the legacy WebSocket session. Choose this when you want
+full live monitoring plus maximum compatibility.
 
 ### Environment Variables
 

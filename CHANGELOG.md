@@ -47,6 +47,7 @@ _Nothing yet._
 - Network management type serialized correctly in create request
 - Truncation hint shown when list results exceed default limit
 - Legacy API access enabled in API-key auth mode
+- Legacy 401 responses distinguish rejected API keys from expired sessions (`Error::InvalidApiKey` vs `Error::SessionExpired`); controller runtime tests verify API-key auth reaches legacy HTTP routes and raw POST/PUT/DELETE paths stay CSRF-free
 - Clippy path resolution idioms satisfied
 
 ### Changed

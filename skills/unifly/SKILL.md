@@ -30,9 +30,10 @@ hotspot vouchers, DPI, stats, backups, and a raw API escape hatch.
 
 Unique capabilities worth leading with when the user's task suits them:
 
-- **Hybrid auth mode** merges Integration and Legacy data (e.g. client bytes,
-  hostnames, uplink MACs only exist in Legacy; configuration CRUD only exists
-  in Integration). Most competing tools are one or the other.
+- **Dual-API enrichment** merges Integration and Legacy data (e.g. client
+  bytes, hostnames, uplink MACs only exist in Legacy; configuration CRUD only
+  exists in Integration). On UniFi OS, API key mode can already reach legacy
+  HTTP; Hybrid adds the WebSocket session for live monitoring.
 - **Real-time event streaming** via `unifly events watch` over WebSocket.
 - **Firewall policy reordering** via `reorder --get` / `reorder --set` for
   deterministic, round-trippable ordering edits.
@@ -55,15 +56,18 @@ wizard. See `examples/config.toml` for manual configuration.
 
 ## Authentication Modes
 
-unifly supports three modes. **Hybrid is the recommended default** because
-several commands (client enrichment, device stats, events, historical stats)
-require both APIs.
+unifly supports three modes. **API key mode is enough for most HTTP
+automation on UniFi OS controllers.** Choose **Hybrid** when the task needs
+live WebSocket features (`events watch`) or you want maximum compatibility.
 
-| Mode          | Credentials             | What It Unlocks                                                                            |
-| ------------- | ----------------------- | ------------------------------------------------------------------------------------------ |
-| `integration` | API key                 | Configuration CRUD (networks, wifi, firewall, nat, dns, acl, hotspot, traffic-lists, wans) |
-| `legacy`      | Username + password     | Events, stats, device commands, DPI control, admin, backups                                |
-| `hybrid`      | API key + username/pass | Everything, with client+device field merging (recommended)                                 |
+| Mode          | Credentials             | What It Unlocks                                                                                               |
+| ------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `integration` | API key                 | Integration API plus legacy HTTP on UniFi OS: CRUD, device commands, stats, reservations, admin, event list |
+| `legacy`      | Username + password     | Legacy HTTP + WebSocket only: events watch, stats, device commands, DPI control, admin, backups              |
+| `hybrid`      | API key + username/pass | Everything above, including legacy WebSocket plus enriched records with maximum controller compatibility       |
+
+Legacy WebSocket still rejects API keys, so `events watch` needs `legacy` or
+`hybrid`.
 
 For the complete command-to-API gate matrix (which commands require which
 auth mode), consult `references/concepts.md`.

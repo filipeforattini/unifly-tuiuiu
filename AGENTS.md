@@ -110,9 +110,11 @@ ClawHub and Claude Code plugin).
   endpoints at `/proxy/network/integration/v1/`. Returns clean JSON with
   UUIDs. Covers configuration CRUD (networks, wifi, firewall, nat, dns,
   acl, hotspot, traffic-lists, wans).
-- **`legacy/`**: `LegacyClient`, cookie + CSRF auth, envelope-wrapped
+- **`legacy/`**: `LegacyClient`, session cookie + CSRF for session auth,
+  plus `X-API-KEY` on UniFi OS legacy HTTP endpoints. Uses envelope-wrapped
   responses at `/proxy/network/api/` and `/proxy/network/v2/api/`. Covers
-  events (WebSocket), stats, device commands, admin, backups, DPI control.
+  events, stats, device commands, admin, backups, DPI control. Legacy
+  WebSocket still requires a session cookie.
 
 Both clients share a common `TransportConfig` and `TlsMode`. TLS modes:
 `SystemDefaults`, `AcceptInvalid`, `CustomPem`. Credentials are wrapped in
@@ -182,11 +184,14 @@ pub enum AuthCredentials {
 }
 ```
 
-**Hybrid is the recommended default** because several commands need both
-APIs. `clients list`, `devices list`, and `topology` rely on Legacy field
-merging (client bytes, hostname, wireless, uplink MAC, VLAN, client_count)
-that Integration alone cannot provide. Merge happens inline in
-`full_refresh()` in `controller/refresh.rs`.
+**ApiKey mode is enough for most HTTP work on UniFi OS controllers.**
+`connect()` builds a `LegacyClient` with `X-API-KEY`, so `clients list`,
+`devices list`, `topology`, device commands, stats, admin operations, DHCP
+reservations, and `events list` can all use legacy HTTP without a password.
+Use **Hybrid** when you need legacy WebSocket features such as
+`events watch`, or when you want maximum compatibility across controller
+variants. Merge still happens inline in `full_refresh()` in
+`controller/refresh.rs`.
 
 ---
 
