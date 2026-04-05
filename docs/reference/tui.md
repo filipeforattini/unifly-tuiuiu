@@ -12,35 +12,37 @@ unifly tui -v                # Verbose logging to your system temp directory
 
 ## Screens
 
-Navigate with number keys `1`-`8` or `Tab`/`Shift+Tab`:
+Navigate with number keys `1`-`8`, `Tab`/`Shift+Tab`, or `,` for Settings:
 
 | Key | Screen | Description |
 |---|---|---|
 | `1` | **Dashboard** | btop-style overview with six live panels |
-| `2` | **Devices** | Adopted devices — model, firmware, IP, uptime, CPU/MEM |
-| `3` | **Clients** | Connected clients — hostname, IP, MAC, VLAN, signal, traffic |
-| `4` | **Networks** | VLAN topology — subnets, DHCP, IPv6 config |
+| `2` | **Devices** | Adopted devices: model, firmware, IP, uptime, CPU/MEM |
+| `3` | **Clients** | Connected clients: hostname, IP, MAC, VLAN, signal, traffic |
+| `4` | **Networks** | VLAN topology: subnets, DHCP, IPv6 config |
 | `5` | **Firewall** | Policies, zones, ACL rules, and NAT policies |
 | `6` | **Topology** | Network topology tree view |
 | `7` | **Events** | Live event stream with severity indicators |
-| `8` | **Stats** | Historical charts — WAN bandwidth, client counts, DPI |
+| `8` | **Stats** | Historical charts: WAN bandwidth, client counts, DPI |
+| `,` | **Settings** | Controller profile, theme selector, display preferences |
+| | **Onboarding** | First-run setup wizard for controller connection |
 
 ## Dashboard Panels
 
 The dashboard packs six live panels into a single view:
 
-- **WAN Traffic** — Braille line chart with live TX/RX rates and peak tracking
-- **Gateway** — WAN IP, DNS, latency, uptime, ISP name, IPv6 when available
-- **System Health** — Subsystem status dots, CPU/MEM utilization bars, load averages
-- **Networks** — VLANs sorted by ID with IPv6 prefix delegation and mode
-- **Top Clients** — Proportional traffic bars with fractional block characters
-- **Recent Events** — Compact two-per-line event display
+- **WAN Traffic**: Braille line chart with live TX/RX rates and peak tracking
+- **Gateway**: WAN IP, DNS, latency, uptime, ISP name, IPv6 when available
+- **System Health**: Subsystem status dots, CPU/MEM utilization bars, load averages
+- **Networks**: VLANs sorted by ID with IPv6 prefix delegation and mode
+- **Top Clients**: Proportional traffic bars with fractional block characters
+- **Recent Events**: Compact two-per-line event display
 
 ## Key Bindings
 
 | Key | Action |
 |---|---|
-| `1`-`8` | Switch screens |
+| `1`-`8`, `,` | Switch screens |
 | `Tab` / `Shift+Tab` | Next / previous screen |
 | `j` / `k` | Scroll down / up |
 | `Enter` | Open detail view |
@@ -57,10 +59,10 @@ Press `Enter` on any list item to open its detail view. Detail views show compre
 
 The TUI refreshes data automatically:
 
-- **Devices and clients** — polled every 30 seconds
-- **Health subsystems** — polled every 30 seconds
-- **Events** — pushed via WebSocket in real-time
-- **Bandwidth** — sampled from device stats on each refresh cycle
+- **Devices and clients**: polled every 30 seconds
+- **Health subsystems**: polled every 30 seconds
+- **Events**: pushed via WebSocket in real-time
+- **Bandwidth**: sampled from device stats on each refresh cycle
 
 ## Authentication Modes
 

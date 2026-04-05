@@ -52,8 +52,8 @@ graph LR
 ```
 
 - **Writes** go through `DashMap::insert()` then `watch::Sender::send()`
-- **CLI reads** call `current()` — snapshot of the latest data
-- **TUI subscribes** via `changed()` — async notification on updates
+- **CLI reads** call `current()`: snapshot of the latest data
+- **TUI subscribes** via `changed()`: async notification on updates
 
 ## Entity ID Resolution
 
@@ -80,7 +80,7 @@ Non-MAC entities (networks, WiFi, firewall policies) use synthetic keys with a t
 
 | Pattern | CLI | TUI |
 |---|---|---|
-| **Connection** | `oneshot()` — no background tasks | `connect()` — full lifecycle |
+| **Connection** | `oneshot()`: no background tasks | `connect()`: full lifecycle |
 | **Data access** | Single `current()` snapshot | `changed()` subscription loop |
 | **Refresh** | None (fire-and-forget) | Automatic every 30 seconds |
 | **Events** | Optional stream command | Always connected via WebSocket |

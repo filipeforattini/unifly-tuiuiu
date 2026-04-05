@@ -4,7 +4,7 @@ layout: home
 hero:
   name: Unifly
   text: Your UniFi Network, at Your Fingertips
-  tagline: CLI + TUI for UniFi Network Controllers — real-time monitoring, device management, and network administration from your terminal
+  tagline: "CLI + TUI for UniFi Network Controllers: real-time monitoring, device management, and network administration from your terminal"
   actions:
     - theme: brand
       text: Get Started
@@ -25,7 +25,7 @@ features:
     details: Devices, clients, networks, WiFi, firewall, DNS, VPN, hotspot vouchers, DPI, and more
   - icon: "\uD83D\uDD12"
     title: Secure Credentials
-    details: OS keyring storage for API keys and passwords — nothing written to disk in plaintext
+    details: OS keyring storage for API keys and passwords. Nothing written to disk in plaintext
   - icon: "\uD83C\uDF10"
     title: Multi-Profile
     details: Named profiles for multiple controllers with instant switching via a single flag

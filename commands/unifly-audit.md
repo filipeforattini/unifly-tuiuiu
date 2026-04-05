@@ -1,6 +1,6 @@
 ---
 name: unifly-audit
-description: Security audit of UniFi configuration — checks for open WiFi, permissive firewall rules, and misconfigurations
+description: Security audit of UniFi configuration. Checks for open WiFi, permissive firewall rules, and misconfigurations
 arguments:
   - name: profile
     description: "Config profile to use (e.g., home, office)"
@@ -84,9 +84,9 @@ When `-p {{profile}}` is provided, prepend `-p -p {{profile}}` to all commands.
 
 Compile findings into a report with severity levels:
 
-- **CRITICAL** — Open WiFi networks, no firewall between zones
-- **HIGH** — WPA2-only networks, allow-all firewall rules, no logging
-- **MODERATE** — Outdated firmware, unused networks
-- **INFO** — Network isolation status, device counts
+- **CRITICAL**: Open WiFi networks, no firewall between zones
+- **HIGH**: WPA2-only networks, allow-all firewall rules, no logging
+- **MODERATE**: Outdated firmware, unused networks
+- **INFO**: Network isolation status, device counts
 
 Recommend specific remediation steps for each finding.

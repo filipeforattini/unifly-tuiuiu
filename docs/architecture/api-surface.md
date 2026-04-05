@@ -38,13 +38,13 @@ The original UniFi controller API, session-based with cookie authentication.
 
 ### Exclusive Features
 
-- `events/latest` — Recent events
+- `events/latest`: Recent events
 - WebSocket event streaming
-- `stat/device` — Device statistics with traffic data
-- `stat/health` — System health with ISP info, DNS, gateway details
-- `stat/report/` — Historical bandwidth and client reports
-- `cmd/sitemgr` — Device commands (adopt, restart, upgrade)
-- `stat/admin` — Administrator management
+- `stat/device`: Device statistics with traffic data
+- `stat/health`: System health with ISP info, DNS, gateway details
+- `stat/report/`: Historical bandwidth and client reports
+- `cmd/sitemgr`: Device commands (adopt, restart, upgrade)
+- `stat/admin`: Administrator management
 
 ### v2 Endpoints
 
@@ -55,7 +55,7 @@ Network Application 9+ exposes a second generation of legacy-authenticated endpo
 | `traffic-flow-latest-statistics` | DPI traffic flow data by application/category |
 | `nat` | NAT rule CRUD (DNAT, SNAT, masquerade) |
 
-Unifly's DPI cascade tries the v2 endpoint first, then falls back to `stat/sitedpi` and `stat/dpi` for older firmware. NAT rules use the v2 endpoint exclusively — the Integration API does not expose NAT on Network Application 10.1.89.
+Unifly's DPI cascade tries the v2 endpoint first, then falls back to `stat/sitedpi` and `stat/dpi` for older firmware. NAT rules use the v2 endpoint exclusively:the Integration API does not expose NAT on Network Application 10.1.89.
 
 ### CSRF Token Flow
 
@@ -93,7 +93,7 @@ This provides the most complete feature set while using the cleanest API surface
 
 UniFi controllers return errors in different formats depending on the API:
 
-- **Integration API** — Standard HTTP status codes with JSON error body
-- **Legacy API** — Sometimes HTTP 200 with an error wrapper: `{"error":{"code":N,"message":"..."}}`
+- **Integration API**: Standard HTTP status codes with JSON error body
+- **Legacy API**: Sometimes HTTP 200 with an error wrapper: `{"error":{"code":N,"message":"..."}}`
 
 Unifly normalizes both into a unified `Error` type with 14 variants covering authentication failures, not-found, validation errors, rate limiting, and transport issues.

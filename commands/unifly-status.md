@@ -1,6 +1,6 @@
 ---
 name: unifly-status
-description: Quick health check of UniFi infrastructure — shows controller health, device status, and alerts
+description: Quick health check of UniFi infrastructure. Shows controller health, device status, and alerts
 arguments:
   - name: profile
     description: "Config profile to use (e.g., home, office)"

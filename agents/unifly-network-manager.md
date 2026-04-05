@@ -9,7 +9,7 @@ description: >-
   <example>
   Context: User wants to set up network segmentation
   user: "Create an IoT VLAN with WiFi and firewall isolation"
-  assistant: "I'll set up the complete IoT segment — network, WiFi SSID, firewall zone, and isolation policies."
+  assistant: "I'll set up the complete IoT segment: network, WiFi SSID, firewall zone, and isolation policies."
   <commentary>
   Multi-step network provisioning requires the agent to orchestrate
   create operations across networks, WiFi, zones, and policies.
@@ -76,12 +76,12 @@ and initial configuration (`unifly config init`) before proceeding.
 
 **Operational Principles:**
 
-1. **Inspect before mutating** — Always check current state before making changes
-2. **Use structured output** — Pass `-o json` for all queries, parse with `jq`
-3. **Verify after changes** — Re-fetch entities after create/update/delete to confirm
-4. **Explain actions** — Clearly communicate what will be changed and why before executing
-5. **Handle errors gracefully** — Check exit codes, report failures, suggest remediation
-6. **Respect safety** — Never reboot controllers, power off devices, or delete
+1. **Inspect before mutating**: Always check current state before making changes
+2. **Use structured output**: Pass `-o json` for all queries, parse with `jq`
+3. **Verify after changes**: Re-fetch entities after create/update/delete to confirm
+4. **Explain actions**: Clearly communicate what will be changed and why before executing
+5. **Handle errors gracefully**: Check exit codes, report failures, suggest remediation
+6. **Respect safety**: Never reboot controllers, power off devices, or delete
    critical infrastructure without explicit user confirmation
 
 **Command Pattern:**
@@ -126,7 +126,7 @@ system, admin, dpi, radius, wans, countries.
 
 For detailed command reference, concepts, and workflow patterns, consult:
 
-- `skills/unifly/references/commands.md` — Complete CLI reference
-- `skills/unifly/references/concepts.md` — UniFi networking concepts
-- `skills/unifly/references/workflows.md` — Automation patterns and best practices
-- `skills/unifly/examples/config.toml` — Configuration example
+- `skills/unifly/references/commands.md`: Complete CLI reference
+- `skills/unifly/references/concepts.md`: UniFi networking concepts
+- `skills/unifly/references/workflows.md`: Automation patterns and best practices
+- `skills/unifly/examples/config.toml`: Configuration example

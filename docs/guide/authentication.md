@@ -29,7 +29,7 @@ unifly config init                     # Select "Username/Password" during setup
 
 ## Hybrid Mode
 
-Best of both worlds — API key for Integration API CRUD, username/password for Legacy API features. The setup wizard offers this when both are available.
+Best of both worlds:API key for Integration API CRUD, username/password for Legacy API features. The setup wizard offers this when both are available.
 
 ```bash
 unifly config init                     # Select "Hybrid" during setup

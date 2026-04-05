@@ -2,8 +2,8 @@
 
 Unifly is a complete command-line toolkit for managing Ubiquiti UniFi network controllers. A single binary with two modes:
 
-- **`unifly <command>`** — CLI for scripting, automation, and quick lookups
-- **`unifly tui`** — real-time terminal dashboard for monitoring
+- **`unifly <command>`**: CLI for scripting, automation, and quick lookups
+- **`unifly tui`**: real-time terminal dashboard for monitoring
 
 Both powered by a shared async engine that speaks every UniFi API dialect.
 
@@ -11,10 +11,10 @@ Both powered by a shared async engine that speaks every UniFi API dialect.
 
 UniFi controllers expose multiple APIs with different capabilities:
 
-- **Integration API** — RESTful, API-key authenticated, covers CRUD for most resources
-- **Legacy API** — Session-based with cookie/CSRF, required for events, statistics, and device commands
+- **Integration API**: RESTful, API-key authenticated, covers CRUD for most resources
+- **Legacy API**: Session-based with cookie/CSRF, required for events, statistics, and device commands
 
-Unifly unifies these into a single, coherent interface. You don't need to know which API endpoint provides what — unifly handles the routing, authentication, and data merging automatically.
+Unifly unifies these into a single, coherent interface. You don't need to know which API endpoint provides what. Unifly handles the routing, authentication, and data merging automatically.
 
 ## What You Can Do
 
@@ -46,6 +46,6 @@ Two crates with a clean dependency chain. See the [Architecture](/architecture/)
 
 ## Next Steps
 
-- [Installation](/guide/installation) — get unifly on your system
-- [Quick Start](/guide/quick-start) — configure and run your first commands
-- [Configuration](/guide/configuration) — deep dive into profiles and settings
+- [Installation](/guide/installation):get unifly on your system
+- [Quick Start](/guide/quick-start):configure and run your first commands
+- [Configuration](/guide/configuration):deep dive into profiles and settings

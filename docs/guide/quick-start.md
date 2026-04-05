@@ -10,12 +10,12 @@ unifly config init
 
 The wizard walks you through:
 
-1. **Controller URL** — your UniFi controller's address (e.g., `https://192.168.1.1`)
-2. **Authentication** — API key, username/password, or hybrid mode
-3. **Site selection** — choose which site to manage
-4. **TLS settings** — accept self-signed certificates if needed
+1. **Controller URL**: your UniFi controller's address (e.g., `https://192.168.1.1`)
+2. **Authentication**: API key, username/password, or hybrid mode
+3. **Site selection**: choose which site to manage
+4. **TLS settings**: accept self-signed certificates if needed
 
-Credentials are stored in your OS keyring — never written to disk in plaintext.
+Credentials are stored in your OS keyring. Never written to disk in plaintext.
 
 ## First Commands
 
@@ -32,7 +32,7 @@ unifly clients list
 unifly networks list
 
 # Stream live events
-unifly events stream
+unifly events watch
 ```
 
 Example output:
@@ -82,7 +82,7 @@ unifly -p home devices list           # One-off override
 
 ## Next Steps
 
-- [Configuration](/guide/configuration) — all config options and environment variables
-- [Authentication](/guide/authentication) — API key vs password vs hybrid
-- [CLI Commands](/reference/cli) — full command reference
-- [TUI Dashboard](/reference/tui) — screen-by-screen guide
+- [Configuration](/guide/configuration):all config options and environment variables
+- [Authentication](/guide/authentication):API key vs password vs hybrid
+- [CLI Commands](/reference/cli):full command reference
+- [TUI Dashboard](/reference/tui):screen-by-screen guide
