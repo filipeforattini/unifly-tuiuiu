@@ -11,8 +11,8 @@ use chrono::{DateTime, Utc};
 use serde_json::Value;
 
 use crate::integration_types;
-use crate::legacy::models::{
-    LegacyAlarm, LegacyClientEntry, LegacyDevice, LegacyEvent, LegacySite,
+use crate::session::models::{
+    SessionAlarm, SessionClientEntry, SessionDevice, SessionEvent, SessionSite,
 };
 use crate::websocket::UnifiEvent;
 
@@ -46,7 +46,7 @@ fn epoch_to_datetime(epoch: Option<i64>) -> Option<DateTime<Utc>> {
     epoch.and_then(|ts| DateTime::from_timestamp(ts, 0))
 }
 
-/// Parse an ISO-8601 datetime string (as returned by the legacy event/alarm endpoints).
+/// Parse an ISO-8601 datetime string (as returned by the session event/alarm endpoints).
 fn parse_datetime(raw: Option<&String>) -> Option<DateTime<Utc>> {
     raw.and_then(|s| DateTime::parse_from_rfc3339(s).ok())
         .map(|dt| dt.with_timezone(&Utc))
@@ -220,9 +220,9 @@ fn traffic_matching_item_to_string(item: &Value) -> Option<String> {
 
 // ── Device ─────────────────────────────────────────────────────────
 
-/// Infer `DeviceType` from the legacy `type` field and optional `model` string.
+/// Infer `DeviceType` from the session `type` field and optional `model` string.
 ///
-/// The legacy API `type` field is typically: `"uap"`, `"usw"`, `"ugw"`, `"udm"`.
+/// The session API `type` field is typically: `"uap"`, `"usw"`, `"ugw"`, `"udm"`.
 /// We also check the `model` prefix for newer hardware that may not match cleanly.
 fn infer_device_type(device_type: &str, model: Option<&String>) -> DeviceType {
     match device_type {
@@ -255,7 +255,7 @@ fn infer_device_type(device_type: &str, model: Option<&String>) -> DeviceType {
     }
 }
 
-/// Map the legacy integer state code to `DeviceState`.
+/// Map the session API integer state code to `DeviceState`.
 ///
 /// Known codes: 0=offline, 1=online, 2=pending adoption, 4=upgrading, 5=provisioning.
 fn map_device_state(code: i32) -> DeviceState {
@@ -269,8 +269,8 @@ fn map_device_state(code: i32) -> DeviceState {
     }
 }
 
-impl From<LegacyDevice> for Device {
-    fn from(d: LegacyDevice) -> Self {
+impl From<SessionDevice> for Device {
+    fn from(d: SessionDevice) -> Self {
         let device_type = infer_device_type(&d.device_type, d.model.as_ref());
         let state = map_device_state(d.state);
 
@@ -323,7 +323,7 @@ impl From<LegacyDevice> for Device {
             stats: device_stats,
             client_count: d.num_sta.and_then(|n| n.try_into().ok()),
             origin: None,
-            source: DataSource::LegacyApi,
+            source: DataSource::SessionApi,
             updated_at: Utc::now(),
         }
     }
@@ -331,8 +331,8 @@ impl From<LegacyDevice> for Device {
 
 // ── Client ─────────────────────────────────────────────────────────
 
-impl From<LegacyClientEntry> for Client {
-    fn from(c: LegacyClientEntry) -> Self {
+impl From<SessionClientEntry> for Client {
+    fn from(c: SessionClientEntry) -> Self {
         let is_wired = c.is_wired.unwrap_or(false);
         let client_type = if is_wired {
             ClientType::Wired
@@ -408,7 +408,7 @@ impl From<LegacyClientEntry> for Client {
             use_fixedip: false,
             fixed_ip: None,
             blocked: c.blocked.unwrap_or(false),
-            source: DataSource::LegacyApi,
+            source: DataSource::SessionApi,
             updated_at: Utc::now(),
         }
     }
@@ -425,8 +425,8 @@ fn channel_to_frequency(channel: Option<i32>) -> Option<f32> {
 
 // ── Site ───────────────────────────────────────────────────────────
 
-impl From<LegacySite> for Site {
-    fn from(s: LegacySite) -> Self {
+impl From<SessionSite> for Site {
+    fn from(s: SessionSite) -> Self {
         // `desc` is the human-friendly label; `name` is the internal slug (e.g. "default").
         let display_name = s
             .desc
@@ -439,14 +439,14 @@ impl From<LegacySite> for Site {
             name: display_name,
             device_count: None,
             client_count: None,
-            source: DataSource::LegacyApi,
+            source: DataSource::SessionApi,
         }
     }
 }
 
 // ── Event ──────────────────────────────────────────────────────────
 
-/// Map legacy subsystem string to `EventCategory`.
+/// Map session API subsystem string to `EventCategory`.
 fn map_event_category(subsystem: Option<&String>) -> EventCategory {
     match subsystem.map(String::as_str) {
         Some("wlan" | "lan" | "wan") => EventCategory::Network,
@@ -460,8 +460,8 @@ fn map_event_category(subsystem: Option<&String>) -> EventCategory {
     }
 }
 
-impl From<LegacyEvent> for Event {
-    fn from(e: LegacyEvent) -> Self {
+impl From<SessionEvent> for Event {
+    fn from(e: SessionEvent) -> Self {
         Event {
             id: Some(EntityId::from(e.id)),
             timestamp: parse_datetime(e.datetime.as_ref()).unwrap_or_else(Utc::now),
@@ -476,15 +476,15 @@ impl From<LegacyEvent> for Event {
             client_mac: None,
             site_id: e.site_id.map(EntityId::from),
             raw_key: e.key,
-            source: DataSource::LegacyApi,
+            source: DataSource::SessionApi,
         }
     }
 }
 
 // ── Alarm → Event ──────────────────────────────────────────────────
 
-impl From<LegacyAlarm> for Event {
-    fn from(a: LegacyAlarm) -> Self {
+impl From<SessionAlarm> for Event {
+    fn from(a: SessionAlarm) -> Self {
         Event {
             id: Some(EntityId::from(a.id)),
             timestamp: parse_datetime(a.datetime.as_ref()).unwrap_or_else(Utc::now),
@@ -496,13 +496,13 @@ impl From<LegacyAlarm> for Event {
             client_mac: None,
             site_id: None,
             raw_key: a.key,
-            source: DataSource::LegacyApi,
+            source: DataSource::SessionApi,
         }
     }
 }
 
-impl From<LegacyAlarm> for Alarm {
-    fn from(a: LegacyAlarm) -> Self {
+impl From<SessionAlarm> for Alarm {
+    fn from(a: SessionAlarm) -> Self {
         Alarm {
             id: EntityId::from(a.id),
             timestamp: parse_datetime(a.datetime.as_ref()).unwrap_or_else(Utc::now),
@@ -571,7 +571,7 @@ impl From<UnifiEvent> for Event {
             client_mac,
             site_id,
             raw_key: Some(e.key),
-            source: DataSource::LegacyApi,
+            source: DataSource::SessionApi,
         }
     }
 }
@@ -1662,7 +1662,7 @@ pub fn nat_policy_from_v2(v: &serde_json::Value) -> Option<NatPolicy> {
             .and_then(|v| v.as_str())
             .map(ToOwned::to_owned),
         origin: None,
-        data_source: DataSource::LegacyApi,
+        data_source: DataSource::SessionApi,
     })
 }
 
@@ -1813,7 +1813,7 @@ mod tests {
 
     #[test]
     fn legacy_site_uses_desc_as_display_name() {
-        let site = LegacySite {
+        let site = SessionSite {
             id: "abc123".into(),
             name: "default".into(),
             desc: Some("Main Office".into()),
@@ -1827,7 +1827,7 @@ mod tests {
 
     #[test]
     fn legacy_site_falls_back_to_name_when_desc_empty() {
-        let site = LegacySite {
+        let site = SessionSite {
             id: "abc123".into(),
             name: "branch-1".into(),
             desc: Some(String::new()),

@@ -3,7 +3,7 @@ use std::sync::Arc;
 use crate::command::{Command, CommandResult};
 use crate::core_error::CoreError;
 use crate::store::DataStore;
-use crate::{IntegrationClient, LegacyClient};
+use crate::{IntegrationClient, SessionClient};
 
 use super::Controller;
 
@@ -17,12 +17,14 @@ pub(super) use super::payloads::{
     build_endpoint_json, build_update_dns_policy_fields, build_update_wifi_broadcast_payload,
     dns_policy_type_name, merge_acl_filter_value, parse_ipv4_cidr, traffic_matching_list_items,
 };
-pub(super) use super::{client_mac, device_mac, require_integration, require_legacy, require_uuid};
+pub(super) use super::{
+    client_mac, device_mac, require_integration, require_session, require_uuid,
+};
 
 struct CommandContext {
     store: Arc<DataStore>,
     integration: Option<Arc<IntegrationClient>>,
-    legacy: Option<Arc<LegacyClient>>,
+    session: Option<Arc<SessionClient>>,
     site_id: Option<uuid::Uuid>,
 }
 
@@ -31,7 +33,7 @@ impl CommandContext {
         Self {
             store: controller.inner.store.clone(),
             integration: controller.inner.integration_client.lock().await.clone(),
-            legacy: controller.inner.legacy_client.lock().await.clone(),
+            session: controller.inner.session_client.lock().await.clone(),
             site_id: *controller.inner.site_id.lock().await,
         }
     }

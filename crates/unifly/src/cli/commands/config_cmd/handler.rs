@@ -36,10 +36,10 @@ pub(super) fn handle(args: ConfigArgs, global: &GlobalOpts) -> Result<(), CliErr
                 "controller" => profile.controller = value,
                 "site" => profile.site = value,
                 "auth_mode" | "auth-mode" => {
-                    if !matches!(value.as_str(), "integration" | "legacy" | "hybrid") {
+                    if !matches!(value.as_str(), "integration" | "session" | "hybrid") {
                         return Err(CliError::Validation {
                             field: "auth_mode".into(),
-                            reason: "must be 'integration', 'legacy', or 'hybrid'".into(),
+                            reason: "must be 'integration', 'session', or 'hybrid'".into(),
                         });
                     }
                     profile.auth_mode = value;

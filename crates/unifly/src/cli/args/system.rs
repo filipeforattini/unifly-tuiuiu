@@ -13,19 +13,19 @@ pub enum SystemCommand {
     /// Application version info (Integration API)
     Info,
 
-    /// Site health summary (legacy API)
+    /// Site health summary (session API)
     Health,
 
-    /// Controller system info (legacy API)
+    /// Controller system info (session API)
     Sysinfo,
 
-    /// Backup management (legacy API)
+    /// Backup management (session API)
     Backup(BackupArgs),
 
-    /// Reboot controller hardware (legacy API, UDM only)
+    /// Reboot controller hardware (session API, UDM only)
     Reboot,
 
-    /// Power off controller hardware (legacy API, UDM only)
+    /// Power off controller hardware (session API, UDM only)
     Poweroff,
 }
 

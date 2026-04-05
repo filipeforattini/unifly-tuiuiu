@@ -14,7 +14,7 @@ pub enum SitesCommand {
     #[command(alias = "ls")]
     List(ListArgs),
 
-    /// Create a new site (legacy API)
+    /// Create a new site (session API)
     Create {
         /// Site name (internal reference)
         #[arg(long, required = true)]
@@ -25,7 +25,7 @@ pub enum SitesCommand {
         description: String,
     },
 
-    /// Delete a site (legacy API)
+    /// Delete a site (session API)
     Delete {
         /// Site name
         name: String,

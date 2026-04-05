@@ -2,7 +2,7 @@
 //
 // All write operations flow through a unified `Command` enum.
 // The controller routes each variant to the appropriate API backend
-// (Integration API preferred, Legacy API for legacy-only operations).
+// (Integration API preferred, Session API for session-only operations).
 
 pub mod requests;
 

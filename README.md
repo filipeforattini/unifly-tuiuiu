@@ -63,7 +63,7 @@ UniFi controllers expose multiple APIs with different capabilities. unifly unifi
 
 | Capability | What You Get |
 | --- | --- |
-| 🔮 **Dual API Engine** | Integration API (REST, API key) + Legacy API (session, cookie/CSRF) with automatic Hybrid negotiation |
+| 🔮 **Dual API Engine** | Integration API (REST, API key) + Session API (session, cookie/CSRF) with automatic Hybrid negotiation |
 | ⚡ **Real-Time TUI** | 10-screen dashboard with area-fill traffic charts, CPU/MEM gauges, live client counts, zoomable topology |
 | 🦋 **26 Top-Level Commands** | Devices, clients, networks, WiFi, firewall policies, zones, ACLs, NAT, DNS, VPN, DPI, RADIUS, topology, raw API passthrough, `tui`... |
 | 💎 **Flexible Output** | Table, JSON, compact JSON, YAML, and plain text. Pipe-friendly for scripting |
@@ -135,7 +135,7 @@ unifly events watch          # Live event feed (requires session auth or Hybrid)
 ### API Key (recommended)
 
 Generate a key on your controller under **Settings > Integrations**. On UniFi
-OS controllers, the same key also authenticates legacy HTTP endpoints, so API
+OS controllers, the same key also authenticates session HTTP endpoints, so API
 key mode covers most CLI automation: CRUD, device commands, stats, DHCP
 reservations, admin operations, and `events list`.
 
@@ -149,9 +149,9 @@ requires **Username/Password** or **Hybrid**.
 
 ### Username / Password
 
-Legacy session-based auth with cookie and CSRF token handling. Use this when
+Session-based auth with cookie and CSRF token handling. Use this when
 you need live WebSocket features (`events watch`) or when your controller does
-not accept API keys on legacy HTTP endpoints.
+not accept API keys on session HTTP endpoints.
 
 ```bash
 unifly config init                     # Select "Username/Password" during setup
@@ -159,8 +159,8 @@ unifly config init                     # Select "Username/Password" during setup
 
 ### Hybrid Mode
 
-Best of both worlds: API key for Integration API plus legacy HTTP, and
-username/password for the legacy WebSocket session. Choose this when you want
+Best of both worlds: API key for Integration API plus session HTTP, and
+username/password for the WebSocket cookie session. Choose this when you want
 full live monitoring plus maximum compatibility.
 
 ### Environment Variables

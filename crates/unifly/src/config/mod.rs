@@ -133,7 +133,7 @@ pub struct Profile {
     #[serde(default = "default_site")]
     pub site: String,
 
-    /// Auth mode: "integration", "legacy", or "hybrid".
+    /// Auth mode: "integration", "session", or "hybrid".
     #[serde(default = "default_auth_mode")]
     pub auth_mode: String,
 
@@ -143,10 +143,10 @@ pub struct Profile {
     /// Environment variable name containing the API key.
     pub api_key_env: Option<String>,
 
-    /// Username for legacy auth.
+    /// Username for session auth.
     pub username: Option<String>,
 
-    /// Password for legacy auth (plaintext — prefer keyring).
+    /// Password for session auth (plaintext — prefer keyring).
     pub password: Option<String>,
 
     /// Environment variable name containing a TOTP token for MFA.
@@ -280,8 +280,8 @@ pub fn resolve_api_key(profile: &Profile, profile_name: &str) -> Result<SecretSt
     })
 }
 
-/// Resolve legacy credentials (username + password) without CLI flags.
-pub fn resolve_legacy_credentials(
+/// Resolve session credentials (username + password) without CLI flags.
+pub fn resolve_session_credentials(
     profile: &Profile,
     profile_name: &str,
 ) -> Result<(String, SecretString), ConfigError> {
@@ -322,13 +322,13 @@ pub fn resolve_auth(profile: &Profile, profile_name: &str) -> Result<AuthCredent
             let secret = resolve_api_key(profile, profile_name)?;
             Ok(AuthCredentials::ApiKey(secret))
         }
-        "legacy" => {
-            let (username, password) = resolve_legacy_credentials(profile, profile_name)?;
+        "session" => {
+            let (username, password) = resolve_session_credentials(profile, profile_name)?;
             Ok(AuthCredentials::Credentials { username, password })
         }
         "hybrid" => {
             let api_key = resolve_api_key(profile, profile_name)?;
-            let (username, password) = resolve_legacy_credentials(profile, profile_name)?;
+            let (username, password) = resolve_session_credentials(profile, profile_name)?;
             Ok(AuthCredentials::Hybrid {
                 api_key,
                 username,
@@ -337,7 +337,7 @@ pub fn resolve_auth(profile: &Profile, profile_name: &str) -> Result<AuthCredent
         }
         other => Err(ConfigError::Validation {
             field: "auth_mode".into(),
-            reason: format!("expected 'integration', 'legacy', or 'hybrid', got '{other}'"),
+            reason: format!("expected 'integration', 'session', or 'hybrid', got '{other}'"),
         }),
     }
 }

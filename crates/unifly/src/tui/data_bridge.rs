@@ -35,7 +35,7 @@ pub async fn spawn_data_bridge(
 
     let _ = action_tx.send(Action::Connected);
 
-    // Surface any warnings from connect (e.g. Legacy auth failure)
+    // Surface any warnings from connect (e.g. Session auth failure)
     for warning in controller.take_warnings().await {
         let _ = action_tx.send(Action::Notify(crate::tui::action::Notification {
             message: warning,

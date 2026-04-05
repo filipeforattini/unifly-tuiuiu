@@ -28,7 +28,7 @@ published independently on crates.io for Rust developers building custom
 integrations.
 
 The moat is **dual-API coverage**: unifly speaks both the modern Integration
-API (REST, API key) and the legacy Session API (cookie + CSRF) and reconciles
+API (REST, API key) and the Session API (cookie + CSRF) and reconciles
 data between them via Hybrid auth mode. Most competing tools are one or the
 other.
 
@@ -110,10 +110,10 @@ ClawHub and Claude Code plugin).
   endpoints at `/proxy/network/integration/v1/`. Returns clean JSON with
   UUIDs. Covers configuration CRUD (networks, wifi, firewall, nat, dns,
   acl, hotspot, traffic-lists, wans).
-- **`legacy/`**: `LegacyClient`, session cookie + CSRF for session auth,
-  plus `X-API-KEY` on UniFi OS legacy HTTP endpoints. Uses envelope-wrapped
+- **`session/`**: `SessionClient`, session cookie + CSRF for session auth,
+  plus `X-API-KEY` on UniFi OS session HTTP endpoints. Uses envelope-wrapped
   responses at `/proxy/network/api/` and `/proxy/network/v2/api/`. Covers
-  events, stats, device commands, admin, backups, DPI control. Legacy
+  events, stats, device commands, admin, backups, DPI control. Session
   WebSocket still requires a session cookie.
 
 Both clients share a common `TransportConfig` and `TlsMode`. TLS modes:
@@ -139,7 +139,7 @@ operations live in submodules:
 - `payloads.rs` / `payloads/`: request body construction
 - `refresh.rs`: periodic data sync
 - `subscriptions.rs`: WebSocket event fan-out
-- `legacy_queries.rs`: Legacy-specific read paths, including `raw_get`/
+- `session_queries.rs`: Session-specific read paths, including `raw_get`/
   `raw_post` used by the `unifly api` command
 
 ### Reactive DataStore
@@ -165,7 +165,7 @@ workspace dependencies.
 ```rust
 pub enum EntityId {
     Uuid(Uuid),      // Integration API records
-    Legacy(String),  // Legacy API records (string _id fields)
+    Legacy(String),  // Session API records (string _id fields)
 }
 ```
 
@@ -185,10 +185,10 @@ pub enum AuthCredentials {
 ```
 
 **ApiKey mode is enough for most HTTP work on UniFi OS controllers.**
-`connect()` builds a `LegacyClient` with `X-API-KEY`, so `clients list`,
+`connect()` builds a `SessionClient` with `X-API-KEY`, so `clients list`,
 `devices list`, `topology`, device commands, stats, admin operations, DHCP
-reservations, and `events list` can all use legacy HTTP without a password.
-Use **Hybrid** when you need legacy WebSocket features such as
+reservations, and `events list` can all use session HTTP without a password.
+Use **Hybrid** when you need session WebSocket features such as
 `events watch`, or when you want maximum compatibility across controller
 variants. Merge still happens inline in `full_refresh()` in
 `controller/refresh.rs`.
@@ -233,8 +233,8 @@ in `commands/mod.rs::dispatch()` via match on `Command`.
 
 `crates/unifly/src/cli/commands/util/access.rs` defines
 **`ensure_integration_access`** and **only that**. There is no
-`ensure_legacy_access` function. Legacy commands fail naturally when the
-auth mode cannot reach Legacy endpoints.
+`ensure_session_access` function. Session commands fail naturally when the
+auth mode cannot reach Session endpoints.
 
 Not every Integration-only command actually calls `ensure_integration_access`
 either. The gate is only invoked by 7 handlers (acl, dns, firewall,
@@ -270,7 +270,7 @@ Hidden/undocumented flag: `--totp` (with `UNIFI_TOTP` env). Not in `--help`
 but functional. Used for MFA controllers and 1Password CLI integration via
 `totp_env` in config.
 
-`--no-cache` forces a fresh Legacy login, bypassing the session cookie
+`--no-cache` forces a fresh Session login, bypassing the session cookie
 cache stored under the system config dir.
 
 ---
@@ -341,7 +341,7 @@ Two error types, composed via `From` impls:
 ```
 crates/unifly-api/tests/
   integration_client_test.rs     # wiremock-based Integration API tests
-  legacy_client_test.rs          # wiremock-based Legacy API tests
+  legacy_client_test.rs          # wiremock-based Session API tests
   controller_runtime_test.rs     # Controller lifecycle + refresh loop
 
 crates/unifly/tests/
@@ -354,7 +354,7 @@ Unit tests are inline in source files under `#[cfg(test)] mod tests`.
 
 ### Libraries
 
-- **wiremock**: mock HTTP servers for Integration/Legacy tests. Serve
+- **wiremock**: mock HTTP servers for Integration/Session tests. Serve
   static JSON fixtures from `tests/fixtures/`.
 - **insta**: snapshot tests for output formatting. `just snap-review`
   opens the interactive UI to approve changes. Snapshot files live next to
@@ -539,7 +539,7 @@ workflow.
 
 ### UniFi API Quirks
 
-- **CSRF tokens rotate.** The Legacy client captures `X-CSRF-Token` on
+- **CSRF tokens rotate.** The Session client captures `X-CSRF-Token` on
   login and updates it from `X-Updated-CSRF-Token` on every response. Do
   not cache the token across requests; trust the rotating value.
 - **UniFi OS wraps some errors as HTTP 200.** Response bodies can look
@@ -556,7 +556,7 @@ workflow.
   both old and new styles.
 - **Integration clients lack fields** the UI shows: `wireless`,
   `uplink_device_mac`, `vlan`, `tx_bytes`, `rx_bytes`, `hostname`. These
-  must come from Legacy API. Hybrid merge is by IP-address match in
+  must come from Session API. Hybrid merge is by IP-address match in
   `controller::refresh::full_refresh`.
 - **Device `radios` is always empty**. Parsing from the `interfaces`
   JSON is not yet implemented. Known gap.
@@ -577,8 +577,8 @@ workflow.
 - **`networks refs <id>`** is the only command that answers "what depends
   on this entity before I delete it." No equivalent exists for other
   entities yet.
-- **`unifly api <path>`** routes through the Legacy client and handles
-  CSRF automatically, so it can reach Legacy v1, v2, and Integration
+- **`unifly api <path>`** routes through the Session client and handles
+  CSRF automatically, so it can reach Session v1, v2, and Integration
   endpoints without caring about auth mode.
 - **Serde defaults to PascalCase** for enums without `#[serde(rename_all
 = "...")]`. When writing JSON payload files for `--from-file`, use
@@ -662,7 +662,7 @@ workflow.
 
 1. Define in `unifly-api/src/model/<entity>.rs`
 2. Add conversion logic in `unifly-api/src/convert.rs` (handles both
-   Integration and Legacy field shapes)
+   Integration and Session field shapes)
 3. Add an `EntityCollection<T>` to `unifly-api/src/store/data_store.rs`
    if the type is reactive
 4. Re-export from `unifly-api/src/lib.rs`

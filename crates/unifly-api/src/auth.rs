@@ -9,7 +9,7 @@ use secrecy::SecretString;
 /// Useful for branching on auth flow without carrying secret material.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AuthStrategy {
-    /// Cookie-based session (legacy API, WebSocket).
+    /// Cookie-based session (session API, WebSocket).
     Session,
     /// Local API key header (Integration API).
     ApiKey,
@@ -49,11 +49,11 @@ pub enum ControllerPlatform {
 }
 
 impl ControllerPlatform {
-    /// The path prefix for legacy API endpoints.
+    /// The path prefix for session API endpoints.
     ///
-    /// Returns `None` for [`Cloud`](Self::Cloud) because the legacy API
+    /// Returns `None` for [`Cloud`](Self::Cloud) because the session API
     /// is not available via the cloud connector.
-    pub fn legacy_prefix(&self) -> Option<&'static str> {
+    pub fn session_prefix(&self) -> Option<&'static str> {
         match self {
             Self::UnifiOs => Some("/proxy/network"),
             Self::ClassicController => Some(""),

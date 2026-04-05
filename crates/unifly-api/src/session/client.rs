@@ -1,4 +1,4 @@
-// Legacy API HTTP client
+// Session API HTTP client
 //
 // Wraps `reqwest::Client` with UniFi-specific URL construction, envelope
 // unwrapping, and platform-aware path prefixing. All endpoint modules
@@ -15,7 +15,7 @@ use url::Url;
 
 use crate::auth::ControllerPlatform;
 use crate::error::Error;
-use crate::legacy::models::LegacyResponse;
+use crate::session::models::SessionResponse;
 use crate::transport::TransportConfig;
 
 /// UniFi OS wraps some errors as `{"error":{"code":N,"message":"..."}}` with HTTP 200.
@@ -30,13 +30,13 @@ struct UnifiOsErrorInner {
     message: Option<String>,
 }
 
-/// Raw HTTP client for the UniFi controller's legacy API.
+/// Raw HTTP client for the UniFi controller's session API.
 ///
 /// Handles the `{ data: [], meta: { rc, msg } }` envelope, site-scoped
 /// URL construction, and platform-aware path prefixing. All methods return
 /// unwrapped `data` payloads -- the envelope is stripped before the caller
 /// sees it.
-pub struct LegacyClient {
+pub struct SessionClient {
     http: reqwest::Client,
     base_url: Url,
     site: String,
@@ -49,11 +49,11 @@ pub struct LegacyClient {
     cookie_jar: Option<Arc<Jar>>,
 }
 
-impl LegacyClient {
-    /// Create a new legacy client from a `TransportConfig`.
+impl SessionClient {
+    /// Create a new session client from a `TransportConfig`.
     ///
     /// If the config doesn't already include a cookie jar, one is created
-    /// automatically (legacy auth requires cookies). The `base_url` should be
+    /// automatically (session auth requires cookies). The `base_url` should be
     /// the controller root (e.g. `https://192.168.1.1` for UniFi OS or
     /// `https://controller:8443` for standalone).
     pub fn new(
@@ -79,7 +79,7 @@ impl LegacyClient {
         })
     }
 
-    /// Create a legacy client with a pre-built `reqwest::Client`.
+    /// Create a session client with a pre-built `reqwest::Client`.
     ///
     /// Use this when you already have a client with a session cookie in its
     /// jar (e.g. after authenticating via a shared client).
@@ -189,7 +189,7 @@ impl LegacyClient {
         }
     }
 
-    /// Classify a legacy 401 based on the active auth strategy.
+    /// Classify a session 401 based on the active auth strategy.
     ///
     /// Session-backed clients carry a cookie jar and should surface the
     /// failure as an expired session. API-key clients never have a jar,
@@ -206,10 +206,10 @@ impl LegacyClient {
 
     /// Build a full URL for a controller-level API path.
     ///
-    /// Applies the platform-specific legacy prefix, then appends `/api/{path}`.
+    /// Applies the platform-specific session prefix, then appends `/api/{path}`.
     /// For example, on UniFi OS: `https://host/proxy/network/api/{path}`
     pub(crate) fn api_url(&self, path: &str) -> Url {
-        let prefix = self.platform.legacy_prefix().unwrap_or("");
+        let prefix = self.platform.session_prefix().unwrap_or("");
         let base = self.base_url.as_str().trim_end_matches('/');
         let prefix = prefix.trim_end_matches('/');
         let full = format!("{base}{prefix}/api/{path}");
@@ -218,9 +218,9 @@ impl LegacyClient {
 
     /// Build a site-scoped URL: `{base}{prefix}/api/s/{site}/{path}`
     ///
-    /// Most legacy endpoints are site-scoped: stat/device, cmd/devmgr, etc.
+    /// Most session endpoints are site-scoped: stat/device, cmd/devmgr, etc.
     pub(crate) fn site_url(&self, path: &str) -> Url {
-        let prefix = self.platform.legacy_prefix().unwrap_or("");
+        let prefix = self.platform.session_prefix().unwrap_or("");
         let base = self.base_url.as_str().trim_end_matches('/');
         let prefix = prefix.trim_end_matches('/');
         let full = format!("{base}{prefix}/api/s/{}/{path}", self.site);
@@ -232,7 +232,7 @@ impl LegacyClient {
     /// Used by newer endpoints (Network Application 9+) that use the v2 path
     /// format, e.g. traffic-flow-latest-statistics.
     pub(crate) fn site_url_v2(&self, path: &str) -> Url {
-        let prefix = self.platform.legacy_prefix().unwrap_or("");
+        let prefix = self.platform.session_prefix().unwrap_or("");
         let base = self.base_url.as_str().trim_end_matches('/');
         let prefix = prefix.trim_end_matches('/');
         let full = format!("{base}{prefix}/v2/api/site/{}/{path}", self.site);
@@ -241,7 +241,7 @@ impl LegacyClient {
 
     // ── Request helpers ──────────────────────────────────────────────
 
-    /// Send a GET request and unwrap the legacy envelope.
+    /// Send a GET request and unwrap the session envelope.
     pub(crate) async fn get<T: DeserializeOwned>(&self, url: Url) -> Result<Vec<T>, Error> {
         debug!("GET {}", url);
 
@@ -253,7 +253,7 @@ impl LegacyClient {
     /// Send a GET request and return the raw JSON response (no envelope unwrapping).
     ///
     /// Used for v2 API endpoints that return plain JSON instead of the
-    /// legacy `{ meta, data }` envelope.
+    /// session `{ meta, data }` envelope.
     pub(crate) async fn get_raw(&self, url: Url) -> Result<serde_json::Value, Error> {
         debug!("GET (raw) {}", url);
 
@@ -265,7 +265,7 @@ impl LegacyClient {
         }
         if !status.is_success() {
             let body = resp.text().await.unwrap_or_default();
-            return Err(Error::LegacyApi {
+            return Err(Error::SessionApi {
                 message: format!("HTTP {status}: {}", &body[..body.len().min(200)]),
             });
         }
@@ -277,7 +277,7 @@ impl LegacyClient {
         })
     }
 
-    /// Send a POST request with JSON body and unwrap the legacy envelope.
+    /// Send a POST request with JSON body and unwrap the session envelope.
     pub(crate) async fn post<T: DeserializeOwned>(
         &self,
         url: Url,
@@ -291,7 +291,7 @@ impl LegacyClient {
         self.parse_envelope(resp).await
     }
 
-    /// Send a PUT request with JSON body and unwrap the legacy envelope.
+    /// Send a PUT request with JSON body and unwrap the session envelope.
     #[allow(dead_code)]
     pub(crate) async fn put<T: DeserializeOwned>(
         &self,
@@ -306,7 +306,7 @@ impl LegacyClient {
         self.parse_envelope(resp).await
     }
 
-    /// Send a DELETE request and unwrap the legacy envelope.
+    /// Send a DELETE request and unwrap the session envelope.
     #[allow(dead_code)]
     pub(crate) async fn delete<T: DeserializeOwned>(&self, url: Url) -> Result<Vec<T>, Error> {
         debug!("DELETE {}", url);
@@ -321,7 +321,7 @@ impl LegacyClient {
     ///
     /// The `path` is appended directly after `{base}{prefix}/`.
     pub async fn raw_get(&self, path: &str) -> Result<serde_json::Value, Error> {
-        let prefix = self.platform.legacy_prefix().unwrap_or("");
+        let prefix = self.platform.session_prefix().unwrap_or("");
         let base = self.base_url.as_str().trim_end_matches('/');
         let prefix = prefix.trim_end_matches('/');
         let url = Url::parse(&format!("{base}{prefix}/{path}")).expect("invalid raw URL");
@@ -334,7 +334,7 @@ impl LegacyClient {
         path: &str,
         body: &serde_json::Value,
     ) -> Result<serde_json::Value, Error> {
-        let prefix = self.platform.legacy_prefix().unwrap_or("");
+        let prefix = self.platform.session_prefix().unwrap_or("");
         let base = self.base_url.as_str().trim_end_matches('/');
         let prefix = prefix.trim_end_matches('/');
         let url = Url::parse(&format!("{base}{prefix}/{path}")).expect("invalid raw URL");
@@ -349,7 +349,7 @@ impl LegacyClient {
         }
         if !status.is_success() {
             let body = resp.text().await.unwrap_or_default();
-            return Err(Error::LegacyApi {
+            return Err(Error::SessionApi {
                 message: format!("HTTP {status}: {}", &body[..body.len().min(200)]),
             });
         }
@@ -367,7 +367,7 @@ impl LegacyClient {
         path: &str,
         body: &serde_json::Value,
     ) -> Result<serde_json::Value, Error> {
-        let prefix = self.platform.legacy_prefix().unwrap_or("");
+        let prefix = self.platform.session_prefix().unwrap_or("");
         let base = self.base_url.as_str().trim_end_matches('/');
         let prefix = prefix.trim_end_matches('/');
         let url = Url::parse(&format!("{base}{prefix}/{path}")).expect("invalid raw URL");
@@ -382,7 +382,7 @@ impl LegacyClient {
         }
         if !status.is_success() {
             let body = resp.text().await.unwrap_or_default();
-            return Err(Error::LegacyApi {
+            return Err(Error::SessionApi {
                 message: format!("HTTP {status}: {}", &body[..body.len().min(200)]),
             });
         }
@@ -396,7 +396,7 @@ impl LegacyClient {
 
     /// Send a raw DELETE to an arbitrary path (no envelope unwrapping).
     pub async fn raw_delete(&self, path: &str) -> Result<(), Error> {
-        let prefix = self.platform.legacy_prefix().unwrap_or("");
+        let prefix = self.platform.session_prefix().unwrap_or("");
         let base = self.base_url.as_str().trim_end_matches('/');
         let prefix = prefix.trim_end_matches('/');
         let url = Url::parse(&format!("{base}{prefix}/{path}")).expect("invalid raw URL");
@@ -411,7 +411,7 @@ impl LegacyClient {
         }
         if !status.is_success() {
             let body = resp.text().await.unwrap_or_default();
-            return Err(Error::LegacyApi {
+            return Err(Error::SessionApi {
                 message: format!("HTTP {status}: {}", &body[..body.len().min(200)]),
             });
         }
@@ -420,7 +420,7 @@ impl LegacyClient {
     }
 
     /// Parse the `{ meta, data }` envelope, returning `data` on success
-    /// or an `Error::LegacyApi` if `meta.rc != "ok"`.
+    /// or an `Error::SessionApi` if `meta.rc != "ok"`.
     ///
     /// Also handles UniFi OS error responses that use a different shape:
     /// `{"error": {"code": 403, "message": "..."}}` (returned with HTTP 200).
@@ -438,14 +438,14 @@ impl LegacyClient {
         }
 
         if status == reqwest::StatusCode::FORBIDDEN {
-            return Err(Error::LegacyApi {
+            return Err(Error::SessionApi {
                 message: "insufficient permissions (HTTP 403)".into(),
             });
         }
 
         if !status.is_success() {
             let body = resp.text().await.unwrap_or_default();
-            return Err(Error::LegacyApi {
+            return Err(Error::SessionApi {
                 message: format!("HTTP {status}: {}", &body[..body.len().min(200)]),
             });
         }
@@ -472,13 +472,13 @@ impl LegacyClient {
                     }
                 }
             } else {
-                Error::LegacyApi {
+                Error::SessionApi {
                     message: format!("UniFi OS error {}: {msg}", err.code),
                 }
             });
         }
 
-        let envelope: LegacyResponse<T> = serde_json::from_str(&body).map_err(|e| {
+        let envelope: SessionResponse<T> = serde_json::from_str(&body).map_err(|e| {
             let preview = &body[..body.len().min(200)];
             Error::Deserialization {
                 message: format!("{e} (body preview: {preview:?})"),
@@ -488,7 +488,7 @@ impl LegacyClient {
 
         match envelope.meta.rc.as_str() {
             "ok" => Ok(envelope.data),
-            _ => Err(Error::LegacyApi {
+            _ => Err(Error::SessionApi {
                 message: envelope
                     .meta
                     .msg

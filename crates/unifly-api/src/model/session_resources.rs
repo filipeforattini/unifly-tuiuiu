@@ -1,6 +1,6 @@
-// ── Legacy-only model types ──
+// ── Session-only model types ──
 //
-// These types support Legacy API resources that have no Integration API
+// These types support Session API resources that have no Integration API
 // equivalent. Consumed by CLI stats, system, admin, and DPI commands.
 
 use chrono::{DateTime, Utc};
@@ -9,7 +9,7 @@ use std::net::IpAddr;
 
 use super::entity_id::{EntityId, MacAddress};
 
-/// Statistical report (from Legacy API `stat/report/*`).
+/// Statistical report (from Session API `stat/report/*`).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StatReport {
     pub interval: String,

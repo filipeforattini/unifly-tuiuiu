@@ -9,7 +9,7 @@ use super::entity_id::EntityId;
 pub struct Site {
     pub id: EntityId,
     /// The internal reference name (e.g., "default"). Used as the site
-    /// identifier in Legacy API paths (`/api/s/{name}/...`).
+    /// identifier in Session API paths (`/api/s/{name}/...`).
     pub internal_name: String,
     /// Human-friendly display name.
     pub name: String,

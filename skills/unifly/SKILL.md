@@ -22,7 +22,7 @@ description: >-
 # unifly: UniFi Network Management
 
 unifly is a Rust CLI for managing Ubiquiti UniFi network infrastructure. It
-unifies the modern Integration API (REST, API key) and the Legacy API (cookie
+unifies the modern Integration API (REST, API key) and the Session API (cookie
 plus CSRF) behind a single coherent interface, plus real-time WebSocket event
 streaming. 26 top-level commands cover devices, clients, networks, WiFi,
 firewall policies and zones, NAT policies, ACLs, DNS, traffic matching lists,
@@ -30,9 +30,9 @@ hotspot vouchers, DPI, stats, backups, and a raw API escape hatch.
 
 Unique capabilities worth leading with when the user's task suits them:
 
-- **Dual-API enrichment** merges Integration and Legacy data (e.g. client
-  bytes, hostnames, uplink MACs only exist in Legacy; configuration CRUD only
-  exists in Integration). On UniFi OS, API key mode can already reach legacy
+- **Dual-API enrichment** merges Integration and Session data (e.g. client
+  bytes, hostnames, uplink MACs only exist in the Session API; configuration CRUD only
+  exists in Integration). On UniFi OS, API key mode can already reach session
   HTTP; Hybrid adds the WebSocket session for live monitoring.
 - **Real-time event streaming** via `unifly events watch` over WebSocket.
 - **Firewall policy reordering** via `reorder --get` / `reorder --set` for
@@ -62,11 +62,11 @@ live WebSocket features (`events watch`) or you want maximum compatibility.
 
 | Mode          | Credentials             | What It Unlocks                                                                                               |
 | ------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `integration` | API key                 | Integration API plus legacy HTTP on UniFi OS: CRUD, device commands, stats, reservations, admin, event list |
-| `legacy`      | Username + password     | Legacy HTTP + WebSocket only: events watch, stats, device commands, DPI control, admin, backups              |
-| `hybrid`      | API key + username/pass | Everything above, including legacy WebSocket plus enriched records with maximum controller compatibility       |
+| `integration` | API key                 | Integration API plus session HTTP on UniFi OS: CRUD, device commands, stats, reservations, admin, event list |
+| `session`      | Username + password     | Session HTTP + WebSocket only: events watch, stats, device commands, DPI control, admin, backups              |
+| `hybrid`      | API key + username/pass | Everything above, including session WebSocket plus enriched records with maximum controller compatibility       |
 
-Legacy WebSocket still rejects API keys, so `events watch` needs `legacy` or
+Session WebSocket still rejects API keys, so `events watch` needs `session` or
 `hybrid`.
 
 For the complete command-to-API gate matrix (which commands require which
@@ -168,7 +168,7 @@ unifly firewall policies reorder --source-zone <zid> --dest-zone <zid> \
 ### Raw API escape hatch
 
 For endpoints unifly does not wrap (including UniFi v2 routes and Integration
-paths), use `unifly api`. It routes through the Legacy client, so CSRF token
+paths), use `unifly api`. It routes through the Session client, so CSRF token
 management and session caching are automatic.
 
 ```bash
@@ -218,7 +218,7 @@ UNIFI_PROFILE=warehouse unifly system health
    non-interactive use.
 4. **Hybrid auth is recommended** even if the task only needs configuration
    CRUD. Client lists and device stats silently omit fields in
-   integration-only mode because the enrichment happens via Legacy.
+   integration-only mode because the enrichment happens via the Session API.
 5. **Local controllers only.** unifly targets on-prem controllers. The Site
    Manager cloud API (`api.ui.com`) is not yet implemented.
 6. **Exit codes are meaningful.** `0` on success, non-zero on error. Capture
@@ -228,7 +228,7 @@ UNIFI_PROFILE=warehouse unifly system health
 
 1. Verify the tool exists with `command -v unifly`.
 2. Check auth mode with `unifly config show` before running commands that
-   require Legacy or Integration specifically.
+   require Session or Integration specifically.
 3. Run `unifly system health -o json` as the first touch to confirm
    connectivity.
 4. Inspect before mutating: `list` / `get` the entity first, capture IDs.

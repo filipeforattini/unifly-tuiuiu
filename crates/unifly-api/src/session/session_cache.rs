@@ -1,4 +1,4 @@
-// Persistent session cache for legacy API auth.
+// Persistent session cache for session API auth.
 //
 // Stores session cookies and CSRF tokens on disk so subsequent CLI
 // invocations can skip the login handshake (especially valuable when

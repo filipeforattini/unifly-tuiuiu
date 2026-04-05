@@ -46,7 +46,7 @@ impl OnboardingScreen {
                 self.draft.auth_mode = AuthMode::ALL[self.auth_mode_index];
                 self.cred_field = match self.draft.auth_mode {
                     AuthMode::ApiKey | AuthMode::Hybrid => CredentialField::ApiKey,
-                    AuthMode::Legacy => CredentialField::Username,
+                    AuthMode::Session => CredentialField::Username,
                 };
                 self.step = WizardStep::Credentials;
             }
@@ -179,13 +179,13 @@ impl OnboardingScreen {
 
     pub(super) fn next_cred_field(&mut self) {
         self.cred_field = match (self.draft.auth_mode, self.cred_field) {
-            (AuthMode::Legacy | AuthMode::Hybrid, CredentialField::Username) => {
+            (AuthMode::Session | AuthMode::Hybrid, CredentialField::Username) => {
                 CredentialField::Password
             }
             (AuthMode::Hybrid, CredentialField::Password) | (AuthMode::ApiKey, _) => {
                 CredentialField::ApiKey
             }
-            (AuthMode::Legacy, _) | (AuthMode::Hybrid, CredentialField::ApiKey) => {
+            (AuthMode::Session, _) | (AuthMode::Hybrid, CredentialField::ApiKey) => {
                 CredentialField::Username
             }
         };
@@ -217,7 +217,7 @@ mod tests {
         screen.advance();
 
         assert_eq!(screen.step, WizardStep::Credentials);
-        assert_eq!(screen.draft.auth_mode, AuthMode::Legacy);
+        assert_eq!(screen.draft.auth_mode, AuthMode::Session);
         assert_eq!(screen.cred_field, CredentialField::Username);
     }
 

@@ -41,7 +41,7 @@ ca_cert = "/path/to/your-ca.pem"
 
 ### "403 Forbidden" on POST/PUT/DELETE
 
-**Cause**: CSRF token is stale or missing. This happens when the Legacy API session has expired.
+**Cause**: CSRF token is stale or missing. This happens when the Session API session has expired.
 
 ```bash
 # Force a fresh login
@@ -54,7 +54,7 @@ If it persists, check that your credentials are still valid on the controller.
 
 ### "Unsupported { required: Integration API }"
 
-**Cause**: You're running a command that needs an API key, but your profile is set to `legacy` mode.
+**Cause**: You're running a command that needs an API key, but your profile is set to `session` mode.
 
 ```bash
 # Check your auth mode
@@ -64,7 +64,7 @@ unifly config show
 unifly config set auth_mode hybrid
 ```
 
-### "Unsupported { required: Legacy API }"
+### "Unsupported { required: Session API }"
 
 **Cause**: You're running a command that needs username/password, but your profile only has an API key.
 
@@ -106,7 +106,7 @@ export UNIFI_URL="https://192.168.1.1"
 
 ### Client list missing traffic/hostname/VLAN columns
 
-**Cause**: You're using API Key mode. These fields come from the Legacy API and require Hybrid mode.
+**Cause**: You're using API Key mode. These fields come from the Session API and require Hybrid mode.
 
 ```bash
 # Switch to Hybrid for enriched data
@@ -116,11 +116,11 @@ unifly config set-password
 
 ### "events watch" hangs or shows nothing
 
-**Cause**: Events require the Legacy API (WebSocket connection).
+**Cause**: Events require the Session API (WebSocket connection).
 
-- Verify your profile has `auth_mode = "hybrid"` or `auth_mode = "legacy"`
+- Verify your profile has `auth_mode = "hybrid"` or `auth_mode = "session"`
 - Check that the controller's WebSocket port is accessible
-- Try `unifly events list` first to confirm Legacy API access works
+- Try `unifly events list` first to confirm Session API access works
 
 ### Results are truncated at 25 rows
 

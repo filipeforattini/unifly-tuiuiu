@@ -72,7 +72,7 @@ pub enum DevicesCommand {
     /// List devices pending adoption
     Pending(ListArgs),
 
-    /// Upgrade device firmware (legacy API)
+    /// Upgrade device firmware (session API)
     Upgrade {
         /// Device MAC address
         device: String,
@@ -82,13 +82,13 @@ pub enum DevicesCommand {
         url: Option<String>,
     },
 
-    /// Force re-provision device configuration (legacy API)
+    /// Force re-provision device configuration (session API)
     Provision {
         /// Device MAC address
         device: String,
     },
 
-    /// Run WAN speed test (legacy API, gateway only)
+    /// Run WAN speed test (session API, gateway only)
     Speedtest,
 
     /// List device tags

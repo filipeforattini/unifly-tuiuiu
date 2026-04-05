@@ -8,11 +8,11 @@ pub struct AdminArgs {
 
 #[derive(Debug, Subcommand)]
 pub enum AdminCommand {
-    /// List site administrators (legacy API)
+    /// List site administrators (session API)
     #[command(alias = "ls")]
     List,
 
-    /// Invite a new administrator (legacy API)
+    /// Invite a new administrator (session API)
     Invite {
         /// Admin name
         #[arg(long, required = true)]
@@ -27,13 +27,13 @@ pub enum AdminCommand {
         role: String,
     },
 
-    /// Remove administrator access (legacy API)
+    /// Remove administrator access (session API)
     Revoke {
         /// Admin ID
         admin: String,
     },
 
-    /// Update administrator role (legacy API)
+    /// Update administrator role (session API)
     Update {
         /// Admin ID
         admin: String,

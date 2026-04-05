@@ -50,7 +50,7 @@ The default site is named `default`.
 ## Dual-API Architecture
 
 unifly is unusual among UniFi tools because it speaks both the modern
-Integration API **and** the older Legacy API, reconciling data between them
+Integration API **and** the older Session API, reconciling data between them
 where necessary. Understanding which API handles which operation is the most
 important operational knowledge for agents.
 
@@ -66,10 +66,10 @@ important operational knowledge for agents.
 - **Best for:** Configuration CRUD (networks, WiFi, firewall, NAT, DNS, ACL,
   traffic lists, hotspot, WANs, RADIUS)
 
-### Legacy API
+### Session API
 
 - **Auth:** Session cookie plus CSRF token for session login. On UniFi OS,
-  legacy HTTP endpoints also accept `X-API-KEY`; legacy WebSocket does not.
+  session HTTP endpoints also accept `X-API-KEY`; session WebSocket does not.
 - **Base path:** `/proxy/network/api/` and `/proxy/network/v2/api/`
 - **Format:** Envelope-wrapped JSON (`{"meta": {...}, "data": [...]}`)
 - **Returns:** Everything the controller web UI sees, including fields the
@@ -82,19 +82,19 @@ important operational knowledge for agents.
 
 Hybrid merges both clients at login time. On every `devices list` or
 `clients list`, unifly fetches the Integration API first, then supplements
-each record with Legacy fields: `tx_bytes`/`rx_bytes`, `hostname`,
-`wireless`, `uplink_device_mac`, `vlan`, `client_count` (mapped from Legacy
+each record with Session fields: `tx_bytes`/`rx_bytes`, `hostname`,
+`wireless`, `uplink_device_mac`, `vlan`, `client_count` (mapped from Session API
 `num_sta`). The same merge also works in API key mode on UniFi OS because
-the controller accepts `X-API-KEY` on legacy HTTP routes.
+the controller accepts `X-API-KEY` on session HTTP routes.
 
 Hybrid is still the safest default when you need live WebSocket features
 (`events watch`) or maximum compatibility across controller variants.
 
 ## Command Authentication Gate Matrix
 
-Only Integration-only commands call `ensure_integration_access`. Legacy-backed
-commands fail naturally when the legacy client is unavailable. On UniFi OS,
-API key mode instantiates both the Integration client and a legacy HTTP
+Only Integration-only commands call `ensure_integration_access`. Session-backed
+commands fail naturally when the session client is unavailable. On UniFi OS,
+API key mode instantiates both the Integration client and a session HTTP
 client, so most HTTP commands work without username/password. Use this
 matrix to pick the right `auth_mode`.
 
@@ -113,7 +113,7 @@ matrix to pick the right `auth_mode`.
 - `countries`
 - `radius profiles`
 
-### Legacy HTTP-backed (username + password, or API key on UniFi OS)
+### Session HTTP-backed (username + password, or API key on UniFi OS)
 
 - `admin` (list/invite/revoke/update): `/rest/admin`
 - `alarms` (list/archive/archive-all)
@@ -128,25 +128,25 @@ matrix to pick the right `auth_mode`.
 - `stats site | device | client | gateway | dpi`: `/stat/report/*`
 - `system health | sysinfo | backup | reboot | poweroff`
 
-### Legacy WebSocket required (session-backed auth)
+### Session WebSocket required (session-backed auth)
 
 - `events watch`
 
 The TUI can still launch without WebSocket auth, but live event streaming
 falls back to polling when no session cookie is available.
 
-### Enriched when legacy HTTP is available
+### Enriched when session HTTP is available
 
-- `clients list`: Integration fetch, Legacy fields merged by IP match
+- `clients list`: Integration fetch, Session fields merged by IP match
 - `clients find`: inherits the merged view
-- `devices list`: Integration fetch, Legacy `num_sta` merged by MAC
+- `devices list`: Integration fetch, Session API `num_sta` merged by MAC
 - `topology`: depends on merged `uplink_device_mac` for tree construction
 
 ### Raw API escape hatch
 
-- `api <path>`: Routes through the Legacy client and handles auth
-  automatically (API key on UniFi OS, or CSRF/session for legacy login). Can
-  reach Legacy, v2 (`v2/api/site/...`), and Integration (`integration/v1/...`)
+- `api <path>`: Routes through the Session client and handles auth
+  automatically (API key on UniFi OS, or CSRF/session for session login). Can
+  reach Session, v2 (`v2/api/site/...`), and Integration (`integration/v1/...`)
   endpoints regardless of auth mode.
 
 ## Auth Mode Decision Tree
@@ -155,7 +155,7 @@ falls back to polling when no session cookie is available.
    most HTTP commands work, including stats, device commands, reservations,
    admin operations, and enriched `clients list` / `devices list`. Live
    `events watch` still will not.
-2. **"I have username + password only"** → `auth_mode = "legacy"`. Events,
+2. **"I have username + password only"** → `auth_mode = "session"`. Events,
    stats, device commands work. Modern entities (DNS policies, NAT policies,
    traffic lists, ACL) require Integration and will fail.
 3. **"I have both"** → `auth_mode = "hybrid"`. Recommended when the task
@@ -186,8 +186,8 @@ over CLI flags when running in automation contexts:
 | ---------------- | ---------------------------------------------------- |
 | `UNIFI_URL`      | Controller URL (overrides profile)                   |
 | `UNIFI_API_KEY`  | Integration API key                                  |
-| `UNIFI_USERNAME` | Legacy API username                                  |
-| `UNIFI_PASSWORD` | Legacy API password (prefer keyring in interactive)  |
+| `UNIFI_USERNAME` | Session API username                                  |
+| `UNIFI_PASSWORD` | Session API password (prefer keyring in interactive)  |
 | `UNIFI_SITE`     | Target site name or UUID                             |
 | `UNIFI_PROFILE`  | Active profile                                       |
 | `UNIFI_OUTPUT`   | Default output format                                |
@@ -223,7 +223,7 @@ one-shot operations.
 
 ### Session Cache
 
-unifly caches the Legacy session cookie across commands for speed. To force
+unifly caches the session cookie across commands for speed. To force
 a fresh login (e.g. after password rotation):
 
 ```bash
@@ -339,7 +339,7 @@ archive-all`.
 
 ### Historical Stats
 
-`unifly stats` pulls from Legacy report endpoints. Supported intervals:
+`unifly stats` pulls from Session API report endpoints. Supported intervals:
 
 - `5minute`: High resolution, short retention window
 - `hourly`: Medium resolution
@@ -353,9 +353,9 @@ subcommand supports `--group-by by-app` or `--group-by by-cat`.
 
 - `unifly dpi apps`: List known applications (Integration API)
 - `unifly dpi categories`: List known categories (Integration API)
-- `unifly dpi status`: Current DPI enable state (Legacy API)
-- `unifly dpi enable`: Turn DPI on (Legacy API)
-- `unifly dpi disable`: Turn DPI off (Legacy API)
+- `unifly dpi status`: Current DPI enable state (Session API)
+- `unifly dpi enable`: Turn DPI on (Session API)
+- `unifly dpi disable`: Turn DPI off (Session API)
 - `unifly stats dpi`: Query DPI traffic breakdown
 
 ## Error Taxonomy
@@ -364,8 +364,8 @@ Common failures and how to diagnose them:
 
 | Error                                         | Root Cause                                               | Fix                                         |
 | --------------------------------------------- | -------------------------------------------------------- | ------------------------------------------- |
-| `Unsupported { required: "Integration API" }` | Command needs API key, running in `legacy` mode          | Switch to `hybrid` or `integration` mode    |
-| `Unsupported { required: "Legacy API" }`      | Command needs credentials, running in `integration` mode | Switch to `hybrid` or `legacy` mode         |
+| `Unsupported { required: "Integration API" }` | Command needs API key, running in `session` mode          | Switch to `hybrid` or `integration` mode    |
+| `Unsupported { required: "Session API" }`      | Command needs credentials, running in `integration` mode | Switch to `hybrid` or `session` mode         |
 | 403 on POST/PUT/DELETE via `/proxy/network/`  | Missing CSRF token                                       | Re-login (cache invalidated); `--no-cache`  |
 | `tls error: self-signed certificate`          | Controller uses self-signed TLS                          | Use `-k`/`--insecure` or `UNIFI_INSECURE=1` |
 | `profile 'foo' not found`                     | No matching profile in config                            | Run `unifly config profiles` to list        |

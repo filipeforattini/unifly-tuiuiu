@@ -1,6 +1,6 @@
 //! WebSocket event stream with auto-reconnect.
 //!
-//! Connects to a UniFi controller's legacy WebSocket endpoint and streams
+//! Connects to a UniFi controller's session WebSocket endpoint and streams
 //! parsed events through a [`tokio::sync::broadcast`] channel. Handles
 //! reconnection with exponential backoff + jitter automatically.
 //!

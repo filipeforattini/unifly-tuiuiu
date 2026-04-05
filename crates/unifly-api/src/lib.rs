@@ -9,9 +9,11 @@
 //!   authenticated via `X-API-KEY` header. Primary surface for CRUD operations on
 //!   devices, clients, networks, firewall rules, and other managed entities.
 //!
-//! - **Legacy API** ([`LegacyClient`]) — Session/cookie-authenticated endpoints under
-//!   `/api/s/{site}/`. Used for data not yet exposed by the Integration API: events,
-//!   traffic stats, admin users, DPI data, system info, and real-time WebSocket events.
+//! - **Session API** ([`SessionClient`]) — UniFi's internal `/api/` and `/v2/api/`
+//!   surface, authenticated by session cookie + CSRF (username/password login) or
+//!   by Integration `X-API-KEY` on UniFi OS. Covers data not yet exposed by the
+//!   Integration API: events, traffic stats, admin users, DPI data, system info,
+//!   and real-time WebSocket events (WebSocket still requires the cookie session).
 //!
 //! Both clients share a common [`TransportConfig`] for reqwest-based HTTP transport
 //! with configurable TLS ([`TlsMode`]: system CA, custom PEM, or danger-accept for
@@ -34,7 +36,7 @@
 pub mod auth;
 pub mod error;
 pub mod integration;
-pub mod legacy;
+pub mod session;
 pub mod transport;
 pub mod websocket;
 
@@ -53,8 +55,8 @@ pub use auth::{AuthStrategy, ControllerPlatform, Credentials};
 pub use error::Error;
 pub use integration::IntegrationClient;
 pub use integration::types as integration_types;
-pub use legacy::LegacyClient;
-pub use legacy::models as legacy_models;
+pub use session::SessionClient;
+pub use session::models as session_models;
 pub use transport::{TlsMode, TransportConfig};
 
 // ── Domain re-exports ────────────────────────────────────────────

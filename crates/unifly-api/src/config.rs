@@ -21,10 +21,10 @@ pub enum AuthCredentials {
         username: String,
         password: SecretString,
     },
-    /// Hybrid: API key for Integration API + credentials for Legacy API.
+    /// Hybrid: API key for Integration API + credentials for Session API.
     ///
     /// Gives full access to both APIs in a single session — Integration API
-    /// for CRUD and reads, Legacy API for stats, events, alarms, and admin.
+    /// for CRUD and reads, Session API for stats, events, alarms, and admin.
     Hybrid {
         api_key: SecretString,
         username: String,

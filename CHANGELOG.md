@@ -7,7 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-_Nothing yet._
+### Changed
+
+- **Renamed "legacy" nomenclature to "session" throughout.** The UniFi
+  `/api/*` and `/v2/api/*` HTTP surface is not deprecated — Ubiquiti ships new
+  functionality there regularly, and with the API-key discovery it is no
+  longer even tied to cookie session auth. It is now consistently called the
+  **Session API** in code, types, docs, and user-facing messages.
+  - Rust: `legacy/` module → `session/`, `LegacyClient` → `SessionClient`,
+    `LegacyClientEntry` / `LegacyDevice` / `LegacyEvent` / `LegacySite` /
+    `LegacyAlarm` / `LegacyUserEntry` → `Session*`, `Error::LegacyApi` →
+    `Error::SessionApi`, `require_legacy` → `require_session`,
+    `has_legacy_access` → `has_session_access`, `legacy_prefix` →
+    `session_prefix`, `ensure_legacy_access` → `ensure_session_access`.
+  - Config: `auth_mode = "legacy"` → `auth_mode = "session"`. This is a
+    breaking change to config files; update existing profiles by hand or run
+    `unifly config init` to regenerate.
+  - TUI: `AuthMode::Legacy` → `AuthMode::Session`; the onboarding wizard's
+    auth mode picker now shows "Username / Password (Session API)".
+  - CLI errors: "session expired or invalid credentials" is now
+    "API key rejected..." or "session expired..." depending on the client's
+    auth kind.
+  - Docs: AGENTS.md, README.md, CHANGELOG.md, `skills/unifly/**`, and
+    `docs/guide/**` updated to reflect the new nomenclature.
+  - `EntityId::Legacy(String)` is **kept** — that variant names an ID
+    format (MongoDB ObjectId string vs UUID), not the API surface.
 
 ## [0.8.0] - 2026-04-05
 

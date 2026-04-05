@@ -1,4 +1,4 @@
-// Legacy API event and alarm endpoints
+// Session API event and alarm endpoints
 //
 // Events (stat/event) and alarms (stat/alarm) with archive support
 // via cmd/evtmgr.
@@ -7,17 +7,17 @@ use serde_json::json;
 use tracing::debug;
 
 use crate::error::Error;
-use crate::legacy::client::LegacyClient;
-use crate::legacy::models::{LegacyAlarm, LegacyEvent};
+use crate::session::client::SessionClient;
+use crate::session::models::{SessionAlarm, SessionEvent};
 
-impl LegacyClient {
+impl SessionClient {
     /// List recent events.
     ///
     /// `GET /api/s/{site}/stat/event`
     ///
     /// If `count` is provided, limits the number of events returned
     /// by appending `?_limit={count}` to the request.
-    pub async fn list_events(&self, count: Option<u32>) -> Result<Vec<LegacyEvent>, Error> {
+    pub async fn list_events(&self, count: Option<u32>) -> Result<Vec<SessionEvent>, Error> {
         let path = match count {
             Some(n) => format!("stat/event?_limit={n}"),
             None => "stat/event".to_string(),
@@ -30,7 +30,7 @@ impl LegacyClient {
     /// List active alarms.
     ///
     /// `GET /api/s/{site}/stat/alarm`
-    pub async fn list_alarms(&self) -> Result<Vec<LegacyAlarm>, Error> {
+    pub async fn list_alarms(&self) -> Result<Vec<SessionAlarm>, Error> {
         let url = self.site_url("stat/alarm");
         debug!("listing alarms");
         self.get(url).await

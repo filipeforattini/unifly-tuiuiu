@@ -1,4 +1,4 @@
-// Legacy API device endpoints
+// Session API device endpoints
 //
 // Device management via stat/device (read) and cmd/devmgr (commands).
 // Covers listing, adoption, restart, firmware upgrade, and LED locate.
@@ -7,14 +7,14 @@ use serde_json::json;
 use tracing::debug;
 
 use crate::error::Error;
-use crate::legacy::client::LegacyClient;
-use crate::legacy::models::LegacyDevice;
+use crate::session::client::SessionClient;
+use crate::session::models::SessionDevice;
 
-impl LegacyClient {
+impl SessionClient {
     /// List all devices with full statistics.
     ///
     /// `GET /api/s/{site}/stat/device`
-    pub async fn list_devices(&self) -> Result<Vec<LegacyDevice>, Error> {
+    pub async fn list_devices(&self) -> Result<Vec<SessionDevice>, Error> {
         let url = self.site_url("stat/device");
         debug!("listing devices");
         self.get(url).await
@@ -23,10 +23,10 @@ impl LegacyClient {
     /// Get a single device by MAC address.
     ///
     /// Filters the device list by MAC. Returns `None` if no device matches.
-    pub async fn get_device(&self, mac: &str) -> Result<Option<LegacyDevice>, Error> {
+    pub async fn get_device(&self, mac: &str) -> Result<Option<SessionDevice>, Error> {
         let url = self.site_url("stat/device");
         let body = json!({ "macs": [mac.to_lowercase()] });
-        let devices: Vec<LegacyDevice> = self.post(url, &body).await?;
+        let devices: Vec<SessionDevice> = self.post(url, &body).await?;
         Ok(devices.into_iter().next())
     }
 

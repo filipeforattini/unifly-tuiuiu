@@ -5,7 +5,7 @@ This file is a **gotchas-focused** reference. Every command accepts
 non-obvious flags, dual-API boundaries, correct argument forms, and the
 cross-cutting patterns listed at the end.
 
-**API legend:** **I** = Integration API required. **L** = Legacy API
+**API legend:** **I** = Integration API required. **L** = Session API
 required (username + password). **H** = Works in any mode, but enriched
 by Hybrid. Consult `concepts.md` for the full gate matrix.
 
@@ -54,7 +54,7 @@ unifly devices tags [subcommands]
 - `upgrade --url` allows side-loading custom firmware URLs.
 - `port-cycle` port index is zero-based.
 - All device _commands_ (adopt, remove, restart, locate, port-cycle,
-  upgrade, provision, speedtest) require Legacy API. Only `list`/`get` are
+  upgrade, provision, speedtest) require Session API. Only `list`/`get` are
   Hybrid-safe.
 
 ## Clients `[H]`
@@ -80,7 +80,7 @@ unifly clients remove-ip <mac> [--network <name|id>]
   It matches substrings across IP, name, hostname, and MAC in a single
   pass, case-insensitive.
 - `reservations` (alias `res`) lists **all** DHCP reservations including
-  offline clients. It goes through Legacy `/rest/user`.
+  offline clients. It goes through Session API `/rest/user`.
 - `set-ip` auto-detects the target network from the IP subnet unless
   `--network` is supplied explicitly.
 - `remove-ip` defaults to removing from all networks. Scope it with
@@ -302,7 +302,7 @@ unifly stats dpi [--group-by by-app|by-cat] [--macs MAC1,MAC2]
 - `--attrs` limits the metrics returned; smaller payloads, faster queries.
 - `stats dpi` requires `--group-by`. `by-app` buckets by application,
   `by-cat` buckets by category.
-- Legacy API only; all commands fail without credentials.
+- Session API only; all commands fail without credentials.
 
 ## DPI `[I for apps/categories, L for status/enable/disable]`
 
@@ -317,7 +317,7 @@ unifly dpi disable
 **Gotchas:**
 
 - `apps` and `categories` are Integration API reference lookups.
-- `status`, `enable`, `disable` are Legacy API lifecycle controls for the
+- `status`, `enable`, `disable` are Session API lifecycle controls for the
   DPI subsystem itself. Use these to toggle DPI on/off without touching
   the web UI.
 
@@ -383,11 +383,11 @@ unifly api <path> [-m get|post] [-d '<json-body>']
 
 **Gotchas:**
 
-- Routes through the Legacy client, so CSRF tokens and session caching
+- Routes through the Session client, so CSRF tokens and session caching
   are handled automatically.
 - Paths are relative to the controller base URL. Examples:
-  - Legacy v1: `api/s/default/stat/device`
-  - Legacy v2: `v2/api/site/default/traffic-flow-latest-statistics`
+  - Session v1: `api/s/default/stat/device`
+  - Session v2: `v2/api/site/default/traffic-flow-latest-statistics`
   - Integration v1: `integration/v1/sites/default/clients`
   - Commands: `cmd/stamgr`, `cmd/devmgr`
 - `-d '<json>'` is the POST body. Pair with `-m post`.
@@ -442,7 +442,7 @@ Combine with `&&` and `||`:
 unifly devices list --filter "state.eq('ONLINE') && model.startswith('U6')"
 ```
 
-Only Integration API commands respect `--filter`. Legacy commands filter
+Only Integration API commands respect `--filter`. Session commands filter
 client-side via `jq` after fetching.
 
 ### Default List Limit Is 25

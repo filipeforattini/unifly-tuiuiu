@@ -28,7 +28,7 @@ pub enum EventSeverity {
     Critical,
 }
 
-/// Unified event from WebSocket or Legacy API event log.
+/// Unified event from WebSocket or Session API event log.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Event {
     pub id: Option<EntityId>,

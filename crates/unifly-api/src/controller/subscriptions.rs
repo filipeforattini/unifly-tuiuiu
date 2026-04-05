@@ -132,14 +132,14 @@ impl Controller {
         self.inner.store.subscribe_site_health()
     }
 
-    /// Drain warnings accumulated during connect (e.g. Legacy auth failure).
+    /// Drain warnings accumulated during connect (e.g. Session auth failure).
     pub async fn take_warnings(&self) -> Vec<String> {
         std::mem::take(&mut *self.inner.warnings.lock().await)
     }
 
-    /// Whether a logged-in Legacy client is available for legacy-only features.
-    pub async fn has_legacy_access(&self) -> bool {
-        self.inner.legacy_client.lock().await.is_some()
+    /// Whether a logged-in Session client is available for session-only features.
+    pub async fn has_session_access(&self) -> bool {
+        self.inner.session_client.lock().await.is_some()
     }
 
     /// Whether the Integration API is available for integration-backed features.

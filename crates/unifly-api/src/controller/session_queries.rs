@@ -2,19 +2,19 @@ use crate::core_error::CoreError;
 use crate::model::{Admin, Alarm, EntityId, HealthSummary, SysInfo, SystemInfo};
 
 use super::Controller;
-use super::support::{convert_health_summaries, require_legacy};
+use super::support::{convert_health_summaries, require_session};
 
 impl Controller {
     pub async fn list_backups(&self) -> Result<Vec<serde_json::Value>, CoreError> {
-        let guard = self.inner.legacy_client.lock().await;
-        let legacy = require_legacy(guard.as_ref())?;
-        Ok(legacy.list_backups().await?)
+        let guard = self.inner.session_client.lock().await;
+        let session = require_session(guard.as_ref())?;
+        Ok(session.list_backups().await?)
     }
 
     pub async fn download_backup(&self, filename: &str) -> Result<Vec<u8>, CoreError> {
-        let guard = self.inner.legacy_client.lock().await;
-        let legacy = require_legacy(guard.as_ref())?;
-        Ok(legacy.download_backup(filename).await?)
+        let guard = self.inner.session_client.lock().await;
+        let session = require_session(guard.as_ref())?;
+        Ok(session.download_backup(filename).await?)
     }
 
     pub async fn get_site_stats(
@@ -24,9 +24,9 @@ impl Controller {
         end: Option<i64>,
         attrs: Option<&[String]>,
     ) -> Result<Vec<serde_json::Value>, CoreError> {
-        let guard = self.inner.legacy_client.lock().await;
-        let legacy = require_legacy(guard.as_ref())?;
-        Ok(legacy.get_site_stats(interval, start, end, attrs).await?)
+        let guard = self.inner.session_client.lock().await;
+        let session = require_session(guard.as_ref())?;
+        Ok(session.get_site_stats(interval, start, end, attrs).await?)
     }
 
     pub async fn get_device_stats(
@@ -35,9 +35,9 @@ impl Controller {
         macs: Option<&[String]>,
         attrs: Option<&[String]>,
     ) -> Result<Vec<serde_json::Value>, CoreError> {
-        let guard = self.inner.legacy_client.lock().await;
-        let legacy = require_legacy(guard.as_ref())?;
-        Ok(legacy.get_device_stats(interval, macs, attrs).await?)
+        let guard = self.inner.session_client.lock().await;
+        let session = require_session(guard.as_ref())?;
+        Ok(session.get_device_stats(interval, macs, attrs).await?)
     }
 
     pub async fn get_client_stats(
@@ -46,9 +46,9 @@ impl Controller {
         macs: Option<&[String]>,
         attrs: Option<&[String]>,
     ) -> Result<Vec<serde_json::Value>, CoreError> {
-        let guard = self.inner.legacy_client.lock().await;
-        let legacy = require_legacy(guard.as_ref())?;
-        Ok(legacy.get_client_stats(interval, macs, attrs).await?)
+        let guard = self.inner.session_client.lock().await;
+        let session = require_session(guard.as_ref())?;
+        Ok(session.get_client_stats(interval, macs, attrs).await?)
     }
 
     pub async fn get_gateway_stats(
@@ -58,9 +58,9 @@ impl Controller {
         end: Option<i64>,
         attrs: Option<&[String]>,
     ) -> Result<Vec<serde_json::Value>, CoreError> {
-        let guard = self.inner.legacy_client.lock().await;
-        let legacy = require_legacy(guard.as_ref())?;
-        Ok(legacy
+        let guard = self.inner.session_client.lock().await;
+        let session = require_session(guard.as_ref())?;
+        Ok(session
             .get_gateway_stats(interval, start, end, attrs)
             .await?)
     }
@@ -70,15 +70,15 @@ impl Controller {
         group_by: &str,
         macs: Option<&[String]>,
     ) -> Result<Vec<serde_json::Value>, CoreError> {
-        let guard = self.inner.legacy_client.lock().await;
-        let legacy = require_legacy(guard.as_ref())?;
-        Ok(legacy.get_dpi_stats(group_by, macs).await?)
+        let guard = self.inner.session_client.lock().await;
+        let session = require_session(guard.as_ref())?;
+        Ok(session.get_dpi_stats(group_by, macs).await?)
     }
 
     pub async fn list_admins(&self) -> Result<Vec<Admin>, CoreError> {
-        let guard = self.inner.legacy_client.lock().await;
-        let legacy = require_legacy(guard.as_ref())?;
-        let raw = legacy.list_admins().await?;
+        let guard = self.inner.session_client.lock().await;
+        let session = require_session(guard.as_ref())?;
+        let raw = session.list_admins().await?;
         Ok(raw
             .into_iter()
             .map(|value| Admin {
@@ -114,16 +114,16 @@ impl Controller {
 
     pub async fn list_users(
         &self,
-    ) -> Result<Vec<crate::legacy::models::LegacyUserEntry>, CoreError> {
-        let guard = self.inner.legacy_client.lock().await;
-        let legacy = require_legacy(guard.as_ref())?;
-        Ok(legacy.list_users().await?)
+    ) -> Result<Vec<crate::session::models::SessionUserEntry>, CoreError> {
+        let guard = self.inner.session_client.lock().await;
+        let session = require_session(guard.as_ref())?;
+        Ok(session.list_users().await?)
     }
 
     pub async fn is_dpi_enabled(&self) -> Result<bool, CoreError> {
-        let guard = self.inner.legacy_client.lock().await;
-        let legacy = require_legacy(guard.as_ref())?;
-        let settings = legacy.get_site_settings().await?;
+        let guard = self.inner.session_client.lock().await;
+        let session = require_session(guard.as_ref())?;
+        let settings = session.get_site_settings().await?;
         let enabled = settings
             .iter()
             .find(|s| s.get("key").and_then(|v| v.as_str()) == Some("dpi"))
@@ -134,9 +134,9 @@ impl Controller {
     }
 
     pub async fn list_alarms(&self) -> Result<Vec<Alarm>, CoreError> {
-        let guard = self.inner.legacy_client.lock().await;
-        let legacy = require_legacy(guard.as_ref())?;
-        let raw = legacy.list_alarms().await?;
+        let guard = self.inner.session_client.lock().await;
+        let session = require_session(guard.as_ref())?;
+        let raw = session.list_alarms().await?;
         Ok(raw.into_iter().map(Alarm::from).collect())
     }
 
@@ -176,9 +176,9 @@ impl Controller {
             }
         }
 
-        let guard = self.inner.legacy_client.lock().await;
-        let legacy = require_legacy(guard.as_ref())?;
-        let raw = legacy.get_sysinfo().await?;
+        let guard = self.inner.session_client.lock().await;
+        let session = require_session(guard.as_ref())?;
+        let raw = session.get_sysinfo().await?;
         Ok(SystemInfo {
             controller_name: raw
                 .get("controller_name")
@@ -212,16 +212,16 @@ impl Controller {
     }
 
     pub async fn get_site_health(&self) -> Result<Vec<HealthSummary>, CoreError> {
-        let guard = self.inner.legacy_client.lock().await;
-        let legacy = require_legacy(guard.as_ref())?;
-        let raw = legacy.get_health().await?;
+        let guard = self.inner.session_client.lock().await;
+        let session = require_session(guard.as_ref())?;
+        let raw = session.get_health().await?;
         Ok(convert_health_summaries(raw))
     }
 
     pub async fn get_sysinfo(&self) -> Result<SysInfo, CoreError> {
-        let guard = self.inner.legacy_client.lock().await;
-        let legacy = require_legacy(guard.as_ref())?;
-        let raw = legacy.get_sysinfo().await?;
+        let guard = self.inner.session_client.lock().await;
+        let session = require_session(guard.as_ref())?;
+        let raw = session.get_sysinfo().await?;
         Ok(SysInfo {
             timezone: raw
                 .get("timezone")
@@ -259,11 +259,11 @@ impl Controller {
     ///
     /// The `path` is appended to the controller base URL + platform prefix
     /// (e.g. `/proxy/network/`). The response is returned as raw JSON
-    /// without legacy envelope unwrapping.
+    /// without session envelope unwrapping.
     pub async fn raw_get(&self, path: &str) -> Result<serde_json::Value, CoreError> {
-        let guard = self.inner.legacy_client.lock().await;
-        let legacy = require_legacy(guard.as_ref())?;
-        Ok(legacy.raw_get(path).await?)
+        let guard = self.inner.session_client.lock().await;
+        let session = require_session(guard.as_ref())?;
+        Ok(session.raw_get(path).await?)
     }
 
     /// Send a raw POST request to an arbitrary path on the controller.
@@ -272,8 +272,8 @@ impl Controller {
         path: &str,
         body: &serde_json::Value,
     ) -> Result<serde_json::Value, CoreError> {
-        let guard = self.inner.legacy_client.lock().await;
-        let legacy = require_legacy(guard.as_ref())?;
-        Ok(legacy.raw_post(path, body).await?)
+        let guard = self.inner.session_client.lock().await;
+        let session = require_session(guard.as_ref())?;
+        Ok(session.raw_post(path, body).await?)
     }
 }

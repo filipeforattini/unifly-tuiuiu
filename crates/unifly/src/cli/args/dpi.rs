@@ -16,12 +16,12 @@ pub enum DpiCommand {
     /// List DPI categories
     Categories(ListArgs),
 
-    /// Show DPI status (legacy API)
+    /// Show DPI status (session API)
     Status,
 
-    /// Enable Deep Packet Inspection (legacy API)
+    /// Enable Deep Packet Inspection (session API)
     Enable,
 
-    /// Disable Deep Packet Inspection (legacy API)
+    /// Disable Deep Packet Inspection (session API)
     Disable,
 }

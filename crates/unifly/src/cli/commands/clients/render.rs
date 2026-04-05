@@ -3,7 +3,7 @@ use std::sync::Arc;
 use serde::Serialize;
 use tabled::Tabled;
 use unifly_api::Client;
-use unifly_api::legacy_models::LegacyUserEntry;
+use unifly_api::session_models::SessionUserEntry;
 
 use crate::cli::output::Painter;
 
@@ -85,8 +85,8 @@ pub(super) struct Reservation {
     pub network_id: Option<String>,
 }
 
-impl From<&LegacyUserEntry> for Reservation {
-    fn from(u: &LegacyUserEntry) -> Self {
+impl From<&SessionUserEntry> for Reservation {
+    fn from(u: &SessionUserEntry) -> Self {
         Self {
             mac: u.mac.clone(),
             name: u.name.clone(),

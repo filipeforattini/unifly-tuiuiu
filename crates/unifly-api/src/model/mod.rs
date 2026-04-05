@@ -13,8 +13,8 @@ pub mod dns;
 pub mod event;
 pub mod firewall;
 pub mod hotspot;
-pub mod legacy_resources;
 pub mod network;
+pub mod session_resources;
 pub mod site;
 pub mod supporting;
 pub mod wifi;
@@ -65,8 +65,8 @@ pub use supporting::{
     DeviceTag, RadiusProfile, TrafficMatchingList, VpnServer, VpnTunnel, WanInterface,
 };
 
-// Legacy-only resources
-pub use legacy_resources::{
+// Session-only resources
+pub use session_resources::{
     Admin, Backup, Country, DeviceStatsSample, DpiApplication, DpiCategory, HealthSummary,
     SiteStatsSample, StatEntry, StatReport, StatsInterval, SysInfo, SystemInfo,
 };

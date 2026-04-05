@@ -1,19 +1,19 @@
 #![allow(clippy::unwrap_used)]
-// Integration tests for `LegacyClient` using wiremock.
+// Integration tests for `SessionClient` using wiremock.
 
 use serde_json::json;
 use url::Url;
 use wiremock::matchers::{method, path, query_param};
 use wiremock::{Mock, MockServer, ResponseTemplate};
 
-use unifly_api::{ControllerPlatform, Error, LegacyClient, TransportConfig};
+use unifly_api::{ControllerPlatform, Error, SessionClient, TransportConfig};
 
 // ── Helpers ─────────────────────────────────────────────────────────
 
-async fn setup() -> (MockServer, LegacyClient) {
+async fn setup() -> (MockServer, SessionClient) {
     let server = MockServer::start().await;
     let base_url = Url::parse(&server.uri()).unwrap();
-    let client = LegacyClient::with_client(
+    let client = SessionClient::with_client(
         reqwest::Client::new(),
         base_url,
         "default".into(),
@@ -23,11 +23,11 @@ async fn setup() -> (MockServer, LegacyClient) {
 }
 
 /// Setup with a cookie jar — required for MFA tests (cookie injection).
-async fn setup_with_jar() -> (MockServer, LegacyClient) {
+async fn setup_with_jar() -> (MockServer, SessionClient) {
     let server = MockServer::start().await;
     let base_url = Url::parse(&server.uri()).unwrap();
     let transport = TransportConfig::default().with_cookie_jar();
-    let client = LegacyClient::new(
+    let client = SessionClient::new(
         base_url,
         "default".into(),
         ControllerPlatform::ClassicController,
@@ -229,13 +229,13 @@ async fn test_legacy_api_error() {
     let result = client.list_devices().await;
 
     match result {
-        Err(Error::LegacyApi { ref message }) => {
+        Err(Error::SessionApi { ref message }) => {
             assert!(
                 message.contains("InvalidObject"),
                 "expected 'InvalidObject' in message, got: {message}"
             );
         }
-        other => panic!("expected LegacyApi error, got: {other:?}"),
+        other => panic!("expected SessionApi error, got: {other:?}"),
     }
 }
 

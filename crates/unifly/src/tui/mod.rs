@@ -131,7 +131,7 @@ fn try_hybrid_from_config(api_key: &SecretString) -> Option<AuthCredentials> {
         return None;
     }
 
-    let (username, password) = config::resolve_legacy_credentials(profile, name).ok()?;
+    let (username, password) = config::resolve_session_credentials(profile, name).ok()?;
 
     Some(AuthCredentials::Hybrid {
         api_key: api_key.clone(),

@@ -2,14 +2,14 @@ use crate::command::{Command, CommandResult};
 use crate::core_error::CoreError;
 
 use super::{
-    CommandContext, client_mac, device_mac, require_integration, require_legacy, require_uuid,
+    CommandContext, client_mac, device_mac, require_integration, require_session, require_uuid,
 };
 
 #[allow(clippy::cognitive_complexity, clippy::too_many_lines)]
 pub(super) async fn route(ctx: &CommandContext, cmd: Command) -> Result<CommandResult, CoreError> {
     let store = ctx.store.as_ref();
     let integration = ctx.integration.as_ref();
-    let legacy = ctx.legacy.as_ref();
+    let session = ctx.session.as_ref();
     let site_id = ctx.site_id;
 
     match cmd {
@@ -21,8 +21,8 @@ pub(super) async fn route(ctx: &CommandContext, cmd: Command) -> Result<CommandR
                 ic.adopt_device(&sid, mac.as_str(), ignore_device_limit)
                     .await?;
             } else {
-                let legacy = require_legacy(legacy)?;
-                legacy.adopt_device(mac.as_str()).await?;
+                let session = require_session(session)?;
+                session.adopt_device(mac.as_str()).await?;
             }
             Ok(CommandResult::Ok)
         }
@@ -31,9 +31,9 @@ pub(super) async fn route(ctx: &CommandContext, cmd: Command) -> Result<CommandR
                 let device_uuid = require_uuid(&id)?;
                 ic.device_action(&sid, &device_uuid, "RESTART").await?;
             } else {
-                let legacy = require_legacy(legacy)?;
+                let session = require_session(session)?;
                 let mac = device_mac(store, &id)?;
-                legacy.restart_device(mac.as_str()).await?;
+                session.restart_device(mac.as_str()).await?;
             }
             Ok(CommandResult::Ok)
         }
@@ -49,14 +49,14 @@ pub(super) async fn route(ctx: &CommandContext, cmd: Command) -> Result<CommandR
                 let action = if enable { "LOCATE_ON" } else { "LOCATE_OFF" };
                 ic.device_action(&sid, &device_uuid, action).await?;
             } else {
-                let legacy = require_legacy(legacy)?;
-                legacy.locate_device(mac.as_str(), enable).await?;
+                let session = require_session(session)?;
+                session.locate_device(mac.as_str(), enable).await?;
             }
             Ok(CommandResult::Ok)
         }
         Command::UpgradeDevice { mac, firmware_url } => {
-            let legacy = require_legacy(legacy)?;
-            legacy
+            let session = require_session(session)?;
+            session
                 .upgrade_device(mac.as_str(), firmware_url.as_deref())
                 .await?;
             Ok(CommandResult::Ok)
@@ -68,13 +68,13 @@ pub(super) async fn route(ctx: &CommandContext, cmd: Command) -> Result<CommandR
             Ok(CommandResult::Ok)
         }
         Command::ProvisionDevice { mac } => {
-            let legacy = require_legacy(legacy)?;
-            legacy.provision_device(mac.as_str()).await?;
+            let session = require_session(session)?;
+            session.provision_device(mac.as_str()).await?;
             Ok(CommandResult::Ok)
         }
         Command::SpeedtestDevice => {
-            let legacy = require_legacy(legacy)?;
-            legacy.speedtest().await?;
+            let session = require_session(session)?;
+            session.speedtest().await?;
             Ok(CommandResult::Ok)
         }
         Command::PowerCyclePort {
@@ -98,8 +98,8 @@ pub(super) async fn route(ctx: &CommandContext, cmd: Command) -> Result<CommandR
                 let client_uuid = require_uuid(&client.id)?;
                 ic.client_action(&sid, &client_uuid, "BLOCK").await?;
             } else {
-                let legacy = require_legacy(legacy)?;
-                legacy.block_client(mac.as_str()).await?;
+                let session = require_session(session)?;
+                session.block_client(mac.as_str()).await?;
             }
             Ok(CommandResult::Ok)
         }
@@ -114,8 +114,8 @@ pub(super) async fn route(ctx: &CommandContext, cmd: Command) -> Result<CommandR
                 let client_uuid = require_uuid(&client.id)?;
                 ic.client_action(&sid, &client_uuid, "UNBLOCK").await?;
             } else {
-                let legacy = require_legacy(legacy)?;
-                legacy.unblock_client(mac.as_str()).await?;
+                let session = require_session(session)?;
+                session.unblock_client(mac.as_str()).await?;
             }
             Ok(CommandResult::Ok)
         }
@@ -130,14 +130,14 @@ pub(super) async fn route(ctx: &CommandContext, cmd: Command) -> Result<CommandR
                 let client_uuid = require_uuid(&client.id)?;
                 ic.client_action(&sid, &client_uuid, "RECONNECT").await?;
             } else {
-                let legacy = require_legacy(legacy)?;
-                legacy.kick_client(mac.as_str()).await?;
+                let session = require_session(session)?;
+                session.kick_client(mac.as_str()).await?;
             }
             Ok(CommandResult::Ok)
         }
         Command::ForgetClient { mac } => {
-            let legacy = require_legacy(legacy)?;
-            legacy.forget_client(mac.as_str()).await?;
+            let session = require_session(session)?;
+            session.forget_client(mac.as_str()).await?;
             Ok(CommandResult::Ok)
         }
         Command::AuthorizeGuest {
@@ -147,12 +147,12 @@ pub(super) async fn route(ctx: &CommandContext, cmd: Command) -> Result<CommandR
             rx_rate_kbps,
             tx_rate_kbps,
         } => {
-            let legacy = require_legacy(legacy)?;
+            let session = require_session(session)?;
             let mac = client_mac(store, &client_id)?;
             let minutes = time_limit_minutes.unwrap_or(60);
             #[allow(clippy::as_conversions, clippy::cast_possible_truncation)]
             {
-                legacy
+                session
                     .authorize_guest(
                         mac.as_str(),
                         minutes,
@@ -165,9 +165,9 @@ pub(super) async fn route(ctx: &CommandContext, cmd: Command) -> Result<CommandR
             Ok(CommandResult::Ok)
         }
         Command::UnauthorizeGuest { client_id } => {
-            let legacy = require_legacy(legacy)?;
+            let session = require_session(session)?;
             let mac = client_mac(store, &client_id)?;
-            legacy.unauthorize_guest(mac.as_str()).await?;
+            session.unauthorize_guest(mac.as_str()).await?;
             Ok(CommandResult::Ok)
         }
         Command::SetClientFixedIp {
@@ -175,16 +175,16 @@ pub(super) async fn route(ctx: &CommandContext, cmd: Command) -> Result<CommandR
             ip,
             network_id,
         } => {
-            let legacy = require_legacy(legacy)?;
-            legacy
+            let session = require_session(session)?;
+            session
                 .set_client_fixed_ip(mac.as_str(), &ip.to_string(), &network_id.to_string())
                 .await?;
             Ok(CommandResult::Ok)
         }
         Command::RemoveClientFixedIp { mac, network_id } => {
-            let legacy = require_legacy(legacy)?;
+            let session = require_session(session)?;
             let network_id = network_id.as_ref().map(ToString::to_string);
-            legacy
+            session
                 .remove_client_fixed_ip(mac.as_str(), network_id.as_deref())
                 .await?;
             Ok(CommandResult::Ok)

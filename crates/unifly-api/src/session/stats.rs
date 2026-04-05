@@ -1,4 +1,4 @@
-// Legacy API statistics endpoints
+// Session API statistics endpoints
 //
 // Historical reports (stat/report/) and DPI statistics (stat/sitedpi).
 // These endpoints return loosely-typed JSON because the field set varies
@@ -8,13 +8,13 @@ use serde_json::json;
 use tracing::debug;
 
 use crate::error::Error;
-use crate::legacy::client::LegacyClient;
+use crate::session::client::SessionClient;
 
 fn attrs_or_default(attrs: Option<&[String]>, default: &[&str]) -> serde_json::Value {
     attrs.map_or_else(|| json!(default), |custom| json!(custom))
 }
 
-impl LegacyClient {
+impl SessionClient {
     /// Fetch site-level historical statistics.
     ///
     /// `POST /api/s/{site}/stat/report/{interval}.site`
@@ -139,7 +139,7 @@ impl LegacyClient {
 
     /// Fetch DPI (Deep Packet Inspection) statistics.
     ///
-    /// Tries multiple legacy DPI endpoints for compatibility across firmware
+    /// Tries multiple session DPI endpoints for compatibility across firmware
     /// versions:
     /// 1. `stat/stadpi` with MAC filter — when `macs` is provided
     /// 2. `stat/sitedpi` with type filter — site-level aggregated stats
@@ -174,10 +174,10 @@ impl LegacyClient {
                     debug!("v2 traffic flow stats received");
                     return Ok(vec![v2_data]);
                 }
-                debug!("v2 response had no DPI app data, trying legacy");
+                debug!("v2 response had no DPI app data, trying session");
             }
             Err(e) => {
-                debug!("v2 traffic flow stats unavailable, trying legacy: {e}");
+                debug!("v2 traffic flow stats unavailable, trying session: {e}");
             }
         }
 

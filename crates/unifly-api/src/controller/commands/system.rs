@@ -2,40 +2,40 @@ use crate::command::{Command, CommandResult};
 use crate::core_error::CoreError;
 use crate::model::Voucher;
 
-use super::{CommandContext, require_integration, require_legacy, require_uuid};
+use super::{CommandContext, require_integration, require_session, require_uuid};
 
 #[allow(clippy::cognitive_complexity, clippy::too_many_lines)]
 pub(super) async fn route(ctx: &CommandContext, cmd: Command) -> Result<CommandResult, CoreError> {
     let integration = ctx.integration.as_ref();
-    let legacy = ctx.legacy.as_ref();
+    let session = ctx.session.as_ref();
     let site_id = ctx.site_id;
 
     match cmd {
         Command::SetDpiEnabled { enabled } => {
-            let legacy = require_legacy(legacy)?;
-            legacy
+            let session = require_session(session)?;
+            session
                 .set_site_setting("dpi", &serde_json::json!({ "enabled": enabled }))
                 .await?;
             Ok(CommandResult::Ok)
         }
         Command::ArchiveAlarm { id } => {
-            let legacy = require_legacy(legacy)?;
-            legacy.archive_alarm(&id.to_string()).await?;
+            let session = require_session(session)?;
+            session.archive_alarm(&id.to_string()).await?;
             Ok(CommandResult::Ok)
         }
         Command::ArchiveAllAlarms => {
-            let legacy = require_legacy(legacy)?;
-            legacy.archive_all_alarms().await?;
+            let session = require_session(session)?;
+            session.archive_all_alarms().await?;
             Ok(CommandResult::Ok)
         }
         Command::CreateBackup => {
-            let legacy = require_legacy(legacy)?;
-            legacy.create_backup().await?;
+            let session = require_session(session)?;
+            session.create_backup().await?;
             Ok(CommandResult::Ok)
         }
         Command::DeleteBackup { filename } => {
-            let legacy = require_legacy(legacy)?;
-            legacy.delete_backup(&filename).await?;
+            let session = require_session(session)?;
+            session.delete_backup(&filename).await?;
             Ok(CommandResult::Ok)
         }
         Command::CreateVouchers(req) => {
@@ -66,40 +66,40 @@ pub(super) async fn route(ctx: &CommandContext, cmd: Command) -> Result<CommandR
             Ok(CommandResult::Ok)
         }
         Command::CreateSite { name, description } => {
-            let legacy = require_legacy(legacy)?;
-            legacy.create_site(&name, &description).await?;
+            let session = require_session(session)?;
+            session.create_site(&name, &description).await?;
             Ok(CommandResult::Ok)
         }
         Command::DeleteSite { name } => {
-            let legacy = require_legacy(legacy)?;
-            legacy.delete_site(&name).await?;
+            let session = require_session(session)?;
+            session.delete_site(&name).await?;
             Ok(CommandResult::Ok)
         }
         Command::InviteAdmin { name, email, role } => {
-            let legacy = require_legacy(legacy)?;
-            legacy.invite_admin(&name, &email, &role).await?;
+            let session = require_session(session)?;
+            session.invite_admin(&name, &email, &role).await?;
             Ok(CommandResult::Ok)
         }
         Command::RevokeAdmin { id } => {
-            let legacy = require_legacy(legacy)?;
-            legacy.revoke_admin(&id.to_string()).await?;
+            let session = require_session(session)?;
+            session.revoke_admin(&id.to_string()).await?;
             Ok(CommandResult::Ok)
         }
         Command::UpdateAdmin { id, role } => {
-            let legacy = require_legacy(legacy)?;
-            legacy
+            let session = require_session(session)?;
+            session
                 .update_admin(&id.to_string(), role.as_deref())
                 .await?;
             Ok(CommandResult::Ok)
         }
         Command::RebootController => {
-            let legacy = require_legacy(legacy)?;
-            legacy.reboot_controller().await?;
+            let session = require_session(session)?;
+            session.reboot_controller().await?;
             Ok(CommandResult::Ok)
         }
         Command::PoweroffController => {
-            let legacy = require_legacy(legacy)?;
-            legacy.poweroff_controller().await?;
+            let session = require_session(session)?;
+            session.poweroff_controller().await?;
             Ok(CommandResult::Ok)
         }
         _ => unreachable!("system::route received non-system command"),

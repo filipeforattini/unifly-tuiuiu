@@ -1,4 +1,4 @@
-// Legacy API authentication
+// Session API authentication
 //
 // Cookie-based session login/logout and controller platform detection.
 // The login endpoint sets a session cookie in the client's jar;
@@ -16,7 +16,7 @@ use url::Url;
 
 use crate::auth::ControllerPlatform;
 use crate::error::Error;
-use crate::legacy::client::LegacyClient;
+use crate::session::client::SessionClient;
 
 /// Response body from a 499 MFA challenge.
 #[derive(serde::Deserialize)]
@@ -25,7 +25,7 @@ struct MfaChallengeResponse {
     token: Option<String>,
 }
 
-impl LegacyClient {
+impl SessionClient {
     /// Authenticate with the controller using username/password.
     ///
     /// If the controller has MFA enabled it returns HTTP 499. When a
@@ -212,7 +212,7 @@ impl LegacyClient {
     ///
     /// Returns `true` if the session is still alive.
     async fn validate_session(&self) -> bool {
-        let prefix = self.platform().legacy_prefix().unwrap_or("");
+        let prefix = self.platform().session_prefix().unwrap_or("");
         let base = self.base_url().as_str().trim_end_matches('/');
         let prefix = prefix.trim_end_matches('/');
         let probe_url = format!("{base}{prefix}/api/s/{}/self", self.site());

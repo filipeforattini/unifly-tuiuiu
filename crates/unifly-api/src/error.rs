@@ -3,7 +3,7 @@ use thiserror::Error;
 /// Top-level error type for the `unifly-api` crate.
 ///
 /// Covers every failure mode across all API surfaces:
-/// authentication, transport, Integration API, Legacy API, WebSocket, and cloud.
+/// authentication, transport, Integration API, Session API, WebSocket, and cloud.
 /// `unifly-core` maps these into user-facing diagnostics.
 #[derive(Debug, Error)]
 pub enum Error {
@@ -59,10 +59,10 @@ pub enum Error {
         status: u16,
     },
 
-    // ── Legacy API ──────────────────────────────────────────────────
-    /// Error from the legacy API (parsed from the `{meta: {rc, msg}}` envelope).
-    #[error("Legacy API error: {message}")]
-    LegacyApi { message: String },
+    // ── Session API ──────────────────────────────────────────────────
+    /// Error from the session API (parsed from the `{meta: {rc, msg}}` envelope).
+    #[error("Session API error: {message}")]
+    SessionApi { message: String },
 
     // ── WebSocket ───────────────────────────────────────────────────
     /// WebSocket connection failed.

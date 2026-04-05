@@ -48,13 +48,13 @@ pub fn resolve_profile(
             let secret = resolve_api_key_with_flag(profile, profile_name, global)?;
             AuthCredentials::ApiKey(secret)
         }
-        "legacy" => {
-            let (username, password) = config::resolve_legacy_credentials(profile, profile_name)?;
+        "session" => {
+            let (username, password) = config::resolve_session_credentials(profile, profile_name)?;
             AuthCredentials::Credentials { username, password }
         }
         "hybrid" => {
             let api_key = resolve_api_key_with_flag(profile, profile_name, global)?;
-            let (username, password) = config::resolve_legacy_credentials(profile, profile_name)?;
+            let (username, password) = config::resolve_session_credentials(profile, profile_name)?;
             AuthCredentials::Hybrid {
                 api_key,
                 username,
@@ -64,7 +64,7 @@ pub fn resolve_profile(
         other => {
             return Err(CliError::Validation {
                 field: "auth_mode".into(),
-                reason: format!("expected 'integration', 'legacy', or 'hybrid', got '{other}'"),
+                reason: format!("expected 'integration', 'session', or 'hybrid', got '{other}'"),
             });
         }
     };

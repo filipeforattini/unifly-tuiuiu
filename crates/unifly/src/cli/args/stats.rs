@@ -8,19 +8,19 @@ pub struct StatsArgs {
 
 #[derive(Debug, Subcommand)]
 pub enum StatsCommand {
-    /// Site-level statistics (legacy API)
+    /// Site-level statistics (session API)
     Site(StatsQuery),
 
-    /// Per-device statistics (legacy API)
+    /// Per-device statistics (session API)
     Device(StatsQuery),
 
-    /// Per-client statistics (legacy API)
+    /// Per-client statistics (session API)
     Client(StatsQuery),
 
-    /// Gateway statistics (legacy API)
+    /// Gateway statistics (session API)
     Gateway(StatsQuery),
 
-    /// DPI traffic analysis (legacy API)
+    /// DPI traffic analysis (session API)
     Dpi {
         /// Analysis type: by-app or by-cat
         #[arg(long, default_value = "by-app", value_enum)]

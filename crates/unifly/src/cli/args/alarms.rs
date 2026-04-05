@@ -8,7 +8,7 @@ pub struct AlarmsArgs {
 
 #[derive(Debug, Subcommand)]
 pub enum AlarmsCommand {
-    /// List alarms (legacy API)
+    /// List alarms (session API)
     #[command(alias = "ls")]
     List {
         /// Only show unarchived alarms
@@ -20,12 +20,12 @@ pub enum AlarmsCommand {
         limit: u32,
     },
 
-    /// Archive a single alarm (legacy API)
+    /// Archive a single alarm (session API)
     Archive {
         /// Alarm ID
         id: String,
     },
 
-    /// Archive all alarms (legacy API)
+    /// Archive all alarms (session API)
     ArchiveAll,
 }

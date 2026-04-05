@@ -55,35 +55,35 @@ pub enum ClientsCommand {
         client: String,
     },
 
-    /// Block a client from connecting (legacy API)
+    /// Block a client from connecting (session API)
     Block {
         /// Client MAC address
         mac: String,
     },
 
-    /// Unblock a previously blocked client (legacy API)
+    /// Unblock a previously blocked client (session API)
     Unblock {
         /// Client MAC address
         mac: String,
     },
 
-    /// Disconnect/reconnect a wireless client (legacy API)
+    /// Disconnect/reconnect a wireless client (session API)
     Kick {
         /// Client MAC address
         mac: String,
     },
 
-    /// Forget a client from controller history (legacy API)
+    /// Forget a client from controller history (session API)
     Forget {
         /// Client MAC address
         mac: String,
     },
 
-    /// List all DHCP reservations (legacy API)
+    /// List all DHCP reservations (session API)
     #[command(alias = "res")]
     Reservations(ListArgs),
 
-    /// Set a fixed IP (DHCP reservation) for a client (legacy API)
+    /// Set a fixed IP (DHCP reservation) for a client (session API)
     #[command(alias = "reserve")]
     SetIp {
         /// Client MAC address
@@ -98,7 +98,7 @@ pub enum ClientsCommand {
         network: Option<String>,
     },
 
-    /// Remove a fixed IP (DHCP reservation) from a client (legacy API)
+    /// Remove a fixed IP (DHCP reservation) from a client (session API)
     #[command(alias = "unreserve")]
     RemoveIp {
         /// Client MAC address

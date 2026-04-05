@@ -17,7 +17,7 @@ use wiremock::{Mock, MockServer, ResponseTemplate};
 
 use unifly_api::{
     AuthCredentials, Controller, ControllerConfig, ControllerPlatform, CoreError, Error,
-    LegacyClient, MacAddress, TlsVerification, TransportConfig,
+    MacAddress, SessionClient, TlsVerification, TransportConfig,
 };
 
 const LEGACY_SITE_ID: &str = "site-001";
@@ -101,7 +101,7 @@ async fn mock_legacy_connect_with_events(
         .and(path("/api/login"))
         .respond_with(
             ResponseTemplate::new(200)
-                .insert_header("Set-Cookie", "unifly_session=legacy-cookie; Path=/")
+                .insert_header("Set-Cookie", "unifly_session=session-cookie; Path=/")
                 .set_body_json(json!({})),
         )
         .mount(server)
@@ -134,7 +134,7 @@ async fn mock_legacy_connect_with_events(
         .await;
 }
 
-fn api_key_legacy_client(base_url: Url, site: &str, api_key: &str) -> LegacyClient {
+fn api_key_legacy_client(base_url: Url, site: &str, api_key: &str) -> SessionClient {
     let mut headers = HeaderMap::new();
     let mut key_value = HeaderValue::from_str(api_key).unwrap();
     key_value.set_sensitive(true);
@@ -144,7 +144,7 @@ fn api_key_legacy_client(base_url: Url, site: &str, api_key: &str) -> LegacyClie
         .build_client_with_headers(headers)
         .unwrap();
 
-    LegacyClient::with_client(
+    SessionClient::with_client(
         http,
         base_url,
         site.to_owned(),
@@ -152,8 +152,8 @@ fn api_key_legacy_client(base_url: Url, site: &str, api_key: &str) -> LegacyClie
     )
 }
 
-fn session_legacy_client(base_url: Url, site: &str) -> LegacyClient {
-    LegacyClient::new(
+fn session_legacy_client(base_url: Url, site: &str) -> SessionClient {
+    SessionClient::new(
         base_url,
         site.to_owned(),
         ControllerPlatform::ClassicController,
@@ -333,7 +333,7 @@ async fn legacy_only_site_listing_remains_available() {
 
     controller.connect().await.unwrap();
 
-    assert!(controller.has_legacy_access().await);
+    assert!(controller.has_session_access().await);
     assert!(!controller.has_integration_access().await);
     assert!(controller.take_warnings().await.is_empty());
 
@@ -391,7 +391,7 @@ async fn api_key_mode_has_legacy_and_integration_access() {
 
     controller.connect().await.unwrap();
 
-    assert!(controller.has_legacy_access().await);
+    assert!(controller.has_session_access().await);
     assert!(controller.has_integration_access().await);
     assert_eq!(controller.store().client_count(), 1);
 
@@ -413,7 +413,7 @@ async fn api_key_mode_has_legacy_and_integration_access() {
         .collect();
     assert!(
         !legacy_reqs.is_empty(),
-        "expected api-key mode to exercise legacy HTTP routes"
+        "expected api-key mode to exercise session HTTP routes"
     );
     for req in legacy_reqs {
         assert_eq!(
@@ -421,17 +421,17 @@ async fn api_key_mode_has_legacy_and_integration_access() {
                 .get("x-api-key")
                 .and_then(|value| value.to_str().ok()),
             Some("the-key"),
-            "legacy request {} missing X-API-KEY",
+            "session request {} missing X-API-KEY",
             req.url.path()
         );
         assert!(
             req.headers.get("cookie").is_none(),
-            "legacy request {} should not send Cookie in api-key mode",
+            "session request {} should not send Cookie in api-key mode",
             req.url.path()
         );
         assert!(
             req.headers.get("x-csrf-token").is_none(),
-            "legacy request {} should not send X-CSRF-Token in api-key mode",
+            "session request {} should not send X-CSRF-Token in api-key mode",
             req.url.path()
         );
     }
@@ -466,27 +466,27 @@ async fn api_key_legacy_raw_mutations_skip_csrf_header() {
         .mount(&server)
         .await;
 
-    let legacy = api_key_legacy_client(
+    let session = api_key_legacy_client(
         Url::parse(&server.uri()).unwrap(),
         LEGACY_SITE_NAME,
         "the-key",
     );
 
-    legacy
+    session
         .raw_post(
             "api/s/default/cmd/devmgr",
             &json!({"cmd": "restart", "mac": "aa:bb:cc:dd:ee:ff"}),
         )
         .await
         .unwrap();
-    legacy
+    session
         .raw_put(
             "api/s/default/rest/user/user-1",
             &json!({"use_fixedip": true, "fixed_ip": "10.0.0.60"}),
         )
         .await
         .unwrap();
-    legacy
+    session
         .raw_delete("v2/api/site/default/nat/rule-1")
         .await
         .unwrap();
@@ -540,19 +540,19 @@ async fn legacy_401_without_cookie_jar_reports_invalid_api_key() {
         .mount(&server)
         .await;
 
-    let legacy = api_key_legacy_client(
+    let session = api_key_legacy_client(
         Url::parse(&server.uri()).unwrap(),
         LEGACY_SITE_NAME,
         "the-key",
     );
 
-    let listed = legacy.list_devices().await;
+    let listed = session.list_devices().await;
     assert!(
         matches!(listed, Err(Error::InvalidApiKey)),
         "expected InvalidApiKey for envelope request, got: {listed:?}"
     );
 
-    let raw = legacy.raw_get("api/s/default/stat/device").await;
+    let raw = session.raw_get("api/s/default/stat/device").await;
     assert!(
         matches!(raw, Err(Error::InvalidApiKey)),
         "expected InvalidApiKey for raw request, got: {raw:?}"
@@ -572,15 +572,15 @@ async fn legacy_401_with_cookie_jar_reports_session_expired() {
         .mount(&server)
         .await;
 
-    let legacy = session_legacy_client(Url::parse(&server.uri()).unwrap(), LEGACY_SITE_NAME);
+    let session = session_legacy_client(Url::parse(&server.uri()).unwrap(), LEGACY_SITE_NAME);
 
-    let listed = legacy.list_devices().await;
+    let listed = session.list_devices().await;
     assert!(
         matches!(listed, Err(Error::SessionExpired)),
         "expected SessionExpired for envelope request, got: {listed:?}"
     );
 
-    let raw = legacy.raw_get("api/s/default/stat/device").await;
+    let raw = session.raw_get("api/s/default/stat/device").await;
     assert!(
         matches!(raw, Err(Error::SessionExpired)),
         "expected SessionExpired for raw request, got: {raw:?}"
@@ -611,8 +611,8 @@ async fn websocket_enabled_for_events_watch_path() {
 
     assert_eq!(path, "/wss/s/default/events");
     assert!(
-        cookie.contains("unifly_session=legacy-cookie"),
-        "expected websocket cookie header to carry the legacy session, got: {cookie}"
+        cookie.contains("unifly_session=session-cookie"),
+        "expected websocket cookie header to carry the session session, got: {cookie}"
     );
 
     controller.disconnect().await;
@@ -650,7 +650,7 @@ async fn full_refresh_does_not_rebroadcast_duplicate_legacy_events() {
 
     let first_event = timeout(Duration::from_secs(1), events.recv())
         .await
-        .expect("initial refresh should broadcast legacy events")
+        .expect("initial refresh should broadcast session events")
         .expect("broadcast channel should stay open");
     assert_eq!(first_event.message, "Switch lost contact");
     assert_eq!(controller.events_snapshot().len(), 1);
@@ -661,7 +661,7 @@ async fn full_refresh_does_not_rebroadcast_duplicate_legacy_events() {
         timeout(Duration::from_millis(250), events.recv())
             .await
             .is_err(),
-        "refresh should not rebroadcast already-seen legacy events"
+        "refresh should not rebroadcast already-seen session events"
     );
     assert_eq!(controller.events_snapshot().len(), 1);
 
@@ -737,7 +737,7 @@ async fn handle_connection(
         write_http_response(
             &mut stream,
             200,
-            &[("Set-Cookie", "unifly_session=legacy-cookie; Path=/")],
+            &[("Set-Cookie", "unifly_session=session-cookie; Path=/")],
             b"{}",
         )
         .await?;

@@ -104,7 +104,7 @@ impl App {
             if data.dpi_apps.is_empty()
                 && let Ok(raw) = controller.get_dpi_stats("by_app", None).await
             {
-                data.dpi_apps = parse_legacy_dpi_apps(&raw);
+                data.dpi_apps = parse_session_dpi_apps(&raw);
             }
 
             if let Ok(categories) = dpi_categories_res
@@ -121,7 +121,7 @@ impl App {
             if data.dpi_categories.is_empty()
                 && let Ok(raw) = controller.get_dpi_stats("by_cat", None).await
             {
-                data.dpi_categories = parse_legacy_dpi_categories(&raw);
+                data.dpi_categories = parse_session_dpi_categories(&raw);
             }
 
             let _ = tx.send(Action::StatsUpdated(data));
@@ -156,7 +156,7 @@ fn dpi_category_name(id: u64) -> &'static str {
 }
 
 /// Parse Legacy `stat/stadpi` `by_app` response into `(name, total_bytes)` tuples.
-fn parse_legacy_dpi_apps(raw: &[serde_json::Value]) -> Vec<(String, u64)> {
+fn parse_session_dpi_apps(raw: &[serde_json::Value]) -> Vec<(String, u64)> {
     let mut apps: Vec<(String, u64)> = Vec::new();
     for entry in raw {
         if let Some(by_app) = entry.get("by_app").and_then(|value| value.as_array()) {
@@ -192,7 +192,7 @@ fn parse_legacy_dpi_apps(raw: &[serde_json::Value]) -> Vec<(String, u64)> {
 }
 
 /// Parse Legacy `stat/stadpi` `by_cat` response into `(name, total_bytes)` tuples.
-fn parse_legacy_dpi_categories(raw: &[serde_json::Value]) -> Vec<(String, u64)> {
+fn parse_session_dpi_categories(raw: &[serde_json::Value]) -> Vec<(String, u64)> {
     let mut categories: Vec<(String, u64)> = Vec::new();
     for entry in raw {
         if let Some(by_cat) = entry.get("by_cat").and_then(|value| value.as_array()) {

@@ -1,26 +1,26 @@
-// Legacy API response types
+// Session API response types
 //
-// Models for the UniFi controller's legacy JSON API. All responses are wrapped
-// in the `LegacyResponse<T>` envelope. Fields use `#[serde(default)]` liberally
+// Models for the UniFi controller's session JSON API. All responses are wrapped
+// in the `SessionResponse<T>` envelope. Fields use `#[serde(default)]` liberally
 // because the API is inconsistent about field presence across firmware versions.
 
 use serde::{Deserialize, Serialize};
 
 // ── Response Envelope ────────────────────────────────────────────────
 
-/// Standard UniFi legacy API response envelope.
+/// Standard UniFi session API response envelope.
 ///
-/// Every legacy endpoint wraps its payload:
+/// Every session endpoint wraps its payload:
 /// ```json
 /// { "meta": { "rc": "ok", "msg": "optional" }, "data": [...] }
 /// ```
 #[derive(Debug, Deserialize)]
-pub struct LegacyResponse<T> {
+pub struct SessionResponse<T> {
     pub meta: Meta,
     pub data: Vec<T>,
 }
 
-/// Metadata from the legacy envelope. `rc` == `"ok"` means success.
+/// Metadata from the session envelope. `rc` == `"ok"` means success.
 #[derive(Debug, Deserialize)]
 pub struct Meta {
     pub rc: String,
@@ -32,10 +32,10 @@ pub struct Meta {
 
 /// Full device object from `stat/device`.
 ///
-/// The legacy API can return 100+ fields per device. We model the most
+/// The session API can return 100+ fields per device. We model the most
 /// commonly needed ones explicitly; everything else lands in `extra`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct LegacyDevice {
+pub struct SessionDevice {
     #[serde(rename = "_id")]
     pub id: String,
     pub mac: String,
@@ -77,7 +77,7 @@ pub struct LegacyDevice {
     pub extra: serde_json::Map<String, serde_json::Value>,
 }
 
-/// System statistics nested inside `LegacyDevice`.
+/// System statistics nested inside `SessionDevice`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SysStats {
     #[serde(default, rename = "loadavg_1")]
@@ -98,7 +98,7 @@ pub struct SysStats {
 
 /// Connected client from `stat/sta`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct LegacyClientEntry {
+pub struct SessionClientEntry {
     #[serde(rename = "_id")]
     pub id: String,
     pub mac: String,
@@ -173,7 +173,7 @@ pub struct LegacyClientEntry {
 /// names, notes, and DHCP reservations. Unlike `stat/sta` (currently
 /// connected stations), `rest/user` includes offline/historical clients.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct LegacyUserEntry {
+pub struct SessionUserEntry {
     #[serde(rename = "_id")]
     pub id: String,
     pub mac: String,
@@ -202,7 +202,7 @@ pub struct LegacyUserEntry {
 
 /// Site object from `/api/self/sites`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct LegacySite {
+pub struct SessionSite {
     #[serde(rename = "_id")]
     pub id: String,
     pub name: String,
@@ -219,7 +219,7 @@ pub struct LegacySite {
 
 /// Event object from `stat/event`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct LegacyEvent {
+pub struct SessionEvent {
     #[serde(rename = "_id")]
     pub id: String,
     #[serde(default)]
@@ -241,7 +241,7 @@ pub struct LegacyEvent {
 
 /// Alarm object from `stat/alarm`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct LegacyAlarm {
+pub struct SessionAlarm {
     #[serde(rename = "_id")]
     pub id: String,
     #[serde(default)]

@@ -1,6 +1,6 @@
-// Legacy API client modules
+// Session API client modules
 //
-// Hand-written client for the UniFi controller's legacy (non-OpenAPI) endpoints.
+// Hand-written client for the UniFi controller's session (non-OpenAPI) endpoints.
 // Covers stat/, cmd/, rest/, and system-level operations wrapped in the
 // standard `{ meta: { rc, msg }, data: [...] }` envelope.
 
@@ -16,4 +16,4 @@ pub mod sites;
 pub mod stats;
 pub mod system;
 
-pub use client::LegacyClient;
+pub use client::SessionClient;

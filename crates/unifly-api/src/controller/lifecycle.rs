@@ -11,7 +11,7 @@ use secrecy::ExposeSecret;
 use crate::config::AuthCredentials;
 use crate::core_error::CoreError;
 use crate::websocket::{ReconnectConfig, WebSocketHandle};
-use crate::{IntegrationClient, LegacyClient};
+use crate::{IntegrationClient, SessionClient};
 
 use super::support::{build_transport, resolve_site_id, tls_to_transport};
 use super::{COMMAND_CHANNEL_SIZE, ConnectionState, Controller, refresh};
@@ -41,7 +41,7 @@ impl Controller {
         match &config.auth {
             AuthCredentials::ApiKey(api_key) => {
                 // Detect platform so we use the right URL prefix
-                let platform = LegacyClient::detect_platform(&config.url).await?;
+                let platform = SessionClient::detect_platform(&config.url).await?;
                 debug!(?platform, "detected controller platform");
 
                 // Integration API client (preferred)
@@ -59,8 +59,8 @@ impl Controller {
                 *self.inner.integration_client.lock().await = Some(Arc::new(integration));
                 *self.inner.site_id.lock().await = Some(site_id);
 
-                // Also create a legacy client using the same API key.
-                // UniFi OS accepts X-API-KEY on legacy endpoints, which
+                // Also create a session client using the same API key.
+                // UniFi OS accepts X-API-KEY on session endpoints, which
                 // gives us access to /rest/user (DHCP reservations),
                 // /stat/sta (client stats), events, and health data.
                 let mut headers = HeaderMap::new();
@@ -73,20 +73,20 @@ impl Controller {
                 key_value.set_sensitive(true);
                 headers.insert("X-API-KEY", key_value);
                 let legacy_http = transport.build_client_with_headers(headers)?;
-                let legacy = LegacyClient::with_client(
+                let session = SessionClient::with_client(
                     legacy_http,
                     config.url.clone(),
                     config.site.clone(),
                     platform,
                 );
-                *self.inner.legacy_client.lock().await = Some(Arc::new(legacy));
+                *self.inner.session_client.lock().await = Some(Arc::new(session));
             }
             AuthCredentials::Credentials { username, password } => {
-                // Legacy-only auth
-                let platform = LegacyClient::detect_platform(&config.url).await?;
+                // Session-only auth
+                let platform = SessionClient::detect_platform(&config.url).await?;
                 debug!(?platform, "detected controller platform");
 
-                let client = LegacyClient::new(
+                let client = SessionClient::new(
                     config.url.clone(),
                     config.site.clone(),
                     platform,
@@ -105,15 +105,15 @@ impl Controller {
                 }
                 debug!("session authentication successful");
 
-                *self.inner.legacy_client.lock().await = Some(Arc::new(client));
+                *self.inner.session_client.lock().await = Some(Arc::new(client));
             }
             AuthCredentials::Hybrid {
                 api_key,
                 username,
                 password,
             } => {
-                // Hybrid: both Integration API (API key) and Legacy API (session auth)
-                let platform = LegacyClient::detect_platform(&config.url).await?;
+                // Hybrid: both Integration API (API key) and Session API (session auth)
+                let platform = SessionClient::detect_platform(&config.url).await?;
                 debug!(?platform, "detected controller platform (hybrid)");
 
                 // Integration API client
@@ -130,10 +130,10 @@ impl Controller {
                 *self.inner.integration_client.lock().await = Some(Arc::new(integration));
                 *self.inner.site_id.lock().await = Some(site_id);
 
-                // Legacy API client — attempt login but degrade gracefully
+                // Session API client — attempt login but degrade gracefully
                 // if it fails. The Integration API is the primary surface;
                 // Legacy adds events, stats, and admin ops.
-                match LegacyClient::new(
+                match SessionClient::new(
                     config.url.clone(),
                     config.site.clone(),
                     platform,
@@ -157,8 +157,8 @@ impl Controller {
                         };
                         match login_result {
                             Ok(()) => {
-                                debug!("legacy session authentication successful (hybrid)");
-                                *self.inner.legacy_client.lock().await = Some(Arc::new(client));
+                                debug!("session session authentication successful (hybrid)");
+                                *self.inner.session_client.lock().await = Some(Arc::new(client));
                             }
                             Err(e) => {
                                 let msg = format!(
@@ -241,12 +241,12 @@ impl Controller {
     ///
     /// Non-fatal on failure — the TUI falls back to polling.
     async fn spawn_websocket(&self, cancel: &CancellationToken, handles: &mut Vec<JoinHandle<()>>) {
-        let Some(legacy) = self.inner.legacy_client.lock().await.clone() else {
-            debug!("no legacy client — WebSocket unavailable");
+        let Some(session) = self.inner.session_client.lock().await.clone() else {
+            debug!("no session client — WebSocket unavailable");
             return;
         };
 
-        let platform = legacy.platform();
+        let platform = session.platform();
         let Some(ws_path_template) = platform.websocket_path() else {
             debug!("platform does not support WebSocket");
             return;
@@ -272,10 +272,10 @@ impl Controller {
             }
         };
 
-        let cookie = legacy.cookie_header();
+        let cookie = session.cookie_header();
 
         if cookie.is_none() {
-            warn!("no session cookie — WebSocket requires legacy auth (skipping)");
+            warn!("no session cookie — WebSocket requires session auth (skipping)");
             return;
         }
 
@@ -352,7 +352,7 @@ impl Controller {
             let _ = handle.await;
         }
 
-        let legacy = self.inner.legacy_client.lock().await.clone();
+        let session = self.inner.session_client.lock().await.clone();
 
         // Skip logout when session caching is active — we want the
         // session cookie to survive for the next CLI invocation.
@@ -363,13 +363,13 @@ impl Controller {
                 self.inner.config.auth,
                 AuthCredentials::Credentials { .. } | AuthCredentials::Hybrid { .. }
             )
-            && let Some(client) = legacy
+            && let Some(client) = session
             && let Err(error) = client.logout().await
         {
             warn!(error = %error, "logout failed (non-fatal)");
         }
 
-        *self.inner.legacy_client.lock().await = None;
+        *self.inner.session_client.lock().await = None;
         *self.inner.integration_client.lock().await = None;
         *self.inner.site_id.lock().await = None;
 
@@ -390,10 +390,10 @@ impl Controller {
 /// Build a `SessionCache` if caching is enabled for this config.
 fn build_session_cache(
     config: &crate::config::ControllerConfig,
-) -> Option<crate::legacy::session_cache::SessionCache> {
+) -> Option<crate::session::session_cache::SessionCache> {
     if config.no_session_cache {
         return None;
     }
     let name = config.profile_name.as_deref()?;
-    crate::legacy::session_cache::SessionCache::new(name, config.url.as_str())
+    crate::session::session_cache::SessionCache::new(name, config.url.as_str())
 }

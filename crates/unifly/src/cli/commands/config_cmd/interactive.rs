@@ -149,11 +149,11 @@ pub(super) fn run_init() -> Result<(), CliError> {
                 "Password",
             )?;
 
-            ("legacy".to_string(), None, Some(user), password_field)
+            ("session".to_string(), None, Some(user), password_field)
         }
         _ => {
-            eprintln!("\n   Hybrid mode uses an API key for the Integration API");
-            eprintln!("   and username/password for the Legacy API (stats, events, alarms).\n");
+            eprintln!("\n   Hybrid mode uses an API key for the Integration + Session HTTP APIs");
+            eprintln!("   and username/password for the Session WebSocket (live events watch).\n");
 
             let key = rpassword::prompt_password("API key: ").map_err(prompt_err)?;
 

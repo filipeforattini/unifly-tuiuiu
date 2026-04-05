@@ -116,7 +116,7 @@ pub enum CliError {
     #[error("'{feature}' is not yet implemented")]
     #[diagnostic(
         code(unifi::not_implemented),
-        help("This feature requires direct Legacy API access, planned for a future release.")
+        help("This feature requires direct Session API access, planned for a future release.")
     )]
     NotYetImplemented { feature: String },
 

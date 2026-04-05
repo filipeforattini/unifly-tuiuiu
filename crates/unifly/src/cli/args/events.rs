@@ -8,7 +8,7 @@ pub struct EventsArgs {
 
 #[derive(Debug, Subcommand)]
 pub enum EventsCommand {
-    /// List recent events (legacy API)
+    /// List recent events (session API)
     #[command(alias = "ls")]
     List {
         /// Max results
@@ -20,7 +20,7 @@ pub enum EventsCommand {
         within: u32,
     },
 
-    /// Stream real-time events via WebSocket (legacy API)
+    /// Stream real-time events via WebSocket (session API)
     Watch {
         /// Event types to filter (comma-separated)
         #[arg(long, value_delimiter = ',')]

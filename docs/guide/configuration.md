@@ -27,7 +27,7 @@ graph TD
     CONFIG["config.toml"] --> DEFAULT["default_profile = 'home'"]
     CONFIG --> P1["[profiles.home]<br/>UDM Pro, Hybrid"]
     CONFIG --> P2["[profiles.office]<br/>Cloud Key, API Key"]
-    CONFIG --> P3["[profiles.warehouse]<br/>Self-hosted, Legacy"]
+    CONFIG --> P3["[profiles.warehouse]<br/>Self-hosted, Session"]
 
     style P1 fill:#50fa7b,color:#0a0a0f
     style P2 fill:#80ffea,color:#0a0a0f
@@ -70,7 +70,7 @@ insecure = true  # Self-signed cert on internal controller
 [profiles.warehouse]
 controller = "https://warehouse.example.com:8443"
 site = "default"
-auth_mode = "legacy"
+auth_mode = "session"
 username = "readonly-admin"
 ca_cert = "/etc/ssl/certs/warehouse-ca.pem"
 timeout = 45
@@ -82,8 +82,8 @@ timeout = 45
 | ------------- | --------------------------------- | ------------------------------------------------- |
 | `controller`  | URL                               | Controller address (include port if non-standard) |
 | `site`        | string                            | Site name or UUID. Default: `default`             |
-| `auth_mode`   | `integration`, `legacy`, `hybrid` | Which APIs to authenticate against                |
-| `username`    | string                            | Legacy/Hybrid login username                      |
+| `auth_mode`   | `integration`, `session`, `hybrid` | Which APIs to authenticate against                |
+| `username`    | string                            | Session/Hybrid login username                      |
 | `api_key`     | string                            | Integration API key (prefer `api_key_env`)        |
 | `api_key_env` | string                            | Env var name containing the API key               |
 | `totp_env`    | string                            | Env var name for MFA one-time password            |
@@ -119,8 +119,8 @@ All settings can be overridden via environment variables. Useful for CI/CD, scri
 | ---------------- | ------------------------------------- |
 | `UNIFI_API_KEY`  | Integration API key                   |
 | `UNIFI_URL`      | Controller URL                        |
-| `UNIFI_USERNAME` | Legacy API username                   |
-| `UNIFI_PASSWORD` | Legacy API password                   |
+| `UNIFI_USERNAME` | Session API username                   |
+| `UNIFI_PASSWORD` | Session API password                   |
 | `UNIFI_PROFILE`  | Active profile name                   |
 | `UNIFI_SITE`     | Target site name or UUID              |
 | `UNIFI_OUTPUT`   | Default output format                 |
@@ -201,7 +201,7 @@ Only use `--insecure` with controllers you trust. It disables TLS certificate ve
 
 ## Session Cache
 
-Unifly caches Legacy API sessions across commands for speed. If you rotate a password or encounter stale sessions:
+Unifly caches Session API sessions across commands for speed. If you rotate a password or encounter stale sessions:
 
 ```bash
 unifly --no-cache devices list    # Force a fresh login

@@ -3,14 +3,14 @@ use serde_json::json;
 use crate::command::{Command, CommandResult};
 use crate::core_error::CoreError;
 
-use super::super::{CommandContext, require_legacy};
+use super::super::{CommandContext, require_session};
 
 pub(super) async fn route(ctx: &CommandContext, cmd: Command) -> Result<CommandResult, CoreError> {
-    let legacy = ctx.legacy.as_ref();
+    let session = ctx.session.as_ref();
 
     match cmd {
         Command::CreateNatPolicy(req) => {
-            let legacy = require_legacy(legacy)?;
+            let session = require_session(session)?;
 
             let nat_type = match req.nat_type.to_lowercase().as_str() {
                 "masquerade" => "MASQUERADE",
@@ -76,12 +76,12 @@ pub(super) async fn route(ctx: &CommandContext, cmd: Command) -> Result<CommandR
             body["destination_filter"] =
                 build_filter(req.dst_address.as_deref(), req.dst_port.as_deref());
 
-            legacy.create_nat_rule(&body).await?;
+            session.create_nat_rule(&body).await?;
             Ok(CommandResult::Ok)
         }
         Command::DeleteNatPolicy { id } => {
-            let legacy = require_legacy(legacy)?;
-            legacy.delete_nat_rule(&id.to_string()).await?;
+            let session = require_session(session)?;
+            session.delete_nat_rule(&id.to_string()).await?;
             Ok(CommandResult::Ok)
         }
         _ => unreachable!("nat::route received non-NAT command"),

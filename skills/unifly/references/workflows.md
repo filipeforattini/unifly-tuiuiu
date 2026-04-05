@@ -516,14 +516,14 @@ unifly firewall policies create \
 ## Raw API Escape Hatch
 
 When unifly does not wrap an endpoint yet, fall back to `unifly api`. It
-routes through the Legacy client with CSRF handling.
+routes through the Session client with CSRF handling.
 
 ```bash
-# Query raw traffic flow statistics (Legacy v2 endpoint)
+# Query raw traffic flow statistics (Session v2 endpoint)
 unifly api "v2/api/site/default/traffic-flow-latest-statistics" -o json | \
   jq '.[] | {mac, rx, tx}'
 
-# Force-reconnect a client via Legacy command endpoint
+# Force-reconnect a client via Session command endpoint
 unifly api "cmd/stamgr" -m post -d '{"cmd":"kick-sta","mac":"aa:bb:cc:dd:ee:ff"}'
 
 # Raw Integration API call
@@ -574,7 +574,7 @@ unifly networks update "$NETWORK_ID" --name "Updated Name"
 ### Fresh Login After Password Rotation
 
 ```bash
-# Force a fresh Legacy login, bypassing the session cache
+# Force a fresh Session login, bypassing the session cache
 unifly --no-cache devices list
 ```
 
@@ -593,7 +593,7 @@ jq -r '.id'`.
 7. **Use profiles** (`-p home`) to target different controllers without
    reconfiguring.
 8. **Check `unifly config show`** to confirm the resolved auth mode
-   before running commands that depend on Legacy or Integration
+   before running commands that depend on Session or Integration
    specifically.
 9. **For destructive operations** (delete, reboot, poweroff, purge),
    summarize the planned change to the user before running even with

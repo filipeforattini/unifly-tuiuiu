@@ -141,7 +141,7 @@ impl From<crate::error::Error> for CoreError {
                 code,
                 status: Some(status),
             },
-            crate::error::Error::LegacyApi { message } => CoreError::Api {
+            crate::error::Error::SessionApi { message } => CoreError::Api {
                 message,
                 code: None,
                 status: None,

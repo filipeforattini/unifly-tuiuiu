@@ -59,7 +59,7 @@ pub enum StatsPeriod {
 }
 
 impl StatsPeriod {
-    /// Legacy API interval string for `stat/report` endpoints.
+    /// Session API interval string for `stat/report` endpoints.
     pub fn api_interval(self) -> &'static str {
         match self {
             Self::OneHour | Self::TwentyFourHours => "5minutes",

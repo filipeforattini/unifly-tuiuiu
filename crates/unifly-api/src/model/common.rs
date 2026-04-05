@@ -16,7 +16,7 @@ pub enum EntityOrigin {
 pub enum DataSource {
     #[default]
     IntegrationApi,
-    LegacyApi,
+    SessionApi,
     WebSocket,
     Merged,
 }

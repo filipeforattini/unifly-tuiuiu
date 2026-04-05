@@ -6,7 +6,7 @@ use crate::core_error::CoreError;
 use crate::model::{EntityId, HealthSummary, MacAddress};
 use crate::store::DataStore;
 use crate::transport::{TlsMode, TransportConfig};
-use crate::{IntegrationClient, LegacyClient};
+use crate::{IntegrationClient, SessionClient};
 
 use super::Controller;
 
@@ -38,7 +38,7 @@ fn pick_ipv6_from_value(value: &serde_json::Value) -> Option<String> {
     first_link_local
 }
 
-pub(super) fn parse_legacy_device_wan_ipv6(
+pub(super) fn parse_session_device_wan_ipv6(
     extra: &serde_json::Map<String, serde_json::Value>,
 ) -> Option<String> {
     if let Some(value) = extra
@@ -101,7 +101,7 @@ pub(super) fn build_transport(config: &ControllerConfig) -> TransportConfig {
     TransportConfig {
         tls: tls_to_transport(&config.tls),
         timeout: config.timeout,
-        cookie_jar: None, // LegacyClient::new adds one automatically
+        cookie_jar: None, // SessionClient::new adds one automatically
     }
 }
 
@@ -142,15 +142,15 @@ pub(super) async fn resolve_site_id(
 /// Extract a `Uuid` from an `EntityId`, or return an error.
 pub(super) fn require_uuid(id: &EntityId) -> Result<uuid::Uuid, CoreError> {
     id.as_uuid().copied().ok_or_else(|| CoreError::Unsupported {
-        operation: "Integration API operation on legacy ID".into(),
+        operation: "Integration API operation on session ID".into(),
         required: "UUID-based entity ID".into(),
     })
 }
 
-pub(super) fn require_legacy(
-    legacy: Option<&Arc<LegacyClient>>,
-) -> Result<&LegacyClient, CoreError> {
-    legacy
+pub(super) fn require_session(
+    session: Option<&Arc<SessionClient>>,
+) -> Result<&SessionClient, CoreError> {
+    session
         .map(Arc::as_ref)
         .ok_or_else(|| CoreError::Unsupported {
             operation: "Legacy API operation".into(),

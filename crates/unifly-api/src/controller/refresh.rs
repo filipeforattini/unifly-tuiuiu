@@ -13,7 +13,7 @@ use crate::model::{
 };
 use crate::store::{DataStore, event_storage_key};
 
-use super::support::{convert_health_summaries, parse_legacy_device_wan_ipv6};
+use super::support::{convert_health_summaries, parse_session_device_wan_ipv6};
 use super::{Controller, REFRESH_DETAIL_CONCURRENCY};
 
 impl Controller {
@@ -140,28 +140,35 @@ impl Controller {
             };
 
             #[allow(clippy::type_complexity)]
-            let (legacy_events, legacy_health, legacy_clients, legacy_devices, legacy_users, nat): (
+            let (
+                session_events,
+                session_health,
+                session_clients,
+                session_devices,
+                session_users,
+                nat,
+            ): (
                 Vec<Event>,
                 Vec<HealthSummary>,
-                Vec<crate::legacy::models::LegacyClientEntry>,
-                Vec<crate::legacy::models::LegacyDevice>,
-                Vec<crate::legacy::models::LegacyUserEntry>,
+                Vec<crate::session::models::SessionClientEntry>,
+                Vec<crate::session::models::SessionDevice>,
+                Vec<crate::session::models::SessionUserEntry>,
                 Vec<NatPolicy>,
-            ) = match self.inner.legacy_client.lock().await.clone() {
-                Some(legacy) => {
+            ) = match self.inner.session_client.lock().await.clone() {
+                Some(session) => {
                     let (events_res, health_res, clients_res, devices_res, users_res, nat_res) = tokio::join!(
-                        legacy.list_events(Some(100)),
-                        legacy.get_health(),
-                        legacy.list_clients(),
-                        legacy.list_devices(),
-                        legacy.list_users(),
-                        legacy.list_nat_rules(),
+                        session.list_events(Some(100)),
+                        session.get_health(),
+                        session.list_clients(),
+                        session.list_devices(),
+                        session.list_users(),
+                        session.list_nat_rules(),
                     );
 
                     let events = match events_res {
                         Ok(raw) => raw.into_iter().map(Event::from).collect(),
                         Err(error) => {
-                            warn!(error = %error, "legacy event fetch failed (non-fatal)");
+                            warn!(error = %error, "session event fetch failed (non-fatal)");
                             Vec::new()
                         }
                     };
@@ -169,31 +176,31 @@ impl Controller {
                     let health = match health_res {
                         Ok(raw) => convert_health_summaries(raw),
                         Err(error) => {
-                            warn!(error = %error, "legacy health fetch failed (non-fatal)");
+                            warn!(error = %error, "session health fetch failed (non-fatal)");
                             Vec::new()
                         }
                     };
 
-                    let legacy_clients = match clients_res {
+                    let session_clients = match clients_res {
                         Ok(raw) => raw,
                         Err(error) => {
-                            warn!(error = %error, "legacy client fetch failed (non-fatal)");
+                            warn!(error = %error, "session client fetch failed (non-fatal)");
                             Vec::new()
                         }
                     };
 
-                    let legacy_devices = match devices_res {
+                    let session_devices = match devices_res {
                         Ok(raw) => raw,
                         Err(error) => {
-                            warn!(error = %error, "legacy device fetch failed (non-fatal)");
+                            warn!(error = %error, "session device fetch failed (non-fatal)");
                             Vec::new()
                         }
                     };
 
-                    let legacy_users = match users_res {
+                    let session_users = match users_res {
                         Ok(raw) => raw,
                         Err(error) => {
-                            warn!(error = %error, "legacy user fetch failed (non-fatal)");
+                            warn!(error = %error, "session user fetch failed (non-fatal)");
                             Vec::new()
                         }
                     };
@@ -209,41 +216,55 @@ impl Controller {
                         }
                     };
 
-                    (events, health, legacy_clients, legacy_devices, legacy_users, nat)
+                    (
+                        events,
+                        health,
+                        session_clients,
+                        session_devices,
+                        session_users,
+                        nat,
+                    )
                 }
-                None => (Vec::new(), Vec::new(), Vec::new(), Vec::new(), Vec::new(), Vec::new()),
+                None => (
+                    Vec::new(),
+                    Vec::new(),
+                    Vec::new(),
+                    Vec::new(),
+                    Vec::new(),
+                    Vec::new(),
+                ),
             };
 
-            if !legacy_clients.is_empty() {
-                let legacy_by_ip: HashMap<&str, &crate::legacy::models::LegacyClientEntry> =
-                    legacy_clients
+            if !session_clients.is_empty() {
+                let session_by_ip: HashMap<&str, &crate::session::models::SessionClientEntry> =
+                    session_clients
                         .iter()
                         .filter_map(|client| client.ip.as_deref().map(|ip| (ip, client)))
                         .collect();
                 let mut merged = 0u32;
                 for client in &mut clients {
                     let ip_key = client.ip.map(|ip| ip.to_string());
-                    if let Some(legacy_client) =
-                        ip_key.as_deref().and_then(|ip| legacy_by_ip.get(ip))
+                    if let Some(session_client) =
+                        ip_key.as_deref().and_then(|ip| session_by_ip.get(ip))
                     {
                         if client.tx_bytes.is_none() {
-                            client.tx_bytes = legacy_client
+                            client.tx_bytes = session_client
                                 .tx_bytes
                                 .and_then(|bytes| u64::try_from(bytes).ok());
                         }
                         if client.rx_bytes.is_none() {
-                            client.rx_bytes = legacy_client
+                            client.rx_bytes = session_client
                                 .rx_bytes
                                 .and_then(|bytes| u64::try_from(bytes).ok());
                         }
                         if client.hostname.is_none() {
-                            client.hostname.clone_from(&legacy_client.hostname);
+                            client.hostname.clone_from(&session_client.hostname);
                         }
                         if client.wireless.is_none() {
-                            let legacy_client: Client = Client::from((*legacy_client).clone());
-                            client.wireless = legacy_client.wireless;
+                            let session_client: Client = Client::from((*session_client).clone());
+                            client.wireless = session_client.wireless;
                             if client.uplink_device_mac.is_none() {
-                                client.uplink_device_mac = legacy_client.uplink_device_mac;
+                                client.uplink_device_mac = session_client.uplink_device_mac;
                             }
                         }
                         merged += 1;
@@ -251,21 +272,21 @@ impl Controller {
                 }
                 debug!(
                     total_clients = clients.len(),
-                    legacy_available = legacy_by_ip.len(),
+                    legacy_available = session_by_ip.len(),
                     merged,
                     "client traffic merge (by IP)"
                 );
             }
 
-            if !legacy_users.is_empty() {
-                let users_by_mac: HashMap<String, &crate::legacy::models::LegacyUserEntry> =
-                    legacy_users
+            if !session_users.is_empty() {
+                let users_by_mac: HashMap<String, &crate::session::models::SessionUserEntry> =
+                    session_users
                         .iter()
                         .map(|user| (user.mac.to_lowercase(), user))
                         .collect();
                 let mut merged_users = 0u32;
                 for client in &mut clients {
-                    // Try MAC first, then fall back to matching the legacy
+                    // Try MAC first, then fall back to matching the session
                     // client entry (already joined by IP) whose MAC maps to
                     // a user record. The Integration API may return UUIDs
                     // instead of real MACs when access.macAddress is absent.
@@ -273,10 +294,10 @@ impl Controller {
                         .get(&client.mac.as_str().to_lowercase())
                         .or_else(|| {
                             let ip_str = client.ip.map(|ip| ip.to_string())?;
-                            let legacy_client = legacy_clients
+                            let session_client = session_clients
                                 .iter()
                                 .find(|lc| lc.ip.as_deref() == Some(ip_str.as_str()))?;
-                            users_by_mac.get(&legacy_client.mac.to_lowercase())
+                            users_by_mac.get(&session_client.mac.to_lowercase())
                         });
                     if let Some(user) = user {
                         client.use_fixedip = user.use_fixedip.unwrap_or(false);
@@ -292,34 +313,34 @@ impl Controller {
                 );
             }
 
-            if !legacy_devices.is_empty() {
-                let legacy_by_mac: HashMap<&str, &crate::legacy::models::LegacyDevice> =
-                    legacy_devices
+            if !session_devices.is_empty() {
+                let session_by_mac: HashMap<&str, &crate::session::models::SessionDevice> =
+                    session_devices
                         .iter()
                         .map(|device| (device.mac.as_str(), device))
                         .collect();
                 for device in &mut devices {
-                    if let Some(legacy_device) = legacy_by_mac.get(device.mac.as_str()) {
+                    if let Some(legacy_device) = session_by_mac.get(device.mac.as_str()) {
                         if device.client_count.is_none() {
                             device.client_count = legacy_device
                                 .num_sta
                                 .and_then(|count| count.try_into().ok());
                         }
                         if device.wan_ipv6.is_none() {
-                            device.wan_ipv6 = parse_legacy_device_wan_ipv6(&legacy_device.extra);
+                            device.wan_ipv6 = parse_session_device_wan_ipv6(&legacy_device.extra);
                         }
                     }
                 }
             }
 
-            if !legacy_health.is_empty() {
+            if !session_health.is_empty() {
                 self.inner
                     .store
                     .site_health
-                    .send_modify(|health| *health = Arc::new(legacy_health));
+                    .send_modify(|health| *health = Arc::new(session_health));
             }
 
-            let fresh_legacy_events = unseen_events(self.store(), &legacy_events);
+            let fresh_legacy_events = unseen_events(self.store(), &session_events);
 
             self.inner
                 .store
@@ -335,7 +356,7 @@ impl Controller {
                     dns,
                     vouchers,
                     sites,
-                    events: legacy_events,
+                    events: session_events,
                     traffic_matching_lists,
                 });
 
@@ -343,19 +364,19 @@ impl Controller {
                 let _ = self.inner.event_tx.send(Arc::new(event));
             }
         } else {
-            let legacy = self
+            let session = self
                 .inner
-                .legacy_client
+                .session_client
                 .lock()
                 .await
                 .clone()
                 .ok_or(CoreError::ControllerDisconnected)?;
 
             let (devices_res, clients_res, events_res, sites_res) = tokio::join!(
-                legacy.list_devices(),
-                legacy.list_clients(),
-                legacy.list_events(Some(100)),
-                legacy.list_sites(),
+                session.list_devices(),
+                session.list_clients(),
+                session.list_events(Some(100)),
+                session.list_sites(),
             );
 
             let devices: Vec<Device> = devices_res?.into_iter().map(Device::from).collect();

@@ -2,7 +2,7 @@
 
 Every command supports `--help` for exhaustive flag listings. This page documents subcommands, key flags, and gotchas you won't find in `--help`.
 
-**API legend:** **I** = Integration API (API key). **L** = Legacy API (username/password). **H** = Works in any mode, enriched by Hybrid.
+**API legend:** **I** = Integration API (API key). **L** = Session API (username/password). **H** = Works in any mode, enriched by Hybrid.
 
 ## Commands
 
@@ -58,7 +58,7 @@ unifly devices speedtest                        # WAN speed test (gateway only)
 unifly devices tags                             # List device tags
 ```
 
-Gotchas: `restart`, `locate`, `upgrade`, `provision`, `speedtest`, and `port-cycle` require Legacy API access. `list` and `get` work with any auth mode but return richer data in Hybrid (client count, uplink MAC).
+Gotchas: `restart`, `locate`, `upgrade`, `provision`, `speedtest`, and `port-cycle` require Session API access. `list` and `get` work with any auth mode but return richer data in Hybrid (client count, uplink MAC).
 
 ## Clients
 
@@ -79,7 +79,7 @@ unifly clients unauthorize <MAC>                # Revoke guest access
 unifly clients forget <MAC>                     # Remove from client history
 ```
 
-Gotchas: `list` returns enriched data in Hybrid mode (traffic bytes, hostname, wireless, VLAN). `block`/`unblock`/`kick`/`forget` and DHCP reservation commands require Legacy API.
+Gotchas: `list` returns enriched data in Hybrid mode (traffic bytes, hostname, wireless, VLAN). `block`/`unblock`/`kick`/`forget` and DHCP reservation commands require Session API.
 
 ## Networks
 
@@ -153,7 +153,7 @@ unifly nat policies delete <ID>
 There is no `nat policies update`. Delete and recreate to modify a NAT rule.
 :::
 
-NAT types: `masquerade` (outgoing interface address), `source` (explicit rewrite), `destination` (port forwarding/DNAT). NAT routes through the Legacy v2 API, so credentials are required even in Hybrid mode.
+NAT types: `masquerade` (outgoing interface address), `source` (explicit rewrite), `destination` (port forwarding/DNAT). NAT routes through the Session v2 API, so credentials are required even in Hybrid mode.
 
 ## ACL
 
@@ -262,17 +262,17 @@ unifly alarms archive-all                       # Archive everything
 ```bash
 unifly dpi apps                                 # List known applications (Integration)
 unifly dpi categories                           # List known categories (Integration)
-unifly dpi status                               # Current DPI state (Legacy)
-unifly dpi enable                               # Turn on DPI (Legacy)
-unifly dpi disable                              # Turn off DPI (Legacy)
+unifly dpi status                               # Current DPI state (Session)
+unifly dpi enable                               # Turn on DPI (Session)
+unifly dpi disable                              # Turn off DPI (Session)
 ```
 
 ## System
 
 ```bash
 unifly system info                              # Application version (Integration)
-unifly system health                            # Site health summary (Legacy)
-unifly system sysinfo                           # Controller system info (Legacy)
+unifly system health                            # Site health summary (Session)
+unifly system sysinfo                           # Controller system info (Session)
 unifly system backup create                     # Create backup
 unifly system backup list                       # List backups
 unifly system backup download <FILENAME>        # Download backup
@@ -301,10 +301,10 @@ unifly countries                                # Country codes for WiFi regulat
 
 ## Raw API
 
-Escape hatch for any controller endpoint. Routes through the Legacy client with automatic CSRF handling.
+Escape hatch for any controller endpoint. Routes through the Session client with automatic CSRF handling.
 
 ```bash
-unifly api api/s/default/stat/sitedpi                    # GET a legacy endpoint
+unifly api api/s/default/stat/sitedpi                    # GET a session endpoint
 unifly api v2/api/site/default/nat                       # GET a v2 endpoint
 unifly api api/s/default/stat/stadpi -m POST -d '{"type":"by_app"}'  # POST
 ```

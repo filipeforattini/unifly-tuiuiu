@@ -7,10 +7,10 @@
 use serde_json::Value;
 use tracing::debug;
 
-use super::LegacyClient;
+use super::SessionClient;
 use crate::error::Error;
 
-impl LegacyClient {
+impl SessionClient {
     /// List all NAT rules via the v2 API.
     ///
     /// `GET /v2/api/site/{site}/nat`

@@ -1,4 +1,4 @@
-// Legacy API system endpoints
+// Session API system endpoints
 //
 // Controller-level operations: sysinfo, health dashboard, backup management.
 
@@ -6,9 +6,9 @@ use serde_json::json;
 use tracing::debug;
 
 use crate::error::Error;
-use crate::legacy::client::LegacyClient;
+use crate::session::client::SessionClient;
 
-impl LegacyClient {
+impl SessionClient {
     /// Get controller system information.
     ///
     /// `GET /api/s/{site}/stat/sysinfo`
@@ -68,7 +68,7 @@ impl LegacyClient {
     pub async fn download_backup(&self, filename: &str) -> Result<Vec<u8>, Error> {
         let prefix = self
             .platform()
-            .legacy_prefix()
+            .session_prefix()
             .unwrap_or("")
             .trim_end_matches('/');
         let base = self.base_url().as_str().trim_end_matches('/');
@@ -82,7 +82,7 @@ impl LegacyClient {
             .await
             .map_err(Error::Transport)?;
         if !resp.status().is_success() {
-            return Err(Error::LegacyApi {
+            return Err(Error::SessionApi {
                 message: format!("backup download failed: HTTP {}", resp.status()),
             });
         }

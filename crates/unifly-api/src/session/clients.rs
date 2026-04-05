@@ -1,4 +1,4 @@
-// Legacy API client (station) endpoints
+// Session API client (station) endpoints
 //
 // Client management via stat/sta (read) and cmd/stamgr (commands).
 // Covers listing, blocking, kicking, forgetting, and guest authorization.
@@ -7,14 +7,14 @@ use serde_json::json;
 use tracing::debug;
 
 use crate::error::Error;
-use crate::legacy::client::LegacyClient;
-use crate::legacy::models::{LegacyClientEntry, LegacyUserEntry};
+use crate::session::client::SessionClient;
+use crate::session::models::{SessionClientEntry, SessionUserEntry};
 
-impl LegacyClient {
+impl SessionClient {
     /// List all currently connected clients (stations).
     ///
     /// `GET /api/s/{site}/stat/sta`
-    pub async fn list_clients(&self) -> Result<Vec<LegacyClientEntry>, Error> {
+    pub async fn list_clients(&self) -> Result<Vec<SessionClientEntry>, Error> {
         let url = self.site_url("stat/sta");
         debug!("listing connected clients");
         self.get(url).await
@@ -158,7 +158,7 @@ impl LegacyClient {
     /// List all known users (includes offline clients with reservations).
     ///
     /// `GET /api/s/{site}/rest/user`
-    pub async fn list_users(&self) -> Result<Vec<LegacyUserEntry>, Error> {
+    pub async fn list_users(&self) -> Result<Vec<SessionUserEntry>, Error> {
         let url = self.site_url("rest/user");
         debug!("listing known users");
         self.get(url).await
@@ -226,7 +226,7 @@ impl LegacyClient {
 
         let users = self.list_users().await?;
         let normalized_mac = mac.to_lowercase();
-        let matches: Vec<&LegacyUserEntry> = users
+        let matches: Vec<&SessionUserEntry> = users
             .iter()
             .filter(|u| {
                 u.mac.to_lowercase() == normalized_mac
@@ -235,7 +235,7 @@ impl LegacyClient {
             .collect();
 
         if matches.is_empty() {
-            return Err(Error::LegacyApi {
+            return Err(Error::SessionApi {
                 message: if let Some(nid) = network_id {
                     format!("no reservation for MAC {mac} on network {nid}")
                 } else {

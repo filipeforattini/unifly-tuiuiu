@@ -51,7 +51,7 @@ impl SettingsField {
             | Self::ShowDonate => true,
             Self::ApiKey => matches!(mode, AuthMode::ApiKey | AuthMode::Hybrid),
             Self::Username | Self::Password => {
-                matches!(mode, AuthMode::Legacy | AuthMode::Hybrid)
+                matches!(mode, AuthMode::Session | AuthMode::Hybrid)
             }
         }
     }
@@ -321,7 +321,7 @@ mod tests {
     #[test]
     fn field_layout_hides_unused_credentials() {
         let mut screen = test_screen();
-        screen.draft.auth_mode = AuthMode::Legacy;
+        screen.draft.auth_mode = AuthMode::Session;
         screen.auth_mode_index = 1;
 
         let fields = screen.visible_fields();
@@ -346,7 +346,7 @@ mod tests {
     #[test]
     fn validate_requires_legacy_credentials() {
         let mut screen = test_screen();
-        screen.draft.auth_mode = AuthMode::Legacy;
+        screen.draft.auth_mode = AuthMode::Session;
         screen.draft.username.clear();
 
         assert_eq!(screen.validate(), Err("Username cannot be empty".into()));

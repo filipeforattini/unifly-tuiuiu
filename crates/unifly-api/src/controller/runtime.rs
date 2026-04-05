@@ -5,7 +5,7 @@ use crate::model::MacAddress;
 use crate::store::DataStore;
 
 use super::Controller;
-use super::support::parse_legacy_device_wan_ipv6;
+use super::support::parse_session_device_wan_ipv6;
 
 /// Parse a numeric field from a JSON object, tolerating both string and number encodings.
 fn parse_f64_field(parent: Option<&serde_json::Value>, key: &str) -> Option<f64> {
@@ -20,7 +20,7 @@ fn parse_f64_field(parent: Option<&serde_json::Value>, key: &str) -> Option<f64>
 /// Apply a `device:sync` WebSocket message to the DataStore.
 ///
 /// Extracts CPU, memory, load averages, and uplink bandwidth from the
-/// raw Legacy API device JSON. Merges stats into the existing device
+/// raw Session API device JSON. Merges stats into the existing device
 /// (looked up by MAC) without clobbering Integration API fields.
 #[allow(clippy::cast_precision_loss)]
 pub(super) fn apply_device_sync(store: &DataStore, data: &serde_json::Value) {
@@ -112,7 +112,7 @@ pub(super) fn apply_device_sync(store: &DataStore, data: &serde_json::Value) {
     }
 
     if let Some(object) = data.as_object()
-        && let Some(wan_ipv6) = parse_legacy_device_wan_ipv6(object)
+        && let Some(wan_ipv6) = parse_session_device_wan_ipv6(object)
     {
         device.wan_ipv6 = Some(wan_ipv6);
     }
@@ -123,7 +123,7 @@ pub(super) fn apply_device_sync(store: &DataStore, data: &serde_json::Value) {
 }
 
 /// Process commands from the mpsc channel, routing each to the
-/// appropriate Legacy API call.
+/// appropriate Session API call.
 pub(super) async fn command_processor_task(
     controller: Controller,
     mut rx: mpsc::Receiver<CommandEnvelope>,

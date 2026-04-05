@@ -46,7 +46,7 @@ pub async fn handle(
 
     match args.command {
         EventsCommand::List { limit, within } => {
-            ensure_legacy_access(controller, "events list").await?;
+            ensure_session_access(controller, "events list").await?;
             let snap = controller.events_snapshot();
             let cutoff = Utc::now() - chrono::TimeDelta::hours(i64::from(within));
             let filtered: Vec<_> = snap
@@ -66,20 +66,20 @@ pub async fn handle(
         }
 
         EventsCommand::Watch { types } => {
-            ensure_legacy_access(controller, "events watch").await?;
+            ensure_session_access(controller, "events watch").await?;
             watch_events(controller, &global.output, types.as_deref()).await
         }
     }
 }
 
-async fn ensure_legacy_access(controller: &Controller, operation: &str) -> Result<(), CliError> {
-    if controller.has_legacy_access().await {
+async fn ensure_session_access(controller: &Controller, operation: &str) -> Result<(), CliError> {
+    if controller.has_session_access().await {
         return Ok(());
     }
 
     Err(CliError::Unsupported {
         operation: operation.into(),
-        required: "legacy or hybrid authentication".into(),
+        required: "session or hybrid authentication".into(),
     })
 }
 

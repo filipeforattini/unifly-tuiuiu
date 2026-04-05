@@ -12,24 +12,24 @@ use crate::core_error::CoreError;
 use crate::model::Event;
 use crate::store::DataStore;
 use crate::websocket::WebSocketHandle;
-use crate::{IntegrationClient, LegacyClient};
+use crate::{IntegrationClient, SessionClient};
 use tokio::sync::{Mutex, broadcast, mpsc, watch};
 use tokio::task::JoinHandle;
 use tokio_util::sync::CancellationToken;
 
 mod commands;
-mod legacy_queries;
 mod lifecycle;
 mod payloads;
 mod query;
 mod refresh;
 mod runtime;
+mod session_queries;
 mod subscriptions;
 mod support;
 
 use self::support::{
     client_mac, device_mac, integration_client_context, integration_site_context,
-    require_integration, require_legacy, require_uuid,
+    require_integration, require_session, require_uuid,
 };
 
 const COMMAND_CHANNEL_SIZE: usize = 64;
@@ -71,14 +71,14 @@ struct ControllerInner {
     /// Child token for the current connection — cancelled on disconnect,
     /// replaced on reconnect (avoids permanent cancellation).
     cancel_child: Mutex<CancellationToken>,
-    legacy_client: Mutex<Option<Arc<LegacyClient>>>,
+    session_client: Mutex<Option<Arc<SessionClient>>>,
     integration_client: Mutex<Option<Arc<IntegrationClient>>>,
     /// Resolved Integration API site UUID (populated on connect).
     site_id: Mutex<Option<uuid::Uuid>>,
     /// WebSocket event stream handle (populated on connect if enabled).
     ws_handle: Mutex<Option<WebSocketHandle>>,
     task_handles: Mutex<Vec<JoinHandle<()>>>,
-    /// Warnings accumulated during connect (e.g. Legacy auth failure in Hybrid mode).
+    /// Warnings accumulated during connect (e.g. Session auth failure in Hybrid mode).
     warnings: Mutex<Vec<String>>,
 }
 
@@ -103,7 +103,7 @@ impl Controller {
                 command_rx: Mutex::new(Some(command_rx)),
                 cancel,
                 cancel_child: Mutex::new(cancel_child),
-                legacy_client: Mutex::new(None),
+                session_client: Mutex::new(None),
                 integration_client: Mutex::new(None),
                 warnings: Mutex::new(Vec::new()),
                 site_id: Mutex::new(None),

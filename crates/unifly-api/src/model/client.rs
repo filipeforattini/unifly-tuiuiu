@@ -72,15 +72,15 @@ pub struct Client {
     pub rx_bytes: Option<u64>,
     pub bandwidth: Option<Bandwidth>,
 
-    // Fingerprint (legacy API)
+    // Fingerprint (session API)
     pub os_name: Option<String>,
     pub device_class: Option<String>,
 
-    // DHCP reservation (legacy API)
+    // DHCP reservation (session API)
     pub use_fixedip: bool,
     pub fixed_ip: Option<Ipv4Addr>,
 
-    // Blocking state (legacy API)
+    // Blocking state (session API)
     pub blocked: bool,
 
     #[serde(skip)]

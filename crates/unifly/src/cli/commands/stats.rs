@@ -9,7 +9,7 @@ use crate::cli::args::{
 use crate::cli::error::CliError;
 use crate::cli::output;
 
-/// Convert a `StatsInterval` to the Legacy API string.
+/// Convert a `StatsInterval` to the Session API string.
 fn interval_str(interval: &StatsInterval) -> &'static str {
     match interval {
         StatsInterval::FiveMinutes => "5minutes",

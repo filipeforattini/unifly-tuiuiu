@@ -1,7 +1,7 @@
 // ── Core identity types ──
 //
 // EntityId and MacAddress form the foundation of every domain type.
-// They unify UUID-based (Integration API) and string-based (Legacy API)
+// They unify UUID-based (Integration API) and string-based (Session API)
 // identifiers behind a single ergonomic interface.
 
 use serde::{Deserialize, Serialize};
@@ -14,8 +14,8 @@ use uuid::Uuid;
 
 /// Canonical identifier for any UniFi entity.
 ///
-/// Transparently wraps either a UUID (Integration API) or a legacy
-/// MongoDB ObjectId string (Legacy API). Consumers never care which.
+/// Transparently wraps either a UUID (Integration API) or a session
+/// MongoDB ObjectId string (Session API). Consumers never care which.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum EntityId {

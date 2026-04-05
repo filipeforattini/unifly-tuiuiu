@@ -105,7 +105,7 @@ pub struct DeviceStats {
     pub next_heartbeat: Option<DateTime<Utc>>,
 }
 
-/// The canonical Device type. Merges data from Integration + Legacy APIs.
+/// The canonical Device type. Merges data from Integration + Session API.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[allow(clippy::struct_excessive_bools)]
 pub struct Device {

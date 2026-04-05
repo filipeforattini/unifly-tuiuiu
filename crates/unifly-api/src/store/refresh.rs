@@ -1,6 +1,6 @@
 // ── Full refresh application logic ──
 //
-// Applies bulk data snapshots from the Integration and Legacy APIs
+// Applies bulk data snapshots from the Integration and Session API
 // into the DataStore. Integration data is primary; Legacy fills gaps.
 
 use std::collections::HashSet;
@@ -315,7 +315,7 @@ mod tests {
                     client_mac: None,
                     site_id: None,
                     raw_key: Some("EVT_TEST".into()),
-                    source: crate::model::common::DataSource::LegacyApi,
+                    source: crate::model::common::DataSource::SessionApi,
                 },
                 Event {
                     id: None,
@@ -328,7 +328,7 @@ mod tests {
                     client_mac: None,
                     site_id: None,
                     raw_key: Some("EVT_TEST".into()),
-                    source: crate::model::common::DataSource::LegacyApi,
+                    source: crate::model::common::DataSource::SessionApi,
                 },
             ],
             traffic_matching_lists: Vec::new(),

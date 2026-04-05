@@ -1,79 +1,77 @@
 # 🔑 Authentication
 
-Unifly supports three authentication modes. The right choice depends on what you need to do.
+Unifly supports three authentication modes. The right choice depends on whether you need live WebSocket streams.
 
 ## Which Mode Do I Need?
 
 ```mermaid
 flowchart TD
-    START["What do you need?"] --> Q1{"Events, stats, or<br/>device commands?"}
-    Q1 -->|"No, just CRUD"| APIKEY["API Key Mode"]
-    Q1 -->|"Yes"| Q2{"Do you also need<br/>network/WiFi/firewall CRUD?"}
-    Q2 -->|"No"| LEGACY["Username/Password Mode"]
-    Q2 -->|"Yes"| HYBRID["Hybrid Mode 💜"]
+    START["What do you need?"] --> Q1{"Live event streaming<br/>(events watch or TUI)?"}
+    Q1 -->|"No"| APIKEY["API Key Mode 💜"]
+    Q1 -->|"Yes"| HYBRID["Hybrid Mode"]
+    Q1 -->|"No API key<br/>available"| SESSION["Username/Password Mode"]
 
-    style HYBRID fill:#50fa7b,color:#0a0a0f
-    style APIKEY fill:#80ffea,color:#0a0a0f
-    style LEGACY fill:#f1fa8c,color:#0a0a0f
+    style APIKEY fill:#50fa7b,color:#0a0a0f
+    style HYBRID fill:#80ffea,color:#0a0a0f
+    style SESSION fill:#f1fa8c,color:#0a0a0f
 ```
 
 ::: tip Recommended
-**Hybrid mode** gives you full access to everything. Use it unless you have a specific reason not to.
+**API Key mode** is the right default on UniFi OS controllers. A single Integration API key reaches both the Integration API and the Session API HTTP endpoints, covering almost every CLI command without a username or password. Only switch to Hybrid if you need live WebSocket features (`events watch`, `tui`).
 :::
 
 ## API Key
 
-Generate a key on your controller under **Settings > Integrations**. Provides full CRUD access via the Integration API.
+Generate a key on your controller under **Settings > Integrations**. On UniFi OS, the same key also authenticates the Session API HTTP endpoints (`/proxy/network/api/*` and `/proxy/network/v2/api/*`), so API key mode covers CRUD, device commands, stats, DHCP reservations, admin operations, and `events list`.
 
 ```bash
 unifly config init                     # Select "API Key" during setup
 unifly --api-key <KEY> devices list    # Or pass directly
 ```
 
-| Pros                      | Limitations                                 |
-| ------------------------- | ------------------------------------------- |
-| Simplest setup            | No event streaming                          |
-| No session management     | No historical statistics                    |
-| Stable, no token expiry   | No device commands (restart, adopt, locate) |
-| Works for all config CRUD | Client/device records miss some fields      |
+| Pros                                      | Limitations                                  |
+| ----------------------------------------- | -------------------------------------------- |
+| Simplest setup — no password juggling     | No live WebSocket events (requires cookie)   |
+| Authenticates both Integration + Session  | `events watch` and TUI live refresh unavailable |
+| No CSRF bookkeeping                       | Classic standalone controllers may differ    |
+| Stable, no token expiry                   |                                              |
 
-Best for: CI/CD pipelines, scripted provisioning, config-only workflows.
+Best for: CI/CD pipelines, scripted provisioning, daily CLI automation, most everyday workflows.
 
 ## Username / Password
 
-Legacy session-based auth with cookie and CSRF token handling.
+Session-based auth with cookie and CSRF token handling. Use this when you lack an Integration API key, when you need live WebSocket events, or when your controller is a classic standalone that does not accept API keys on the Session HTTP surface.
 
 ```bash
 unifly config init                     # Select "Username/Password" during setup
 ```
 
-| Pros                           | Limitations                               |
-| ------------------------------ | ----------------------------------------- |
-| Full Legacy API access         | Sessions expire periodically              |
-| Events, stats, device commands | No access to modern Integration endpoints |
-| Admin management               | DNS, ACL, traffic lists unavailable       |
+| Pros                              | Limitations                               |
+| --------------------------------- | ----------------------------------------- |
+| Live WebSocket events + TUI live  | Sessions expire periodically              |
+| Full Session API access           | No access to modern Integration endpoints |
+| Admin management                  | DNS, ACL, traffic lists unavailable       |
 
-Best for: Monitoring-focused setups, event streaming, read-heavy workflows.
+Best for: Monitoring-focused setups where you primarily care about live event streaming.
 
 ## Hybrid Mode
 
-Both APIs at once. API key for Integration CRUD, username/password for Legacy features. The setup wizard offers this when you provide both.
+API key for HTTP (both Integration and Session) plus username/password for the live WebSocket cookie session. The setup wizard offers this when you provide both.
 
 ```bash
 unifly config init                     # Select "Hybrid" during setup
 ```
 
-| Capability                                        | API Used                             |
-| ------------------------------------------------- | ------------------------------------ |
-| Networks, WiFi, Firewall, DNS, ACL, Traffic Lists | Integration API                      |
-| NAT policies                                      | Legacy v2 API (requires credentials) |
-| Events, Stats, DPI                                | Legacy API                           |
-| Device commands (restart, adopt)                  | Legacy API                           |
-| Client/device field enrichment                    | Both (merged by IP/MAC)              |
+| Capability                                        | How it's reached                              |
+| ------------------------------------------------- | --------------------------------------------- |
+| Integration CRUD (networks, WiFi, firewall, etc.) | Integration API via `X-API-KEY`               |
+| Session HTTP (stats, device commands, admin)      | Session API via `X-API-KEY`                   |
+| Live event streaming (`events watch`, TUI)        | Session WebSocket via cookie session          |
+| Client/device field enrichment                    | Session HTTP (merged into Integration records) |
 
-How it works: unifly routes each request to the best API automatically. Client and device records are enriched by merging Integration data with Legacy fields (traffic bytes, hostname, wireless info, uplink MAC, VLAN).
+How it works: unifly uses the API key for every HTTP request and the cookie session only to establish the live WebSocket. Everything else an API key can reach is reached with the API key.
 
-To verify Hybrid is working, check that `clients list` shows traffic bytes and hostname columns populated.
+To verify Hybrid is working, run `unifly events watch` — if events stream, the WebSocket cookie session is active.
 
 ## Credential Storage
 

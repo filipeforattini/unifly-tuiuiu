@@ -21,7 +21,7 @@ pub struct Page<T> {
 pub struct SiteResponse {
     pub id: Uuid,
     pub name: String,
-    /// Used as the Legacy API site name (`/api/s/{internalReference}/`).
+    /// Used as the Session API site name (`/api/s/{internalReference}/`).
     pub internal_reference: String,
 }
 

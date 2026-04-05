@@ -177,7 +177,7 @@ pub(super) fn render_credentials(screen: &OnboardingScreen, frame: &mut Frame, a
         y_offset += 5;
     }
 
-    if matches!(screen.draft.auth_mode, AuthMode::Legacy | AuthMode::Hybrid) {
+    if matches!(screen.draft.auth_mode, AuthMode::Session | AuthMode::Hybrid) {
         let username_area = Rect::new(
             fields_area.x,
             fields_area.y + y_offset,

@@ -1,17 +1,17 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum AuthMode {
     ApiKey,
-    Legacy,
+    Session,
     Hybrid,
 }
 
 impl AuthMode {
-    pub(crate) const ALL: [Self; 3] = [Self::ApiKey, Self::Legacy, Self::Hybrid];
+    pub(crate) const ALL: [Self; 3] = [Self::ApiKey, Self::Session, Self::Hybrid];
 
     pub(crate) fn label(self) -> &'static str {
         match self {
-            Self::ApiKey => "API Key (Integration API)",
-            Self::Legacy => "Username / Password (Legacy API)",
+            Self::ApiKey => "API Key (Integration + Session HTTP)",
+            Self::Session => "Username / Password (Session API)",
             Self::Hybrid => "Hybrid (API Key + Credentials)",
         }
     }
@@ -19,22 +19,22 @@ impl AuthMode {
     pub(crate) fn description(self) -> &'static str {
         match self {
             Self::ApiKey => "Recommended for most setups",
-            Self::Legacy => "For stats, events, and admin operations",
-            Self::Hybrid => "Full access to both API surfaces",
+            Self::Session => "Cookie session for live WebSocket events",
+            Self::Hybrid => "Full access including live WebSocket",
         }
     }
 
     pub(crate) fn config_value(self) -> &'static str {
         match self {
             Self::ApiKey => "integration",
-            Self::Legacy => "legacy",
+            Self::Session => "session",
             Self::Hybrid => "hybrid",
         }
     }
 
     pub(crate) fn from_config(value: &str) -> Self {
         match value {
-            "legacy" => Self::Legacy,
+            "session" => Self::Session,
             "hybrid" => Self::Hybrid,
             _ => Self::ApiKey,
         }
@@ -97,7 +97,7 @@ impl ControllerProfileDraft {
                     return Err("API key cannot be empty".into());
                 }
             }
-            AuthMode::Legacy => {
+            AuthMode::Session => {
                 if self.username.trim().is_empty() {
                     return Err("Username cannot be empty".into());
                 }
@@ -139,15 +139,15 @@ impl ControllerProfileDraft {
             auth_mode: self.auth_mode.config_value().to_string(),
             api_key: match self.auth_mode {
                 AuthMode::ApiKey | AuthMode::Hybrid => Some(self.api_key.trim().to_string()),
-                AuthMode::Legacy => None,
+                AuthMode::Session => None,
             },
             api_key_env: None,
             username: match self.auth_mode {
-                AuthMode::Legacy | AuthMode::Hybrid => Some(self.username.trim().to_string()),
+                AuthMode::Session | AuthMode::Hybrid => Some(self.username.trim().to_string()),
                 AuthMode::ApiKey => None,
             },
             password: match self.auth_mode {
-                AuthMode::Legacy | AuthMode::Hybrid => Some(self.password.clone()),
+                AuthMode::Session | AuthMode::Hybrid => Some(self.password.clone()),
                 AuthMode::ApiKey => None,
             },
             totp_env: None,
@@ -210,7 +210,7 @@ mod tests {
         let profile = crate::config::Profile {
             controller: "https://console.example.com".into(),
             site: "default".into(),
-            auth_mode: "legacy".into(),
+            auth_mode: "session".into(),
             api_key: None,
             api_key_env: None,
             username: Some("bliss".into()),
@@ -224,7 +224,7 @@ mod tests {
         let draft = ControllerProfileDraft::from_profile(&profile);
 
         assert_eq!(draft.url, "https://console.example.com");
-        assert_eq!(draft.auth_mode, AuthMode::Legacy);
+        assert_eq!(draft.auth_mode, AuthMode::Session);
         assert_eq!(draft.username, "bliss");
         assert_eq!(draft.password, "hunter2");
         assert!(!draft.insecure);
