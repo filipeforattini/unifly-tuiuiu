@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- **`wifi neighbors`** to list neighboring and rogue APs seen by your access
+  points, including signal, channel, SSID, and observer AP MAC
+- **`wifi channels`** to show per-radio regulatory channel availability from
+  the Session API
+- **`clients roams <mac>`** to surface a client's connection timeline from the
+  v2 system-log endpoint
+- **`clients wifi <ip>`** to show per-client Wi-Fi experience metrics such as
+  signal/noise, `wifi_experience`, link rates, nearest neighbors, and uplink
+  chain data
+
 ### Changed
 
 - **Renamed "legacy" nomenclature to "session" throughout.** The UniFi

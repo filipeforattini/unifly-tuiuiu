@@ -57,12 +57,14 @@ unifly devices tags [subcommands]
   upgrade, provision, speedtest) require Session API. Only `list`/`get` are
   Hybrid-safe.
 
-## Clients `[H]`
+## Clients `[H for list/find/get, L for roams/wifi + commands/reservations]`
 
 ```bash
 unifly clients list [--all] [--type wireless|wired|guest]
 unifly clients find <query>             # case-insensitive substring over IP, name, hostname, MAC
 unifly clients get <mac|id>
+unifly clients roams <mac> [--limit N]
+unifly clients wifi <ip>                # aliases: wifi-experience, wifiman
 unifly clients authorize <mac> [--minutes N] [--up-rate N] [--down-rate N]
 unifly clients unauthorize <mac>
 unifly clients block <mac>
@@ -81,10 +83,24 @@ unifly clients remove-ip <mac> [--network <name|id>]
   pass, case-insensitive.
 - `reservations` (alias `res`) lists **all** DHCP reservations including
   offline clients. It goes through Session API `/rest/user`.
+- `roams` uses `GET /v2/api/site/{site}/system-log/client-connection/{mac}`.
+  Default limit is 50 events; override with `--limit`. The underlying v2
+  endpoint expects the MAC in both the path and the `?mac=` query param.
+- `roams` is the quickest way to diagnose sticky clients and bad handoffs:
+  it shows connect, disconnect, and AP transition events with timestamp,
+  SSID, signal, and band when the controller exposes them.
 - `set-ip` auto-detects the target network from the IP subnet unless
   `--network` is supplied explicitly.
 - `remove-ip` defaults to removing from all networks. Scope it with
   `--network` if the MAC has reservations in multiple networks.
+- `wifi` uses `GET /v2/api/site/{site}/wifiman/{ip}/` for live wireless
+  telemetry: `wifi_experience`, signal/noise/channel, link rates, nearest
+  neighbors, and uplink chain details.
+- `wifi` only works for wireless clients. Wired clients typically return an
+  endpoint error or empty response.
+- `wifi` band codes (`2.4g`, `5g`, `6g`) differ from `clients list`
+  session-radio codes (`ng`, `na`, `6e`). Don't compare them directly
+  without mapping.
 - `list` wireless/bytes/hostname fields are only populated in Hybrid mode.
 
 ## Networks `[I for CRUD]`
@@ -110,11 +126,13 @@ unifly networks refs <id>                # reverse references
   blast radius.
 - `--from-file` / `-F` accepts a full JSON payload (see examples/).
 
-## WiFi `[I]`
+## WiFi `[I for CRUD, L for neighbors/channels]`
 
 ```bash
 unifly wifi list
 unifly wifi get <id|name>
+unifly wifi neighbors [--within SECONDS] # alias: rogueap
+unifly wifi channels
 unifly wifi create --name SSID --security MODE --passphrase PASS --network ID \
   [--broadcast-type standard|iot-optimized] [--frequencies 2.4,5,6] [-F payload.json]
 unifly wifi update <id> [flags...]
@@ -127,6 +145,14 @@ unifly wifi delete <id>
   `wpa2-wpa3-personal`, `wpa2-enterprise`, `wpa3-enterprise`.
 - `--broadcast-type iot-optimized` enables IoT optimizations (2.4 GHz-only
   limits, lower beacon power).
+- `neighbors` uses `GET /api/s/{site}/stat/rogueap` and surfaces APs seen by
+  your own radios. Signal is from your AP's perspective, not the neighbor's.
+- `neighbors --within` is in seconds, and the underlying `stat/rogueap`
+  endpoint also uses seconds rather than the epoch milliseconds common in
+  other UniFi stats routes.
+- `channels` uses `GET /api/s/{site}/stat/current-channel` and reports
+  channel availability per radio under the active country code. It's handy
+  for DFS sanity checks before manual channel planning.
 - `--frequencies` is comma-separated: `2.4`, `5`, `6`. All three are valid
   on WiFi 6E and WiFi 7 APs.
 - `--from-file` accepts full payloads for complex SSID configurations

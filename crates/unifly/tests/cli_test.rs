@@ -557,8 +557,25 @@ fn test_clients_subcommands_exist() {
         .stdout(
             predicate::str::contains("list")
                 .and(predicate::str::contains("get"))
+                .and(predicate::str::contains("roams"))
+                .and(predicate::str::contains("wifi"))
                 .and(predicate::str::contains("block"))
                 .and(predicate::str::contains("unblock")),
+        );
+}
+
+#[test]
+fn test_wifi_subcommands_exist() {
+    unifly_cmd()
+        .args(["wifi", "--help"])
+        .assert()
+        .success()
+        .stdout(
+            predicate::str::contains("list")
+                .and(predicate::str::contains("get"))
+                .and(predicate::str::contains("neighbors"))
+                .and(predicate::str::contains("channels"))
+                .and(predicate::str::contains("create")),
         );
 }
 

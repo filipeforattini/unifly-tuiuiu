@@ -8,7 +8,9 @@ use crate::cli::commands::util;
 use crate::cli::error::CliError;
 use crate::cli::output;
 
-use super::render::{Reservation, client_row, detail, reservation_row};
+use super::render::{
+    Reservation, client_row, detail, reservation_row, roam_row, wifi_experience_detail,
+};
 use super::resolve::{resolve_network, resolve_network_by_name};
 
 fn find_client(controller: &Controller, needle: &str) -> Option<Arc<Client>> {
@@ -98,6 +100,36 @@ pub(super) async fn handle(
                     });
                 }
             }
+            Ok(())
+        }
+
+        ClientsCommand::Roams { mac, limit } => {
+            let events = controller.get_client_roams(&mac, Some(limit)).await?;
+            let out = output::render_list(
+                &global.output,
+                &events,
+                |event| roam_row(event, &painter),
+                |event| {
+                    event
+                        .get("timestamp")
+                        .or_else(|| event.get("time"))
+                        .and_then(serde_json::Value::as_i64)
+                        .map_or_else(|| "-".into(), |timestamp| timestamp.to_string())
+                },
+            );
+            output::print_output(&out, global.quiet);
+            Ok(())
+        }
+
+        ClientsCommand::Wifi { ip } => {
+            let data = controller.get_client_wifi_experience(&ip).await?;
+            let out = output::render_single(
+                &global.output,
+                &data,
+                |value| wifi_experience_detail(value, &painter),
+                |_| ip.clone(),
+            );
+            output::print_output(&out, global.quiet);
             Ok(())
         }
 

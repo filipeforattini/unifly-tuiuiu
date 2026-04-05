@@ -175,6 +175,172 @@ async fn test_list_events_with_limit() {
     assert_eq!(events.len(), 1);
 }
 
+// ── Wi-Fi observability tests ──────────────────────────────────────
+
+#[tokio::test]
+async fn test_list_rogue_aps() {
+    let (server, client) = setup().await;
+
+    let envelope = json!({
+        "meta": { "rc": "ok" },
+        "data": [{
+            "bssid": "aa:bb:cc:dd:ee:01",
+            "essid": "NeighborWifi",
+            "channel": 6,
+            "freq": 2437,
+            "signal": -72,
+            "radio": "ng",
+            "is_rogue": false,
+            "ap_mac": "ff:ff:ff:ff:ff:01"
+        }]
+    });
+
+    Mock::given(method("GET"))
+        .and(path(site_path("stat/rogueap")))
+        .respond_with(ResponseTemplate::new(200).set_body_json(&envelope))
+        .mount(&server)
+        .await;
+
+    let aps = client.list_rogue_aps(None).await.unwrap();
+
+    assert_eq!(aps.len(), 1);
+    assert_eq!(aps[0].bssid, "aa:bb:cc:dd:ee:01");
+    assert_eq!(aps[0].essid.as_deref(), Some("NeighborWifi"));
+    assert_eq!(aps[0].channel, Some(6));
+    assert!(!aps[0].is_rogue);
+}
+
+#[tokio::test]
+async fn test_list_rogue_aps_with_within_param() {
+    let (server, client) = setup().await;
+
+    Mock::given(method("GET"))
+        .and(path(site_path("stat/rogueap")))
+        .and(query_param("within", "3600"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "meta": { "rc": "ok" },
+            "data": []
+        })))
+        .mount(&server)
+        .await;
+
+    let aps = client.list_rogue_aps(Some(3600)).await.unwrap();
+    assert!(aps.is_empty());
+}
+
+#[tokio::test]
+async fn test_list_channels() {
+    let (server, client) = setup().await;
+
+    let envelope = json!({
+        "meta": { "rc": "ok" },
+        "data": [{
+            "code": "US",
+            "radio": "na",
+            "channel": 36,
+            "channels": [36, 40, 44, 48, 149, 153, 157, 161, 165]
+        }]
+    });
+
+    Mock::given(method("GET"))
+        .and(path(site_path("stat/current-channel")))
+        .respond_with(ResponseTemplate::new(200).set_body_json(&envelope))
+        .mount(&server)
+        .await;
+
+    let channels = client.list_channels().await.unwrap();
+
+    assert_eq!(channels.len(), 1);
+    assert_eq!(channels[0].radio.as_deref(), Some("na"));
+    let channels_list = channels[0].channels.as_ref().unwrap();
+    assert!(channels_list.contains(&36));
+    assert!(channels_list.contains(&165));
+}
+
+#[tokio::test]
+async fn test_get_client_roams() {
+    let (server, client) = setup().await;
+
+    let response = json!([
+        {
+            "timestamp": 1_700_000_000_000_i64,
+            "event_type": "CONNECTED",
+            "ap_mac": "aa:bb:cc:00:00:01",
+            "ssid": "HomeWiFi",
+            "signal": -55,
+            "band": "5g"
+        },
+        {
+            "timestamp": 1_700_000_060_000_i64,
+            "event_type": "ROAMED",
+            "ap_mac": "aa:bb:cc:00:00:02",
+            "ssid": "HomeWiFi",
+            "signal": -48,
+            "band": "5g"
+        }
+    ]);
+
+    Mock::given(method("GET"))
+        .and(path(
+            "/v2/api/site/default/system-log/client-connection/aa:bb:cc:dd:ee:ff",
+        ))
+        .and(query_param("mac", "aa:bb:cc:dd:ee:ff"))
+        .and(query_param("separateConnectionSignalParam", "false"))
+        .and(query_param("limit", "50"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(&response))
+        .mount(&server)
+        .await;
+
+    let events = client
+        .get_client_roams("aa:bb:cc:dd:ee:ff", Some(50))
+        .await
+        .unwrap();
+
+    assert_eq!(events.len(), 2);
+    assert_eq!(events[0]["event_type"], "CONNECTED");
+    assert_eq!(events[1]["event_type"], "ROAMED");
+    assert_eq!(events[1]["signal"], -48);
+}
+
+#[tokio::test]
+async fn test_get_client_wifi_experience() {
+    let (server, client) = setup().await;
+
+    let response = json!({
+        "signal": -52,
+        "noise": -95,
+        "channel": 36,
+        "channel_width": 80,
+        "band": "5g",
+        "radio_protocol": "ax",
+        "link_download_rate_kbps": 866_700,
+        "link_upload_rate_kbps": 866_700,
+        "wifi_experience": 87,
+        "nearest_neighbors": [
+            { "bssid": "aa:bb:cc:00:00:01", "channel": 36, "signal": -40 }
+        ],
+        "uplink_devices": [
+            { "device_name": "Living Room AP", "wifi_experience": 92 }
+        ]
+    });
+
+    Mock::given(method("GET"))
+        .and(path("/v2/api/site/default/wifiman/10.0.0.50/"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(&response))
+        .mount(&server)
+        .await;
+
+    let data = client
+        .get_client_wifi_experience("10.0.0.50")
+        .await
+        .unwrap();
+
+    assert_eq!(data["wifi_experience"], 87);
+    assert_eq!(data["signal"], -52);
+    assert_eq!(data["band"], "5g");
+    assert_eq!(data["nearest_neighbors"].as_array().unwrap().len(), 1);
+}
+
 // ── Error tests ─────────────────────────────────────────────────────
 
 #[tokio::test]

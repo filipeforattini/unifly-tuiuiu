@@ -4,6 +4,7 @@ use std::sync::Arc;
 
 use tabled::Tabled;
 use unifly_api::model::{WifiBroadcast, WifiSecurityMode};
+use unifly_api::session_models::{ChannelAvailability, RogueAp};
 use unifly_api::{
     Command as CoreCommand, Controller, CreateWifiBroadcastRequest, EntityId,
     UpdateWifiBroadcastRequest,
@@ -52,6 +53,36 @@ struct WifiRow {
     bands: String,
 }
 
+#[derive(Tabled)]
+struct NeighborRow {
+    #[tabled(rename = "BSSID")]
+    bssid: String,
+    #[tabled(rename = "SSID")]
+    ssid: String,
+    #[tabled(rename = "Ch")]
+    channel: String,
+    #[tabled(rename = "Signal")]
+    signal: String,
+    #[tabled(rename = "Radio")]
+    radio: String,
+    #[tabled(rename = "Security")]
+    security: String,
+    #[tabled(rename = "Observer")]
+    observer: String,
+}
+
+#[derive(Tabled)]
+struct ChannelRow {
+    #[tabled(rename = "Radio")]
+    radio: String,
+    #[tabled(rename = "Country")]
+    country: String,
+    #[tabled(rename = "Current")]
+    current: String,
+    #[tabled(rename = "Available")]
+    available: String,
+}
+
 fn wifi_row(w: &Arc<WifiBroadcast>, p: &output::Painter) -> WifiRow {
     WifiRow {
         id: p.id(&w.id.to_string()),
@@ -66,6 +97,46 @@ fn wifi_row(w: &Arc<WifiBroadcast>, p: &output::Painter) -> WifiRow {
                 .collect::<Vec<_>>()
                 .join(", "),
         ),
+    }
+}
+
+fn neighbor_row(ap: &RogueAp, p: &output::Painter) -> NeighborRow {
+    NeighborRow {
+        bssid: p.mac(&ap.bssid),
+        ssid: p.name(ap.essid.as_deref().unwrap_or("<hidden>")),
+        channel: p.number(
+            &ap.channel
+                .map_or_else(|| "-".into(), |channel| channel.to_string()),
+        ),
+        signal: p.number(
+            &ap.signal
+                .map_or_else(|| "-".into(), |signal| format!("{signal} dBm")),
+        ),
+        radio: p.muted(ap.radio.as_deref().unwrap_or("-")),
+        security: p.muted(ap.security.as_deref().unwrap_or("-")),
+        observer: p.mac(ap.ap_mac.as_deref().unwrap_or("-")),
+    }
+}
+
+fn channel_row(channel: &ChannelAvailability, p: &output::Painter) -> ChannelRow {
+    ChannelRow {
+        radio: p.name(channel.radio.as_deref().unwrap_or("-")),
+        country: p.muted(channel.code.as_deref().unwrap_or("-")),
+        current: p.number(
+            &channel
+                .channel
+                .map_or_else(|| "-".into(), |current| current.to_string()),
+        ),
+        available: p.muted(&channel.channels.as_ref().map_or_else(
+            || "-".into(),
+            |channels| {
+                channels
+                    .iter()
+                    .map(ToString::to_string)
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            },
+        )),
     }
 }
 
@@ -99,12 +170,12 @@ pub async fn handle(
     args: WifiArgs,
     global: &GlobalOpts,
 ) -> Result<(), CliError> {
-    util::ensure_integration_access(controller, "wifi").await?;
-
     let p = output::Painter::new(global);
 
     match args.command {
         WifiCommand::List(list) => {
+            util::ensure_integration_access(controller, "wifi").await?;
+
             let all = controller.wifi_broadcasts_snapshot();
             let snap = util::apply_list_args(all.iter().cloned(), &list, |w, filter| {
                 util::matches_json_filter(w, filter)
@@ -120,6 +191,8 @@ pub async fn handle(
         }
 
         WifiCommand::Get { id } => {
+            util::ensure_integration_access(controller, "wifi").await?;
+
             let entity_id = unifly_api::EntityId::from(id.clone());
             match controller.get_wifi_broadcast_detail(&entity_id).await {
                 Ok(w) => {
@@ -139,6 +212,30 @@ pub async fn handle(
             Ok(())
         }
 
+        WifiCommand::Neighbors { within } => {
+            let aps = controller.list_rogue_aps(within).await?;
+            let out = output::render_list(
+                &global.output,
+                &aps,
+                |ap| neighbor_row(ap, &p),
+                |ap| ap.bssid.clone(),
+            );
+            output::print_output(&out, global.quiet);
+            Ok(())
+        }
+
+        WifiCommand::Channels => {
+            let channels = controller.list_channels().await?;
+            let out = output::render_list(
+                &global.output,
+                &channels,
+                |channel| channel_row(channel, &p),
+                |channel| channel.radio.clone().unwrap_or_else(|| "unknown".into()),
+            );
+            output::print_output(&out, global.quiet);
+            Ok(())
+        }
+
         WifiCommand::Create {
             from_file,
             name,
@@ -151,6 +248,8 @@ pub async fn handle(
             band_steering,
             fast_roaming,
         } => {
+            util::ensure_integration_access(controller, "wifi").await?;
+
             let req = if let Some(ref path) = from_file {
                 serde_json::from_value(util::read_json_file(path)?)?
             } else {
@@ -185,6 +284,8 @@ pub async fn handle(
             passphrase,
             enabled,
         } => {
+            util::ensure_integration_access(controller, "wifi").await?;
+
             if from_file.is_none() && name.is_none() && passphrase.is_none() && enabled.is_none() {
                 return Err(CliError::Validation {
                     field: "update".into(),
@@ -215,6 +316,8 @@ pub async fn handle(
         }
 
         WifiCommand::Delete { id, force } => {
+            util::ensure_integration_access(controller, "wifi").await?;
+
             let eid = EntityId::from(id.clone());
             if !util::confirm(&format!("Delete WiFi broadcast {id}?"), global.yes)? {
                 return Ok(());

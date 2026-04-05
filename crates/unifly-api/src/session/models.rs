@@ -256,3 +256,61 @@ pub struct SessionAlarm {
     #[serde(flatten)]
     pub extra: serde_json::Map<String, serde_json::Value>,
 }
+
+// ── Wi-Fi Observability ─────────────────────────────────────────────
+
+/// Neighboring / rogue access point from `stat/rogueap`.
+///
+/// Each entry represents a foreign AP detected by one of your APs.
+/// Note: `stat/rogueap` uses Unix epoch **seconds** for query params,
+/// unlike many other UniFi stats endpoints.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RogueAp {
+    pub bssid: String,
+    #[serde(default)]
+    pub essid: Option<String>,
+    #[serde(default)]
+    pub channel: Option<i32>,
+    #[serde(default)]
+    pub freq: Option<i32>,
+    #[serde(default)]
+    pub signal: Option<i32>,
+    #[serde(default)]
+    pub rssi: Option<i32>,
+    #[serde(default)]
+    pub noise: Option<i32>,
+    #[serde(default)]
+    pub security: Option<String>,
+    #[serde(default)]
+    pub radio: Option<String>,
+    #[serde(default)]
+    pub age: Option<i64>,
+    #[serde(default)]
+    pub is_rogue: bool,
+    /// MAC of your AP that observed this neighbor.
+    #[serde(default)]
+    pub ap_mac: Option<String>,
+    /// Catch-all for undocumented fields.
+    #[serde(flatten)]
+    pub extra: serde_json::Map<String, serde_json::Value>,
+}
+
+/// Per-radio regulatory channel availability from `stat/current-channel`.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ChannelAvailability {
+    #[serde(default)]
+    pub code: Option<String>,
+    #[serde(default)]
+    pub radio: Option<String>,
+    #[serde(default)]
+    pub channel: Option<i32>,
+    #[serde(default)]
+    pub channels: Option<Vec<i32>>,
+    #[serde(default)]
+    pub ht_modes: Option<Vec<String>>,
+    #[serde(default)]
+    pub vht_modes: Option<Vec<String>>,
+    /// Catch-all for undocumented fields.
+    #[serde(flatten)]
+    pub extra: serde_json::Map<String, serde_json::Value>,
+}

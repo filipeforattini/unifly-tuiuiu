@@ -27,6 +27,23 @@ pub enum ClientsCommand {
         client: String,
     },
 
+    /// Show a client's roam timeline (connects, disconnects, AP transitions)
+    Roams {
+        /// Client MAC address
+        mac: String,
+
+        /// Maximum number of events to return
+        #[arg(long, default_value = "50")]
+        limit: u32,
+    },
+
+    /// Show Wi-Fi experience metrics for a wireless client
+    #[command(alias = "wifi-experience", alias = "wifiman")]
+    Wifi {
+        /// Client IP address
+        ip: String,
+    },
+
     /// Authorize guest access
     Authorize {
         /// Client ID (UUID)

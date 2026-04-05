@@ -22,6 +22,17 @@ pub enum WifiCommand {
         id: String,
     },
 
+    /// List neighboring / rogue APs detected by your access points
+    #[command(alias = "rogueap")]
+    Neighbors {
+        /// Only show APs seen within this many seconds
+        #[arg(long)]
+        within: Option<i64>,
+    },
+
+    /// List per-radio regulatory channel availability
+    Channels,
+
     /// Create a WiFi broadcast
     Create {
         /// SSID name

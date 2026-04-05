@@ -79,9 +79,9 @@ All commands follow `unifly [global-flags] <command> <action> [args]`.
 | Command         | Aliases    | Actions                                                                                                        |
 | --------------- | ---------- | -------------------------------------------------------------------------------------------------------------- |
 | `devices`       | `dev`, `d` | list, get, adopt, remove, restart, locate, port-cycle, stats, pending, upgrade, provision, speedtest, tags     |
-| `clients`       | `cl`       | list, find, get, authorize, unauthorize, block, unblock, kick, forget, reservations (`res`), set-ip, remove-ip |
+| `clients`       | `cl`       | list, find, get, roams, wifi, authorize, unauthorize, block, unblock, kick, forget, reservations (`res`), set-ip, remove-ip |
 | `networks`      | `net`, `n` | list, get, create, update, delete, refs                                                                        |
-| `wifi`          | `w`        | list, get, create, update, delete                                                                              |
+| `wifi`          | `w`        | list, get, neighbors, channels, create, update, delete                                                        |
 | `firewall`      | `fw`       | policies {list, get, create, update, patch, delete, reorder}, zones {list, get, create, update, delete}        |
 | `nat`           |            | policies {list, get, create, delete}                                                                           |
 | `acl`           |            | list, get, create, update, delete, reorder                                                                     |

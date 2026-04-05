@@ -113,8 +113,8 @@ ClawHub and Claude Code plugin).
 - **`session/`**: `SessionClient`, session cookie + CSRF for session auth,
   plus `X-API-KEY` on UniFi OS session HTTP endpoints. Uses envelope-wrapped
   responses at `/proxy/network/api/` and `/proxy/network/v2/api/`. Covers
-  events, stats, device commands, admin, backups, DPI control. Session
-  WebSocket still requires a session cookie.
+  events, stats, Wi-Fi/client observability, device commands, admin,
+  backups, DPI control. Session WebSocket still requires a session cookie.
 
 Both clients share a common `TransportConfig` and `TlsMode`. TLS modes:
 `SystemDefaults`, `AcceptInvalid`, `CustomPem`. Credentials are wrapped in
@@ -186,12 +186,13 @@ pub enum AuthCredentials {
 
 **ApiKey mode is enough for most HTTP work on UniFi OS controllers.**
 `connect()` builds a `SessionClient` with `X-API-KEY`, so `clients list`,
-`devices list`, `topology`, device commands, stats, admin operations, DHCP
-reservations, and `events list` can all use session HTTP without a password.
-Use **Hybrid** when you need session WebSocket features such as
-`events watch`, or when you want maximum compatibility across controller
-variants. Merge still happens inline in `full_refresh()` in
-`controller/refresh.rs`.
+`devices list`, `topology`, device commands, stats, Wi-Fi observability
+commands (`wifi neighbors`, `wifi channels`, `clients roams`, `clients wifi`),
+admin operations, DHCP reservations, and `events list` can all use session
+HTTP without a password. Use **Hybrid** when you need session WebSocket
+features such as `events watch`, or when you want maximum compatibility
+across controller variants. Merge still happens inline in `full_refresh()`
+in `controller/refresh.rs`.
 
 ---
 
@@ -558,6 +559,17 @@ workflow.
   `uplink_device_mac`, `vlan`, `tx_bytes`, `rx_bytes`, `hostname`. These
   must come from Session API. Hybrid merge is by IP-address match in
   `controller::refresh::full_refresh`.
+- **`stat/rogueap` uses epoch seconds**, not milliseconds. Passing
+  millisecond-style values or assuming stats-report semantics returns empty
+  data silently.
+- **`wifiman/{ip}/` band codes differ from `stat/sta`**. Wi-Fi experience
+  uses `2.4g` / `5g` / `6g`; station data uses `ng` / `na` / `6e`.
+- **`stat/report/*.ap` and `*.site` use different attribute prefixes**.
+  `.ap` expects `ng-cu_total`; `.site` expects `ap-ng-cu_total`.
+- **`system-log/client-connection/{mac}` requires MAC duplication** in both
+  the URL path and the `?mac=` query parameter.
+- **Session v2 observability routes return raw JSON**, not the classic
+  `{meta, data}` envelope. Use `get_raw()` / `raw_get()` patterns.
 - **Device `radios` is always empty**. Parsing from the `interfaces`
   JSON is not yet implemented. Known gap.
 

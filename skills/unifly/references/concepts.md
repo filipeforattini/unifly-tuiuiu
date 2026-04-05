@@ -118,6 +118,8 @@ matrix to pick the right `auth_mode`.
 - `admin` (list/invite/revoke/update): `/rest/admin`
 - `alarms` (list/archive/archive-all)
 - `clients reservations`, `clients set-ip`, `clients remove-ip`: `/rest/user`
+- `clients roams <mac>`: `/v2/api/site/{site}/system-log/client-connection/{mac}`
+- `clients wifi <ip>`: `/v2/api/site/{site}/wifiman/{ip}/`
 - `devices` adopt, remove, restart, locate, port-cycle, upgrade, provision,
   speedtest (all route through `cmd/devmgr` and `cmd/stamgr`)
 - `clients` authorize, unauthorize, block, unblock, kick, forget (via
@@ -127,6 +129,8 @@ matrix to pick the right `auth_mode`.
 - `sites create | delete`
 - `stats site | device | client | gateway | dpi`: `/stat/report/*`
 - `system health | sysinfo | backup | reboot | poweroff`
+- `wifi neighbors`: `/stat/rogueap`
+- `wifi channels`: `/stat/current-channel`
 
 ### Session WebSocket required (session-backed auth)
 
@@ -149,12 +153,31 @@ falls back to polling when no session cookie is available.
   reach Session, v2 (`v2/api/site/...`), and Integration (`integration/v1/...`)
   endpoints regardless of auth mode.
 
+### Session API Endpoint Quirks
+
+- **`stat/rogueap` uses epoch seconds**, not milliseconds. The `--within`
+  filter on `wifi neighbors` maps to this behavior directly, so passing
+  millisecond-style values silently returns empty data.
+- **`wifiman/{ip}/` band codes differ from `stat/sta`**. The Wi-Fi
+  experience endpoint uses `2.4g` / `5g` / `6g`, while station data often
+  uses `ng` / `na` / `6e`.
+- **`stat/report/*.ap` and `*.site` use different attribute prefixes**.
+  `.ap` expects bare fields like `ng-cu_total`, while `.site` uses
+  prefixed names such as `ap-ng-cu_total`.
+- **`system-log/client-connection/{mac}` duplicates the MAC in query
+  params**. Include the client MAC in both the path and `?mac=` or the
+  endpoint may return empty results.
+- **v2 endpoints return raw JSON**, not the `{meta, data}` envelope. Use
+  `get_raw()` / `raw_get()` patterns for `clients roams`, `clients wifi`,
+  and similar observability routes.
+
 ## Auth Mode Decision Tree
 
 1. **"I only have an API key"** → `auth_mode = "integration"`. On UniFi OS,
    most HTTP commands work, including stats, device commands, reservations,
-   admin operations, and enriched `clients list` / `devices list`. Live
-   `events watch` still will not.
+   Wi-Fi observability (`wifi neighbors`, `wifi channels`, `clients roams`,
+   `clients wifi`), admin operations, and enriched `clients list` /
+   `devices list`. Live `events watch` still will not.
 2. **"I have username + password only"** → `auth_mode = "session"`. Events,
    stats, device commands work. Modern entities (DNS policies, NAT policies,
    traffic lists, ACL) require Integration and will fail.

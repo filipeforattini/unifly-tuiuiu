@@ -1,6 +1,8 @@
 use std::sync::Arc;
 
+use chrono::{DateTime, Utc};
 use serde::Serialize;
+use serde_json::Value;
 use tabled::Tabled;
 use unifly_api::Client;
 use unifly_api::session_models::SessionUserEntry;
@@ -115,4 +117,188 @@ pub(super) fn reservation_row(reservation: &Reservation, painter: &Painter) -> R
         fixed_ip: painter.ip(reservation.fixed_ip.as_deref().unwrap_or("-")),
         network: painter.id(reservation.network_id.as_deref().unwrap_or("-")),
     }
+}
+
+// ── Client Roams ────────────────────────────────────────────────
+
+#[derive(Tabled)]
+pub(super) struct RoamRow {
+    #[tabled(rename = "Time")]
+    time: String,
+    #[tabled(rename = "Event")]
+    event: String,
+    #[tabled(rename = "AP")]
+    ap: String,
+    #[tabled(rename = "SSID")]
+    ssid: String,
+    #[tabled(rename = "Signal")]
+    signal: String,
+    #[tabled(rename = "Band")]
+    band: String,
+}
+
+fn json_str<'a>(value: &'a Value, keys: &[&str]) -> Option<&'a str> {
+    keys.iter()
+        .find_map(|key| value.get(*key).and_then(Value::as_str))
+}
+
+fn json_i64(value: &Value, keys: &[&str]) -> Option<i64> {
+    keys.iter()
+        .find_map(|key| value.get(*key).and_then(Value::as_i64))
+}
+
+fn format_event_timestamp(timestamp: i64) -> String {
+    let formatted = if timestamp.abs() >= 1_000_000_000_000 {
+        DateTime::<Utc>::from_timestamp_millis(timestamp)
+    } else {
+        DateTime::<Utc>::from_timestamp(timestamp, 0)
+    };
+    formatted.map_or_else(
+        || timestamp.to_string(),
+        |datetime| datetime.format("%Y-%m-%d %H:%M:%S UTC").to_string(),
+    )
+}
+
+fn append_neighbor_lines(lines: &mut Vec<String>, data: &Value, painter: &Painter) {
+    let Some(neighbors) = data.get("nearest_neighbors").and_then(Value::as_array) else {
+        return;
+    };
+    if neighbors.is_empty() {
+        return;
+    }
+
+    lines.push(String::new());
+    lines.push(format!("Nearest Neighbors ({}):", neighbors.len()));
+    for neighbor in neighbors.iter().take(10) {
+        let bssid = json_str(neighbor, &["bssid"]).unwrap_or("-");
+        let channel =
+            json_i64(neighbor, &["channel"]).map_or_else(|| "-".into(), |value| value.to_string());
+        let signal = json_i64(neighbor, &["signal"])
+            .map_or_else(|| "-".into(), |value| format!("{value} dBm"));
+        lines.push(format!(
+            "  {} ch:{} signal:{}",
+            painter.mac(bssid),
+            painter.number(&channel),
+            painter.number(&signal),
+        ));
+    }
+}
+
+fn append_uplink_lines(lines: &mut Vec<String>, data: &Value, painter: &Painter) {
+    let Some(uplinks) = data.get("uplink_devices").and_then(Value::as_array) else {
+        return;
+    };
+    if uplinks.is_empty() {
+        return;
+    }
+
+    lines.push(String::new());
+    lines.push(format!("Uplink Chain ({} hops):", uplinks.len()));
+    for uplink in uplinks {
+        let name = json_str(uplink, &["device_name", "name"]).unwrap_or("-");
+        let experience = json_i64(uplink, &["wifi_experience"])
+            .map_or_else(|| "-".into(), |value| format!("{value}/100"));
+        lines.push(format!(
+            "  {} experience:{}",
+            painter.name(name),
+            painter.number(&experience),
+        ));
+    }
+}
+
+pub(super) fn roam_row(event: &Value, painter: &Painter) -> RoamRow {
+    let time =
+        json_i64(event, &["timestamp", "time"]).map_or_else(|| "-".into(), format_event_timestamp);
+    let signal = json_i64(event, &["signal", "connection_signal"])
+        .map_or_else(|| "-".into(), |value| format!("{value} dBm"));
+
+    RoamRow {
+        time: painter.muted(&time),
+        event: painter
+            .name(json_str(event, &["event_type", "eventType", "event", "key"]).unwrap_or("-")),
+        ap: painter.muted(json_str(event, &["ap_name", "ap", "ap_mac"]).unwrap_or("-")),
+        ssid: painter.name(json_str(event, &["ssid", "essid"]).unwrap_or("-")),
+        signal: painter.number(&signal),
+        band: painter.muted(json_str(event, &["band", "radio"]).unwrap_or("-")),
+    }
+}
+
+// ── Wi-Fi Experience ────────────────────────────────────────────
+
+pub(super) fn wifi_experience_detail(data: &Value, painter: &Painter) -> String {
+    let mut lines = vec![
+        format!(
+            "Wi-Fi Experience: {}",
+            painter.number(
+                &json_i64(data, &["wifi_experience"])
+                    .map_or_else(|| "-".into(), |score| format!("{score}/100")),
+            )
+        ),
+        format!(
+            "Signal:           {}",
+            painter.number(
+                &json_i64(data, &["signal"])
+                    .map_or_else(|| "-".into(), |signal| format!("{signal} dBm")),
+            )
+        ),
+        format!(
+            "Noise:            {}",
+            painter.number(
+                &json_i64(data, &["noise"])
+                    .map_or_else(|| "-".into(), |noise| format!("{noise} dBm")),
+            )
+        ),
+        format!(
+            "Channel:          {}",
+            painter.number(
+                &json_i64(data, &["channel"])
+                    .map_or_else(|| "-".into(), |channel| channel.to_string()),
+            )
+        ),
+        format!(
+            "Band:             {}",
+            painter.muted(json_str(data, &["band"]).unwrap_or("-"))
+        ),
+        format!(
+            "Channel Width:    {}",
+            painter.number(
+                &json_i64(data, &["channel_width"])
+                    .map_or_else(|| "-".into(), |width| format!("{width} MHz")),
+            )
+        ),
+        format!(
+            "Protocol:         {}",
+            painter.muted(json_str(data, &["radio_protocol", "protocol"]).unwrap_or("-"))
+        ),
+        format!(
+            "Link Down:        {}",
+            painter.number(
+                &json_i64(data, &["link_download_rate_kbps", "download_rate_kbps"])
+                    .map_or_else(|| "-".into(), |rate| format!("{rate} Kbps")),
+            )
+        ),
+        format!(
+            "Link Up:          {}",
+            painter.number(
+                &json_i64(data, &["link_upload_rate_kbps", "upload_rate_kbps"])
+                    .map_or_else(|| "-".into(), |rate| format!("{rate} Kbps")),
+            )
+        ),
+    ];
+
+    if let Some(ssid) = json_str(data, &["ssid", "essid"]) {
+        lines.insert(1, format!("SSID:             {}", painter.name(ssid)));
+    }
+
+    if let Some(access_point) = json_str(data, &["ap_name", "ap", "ap_mac"]) {
+        lines.insert(
+            2,
+            format!("Access Point:     {}", painter.muted(access_point)),
+        );
+    }
+
+    append_neighbor_lines(&mut lines, data, painter);
+    append_uplink_lines(&mut lines, data, painter);
+
+    lines.join("\n")
 }
