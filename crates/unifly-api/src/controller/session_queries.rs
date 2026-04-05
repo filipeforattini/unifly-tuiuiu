@@ -259,12 +259,13 @@ impl Controller {
         Ok(session.list_ipsec_sa().await?)
     }
 
-    pub async fn get_vpn_health(&self) -> Result<Option<HealthSummary>, CoreError> {
-        Ok(self
-            .get_site_health()
-            .await?
-            .into_iter()
-            .find(|summary| summary.subsystem.eq_ignore_ascii_case("vpn")))
+    pub fn get_vpn_health(&self) -> Option<HealthSummary> {
+        self.inner
+            .store
+            .site_health_snapshot()
+            .iter()
+            .find(|summary| summary.subsystem.eq_ignore_ascii_case("vpn"))
+            .cloned()
     }
 
     pub async fn get_sysinfo(&self) -> Result<SysInfo, CoreError> {

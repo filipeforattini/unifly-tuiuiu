@@ -262,7 +262,7 @@ pub async fn handle(
             output::print_output(&out, global.quiet);
             Ok(())
         }
-        VpnCommand::Health => match controller.get_vpn_health().await? {
+        VpnCommand::Health => match controller.get_vpn_health() {
             Some(health) => {
                 let out = output::render_single(
                     &global.output,

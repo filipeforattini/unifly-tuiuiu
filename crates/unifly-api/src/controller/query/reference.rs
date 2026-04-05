@@ -18,25 +18,7 @@ impl Controller {
             .await?;
         Ok(raw
             .into_iter()
-            .map(|server| {
-                let fields = &server.fields;
-                VpnServer {
-                    id: parse_integration_entity_id(fields),
-                    name: field_string(fields, &["name"]),
-                    server_type: field_string(fields, &["type", "serverType"])
-                        .unwrap_or_else(|| "UNKNOWN".into()),
-                    enabled: field_bool(fields, &["enabled"]),
-                    subnet: field_string(fields, &["subnet", "addressRange"]),
-                    port: field_u16(fields, &["port"]),
-                    wan_ip: field_string(fields, &["wanIp", "wanIP", "wanAddress"]),
-                    connected_clients: field_u32(
-                        fields,
-                        &["connectedClients", "connectedClientCount", "numClients"],
-                    ),
-                    protocol: field_string(fields, &["protocol", "transportProtocol"]),
-                    extra: collect_extra(fields),
-                }
-            })
+            .map(|server| parse_vpn_server(&server.fields))
             .collect())
     }
 
@@ -49,31 +31,7 @@ impl Controller {
             .await?;
         Ok(raw
             .into_iter()
-            .map(|tunnel| {
-                let fields = &tunnel.fields;
-                let local_subnets = field_string_list(fields, &["localNetworks", "localSubnets"]);
-                let remote_subnets =
-                    field_string_list(fields, &["remoteNetworks", "remoteSubnets"]);
-                VpnTunnel {
-                    id: parse_integration_entity_id(fields),
-                    name: field_string(fields, &["name"]),
-                    tunnel_type: field_string(fields, &["type", "tunnelType"])
-                        .unwrap_or_else(|| "UNKNOWN".into()),
-                    enabled: field_bool(fields, &["enabled"]),
-                    peer_address: field_string(
-                        fields,
-                        &["peerIp", "peerAddress", "remoteAddress", "remoteHost"],
-                    ),
-                    local_subnets,
-                    remote_subnets,
-                    has_psk: fields
-                        .get("psk")
-                        .or_else(|| fields.get("preSharedKey"))
-                        .is_some_and(|value| !value.is_null()),
-                    ike_version: field_string(fields, &["ikeVersion", "ike"]),
-                    extra: collect_extra(fields),
-                }
-            })
+            .map(|tunnel| parse_vpn_tunnel(&tunnel.fields))
             .collect())
     }
 
@@ -270,6 +228,50 @@ fn parse_integration_entity_id(
         .map_or_else(|| EntityId::Legacy("unknown".into()), EntityId::Uuid)
 }
 
+fn parse_vpn_server(fields: &std::collections::HashMap<String, serde_json::Value>) -> VpnServer {
+    VpnServer {
+        id: parse_integration_entity_id(fields),
+        name: field_string(fields, &["name"]),
+        server_type: field_string(fields, &["type", "serverType"])
+            .unwrap_or_else(|| "UNKNOWN".into()),
+        enabled: field_bool(fields, &["enabled"]),
+        subnet: field_string(fields, &["subnet", "addressRange"]),
+        port: field_u16(fields, &["port"]),
+        wan_ip: field_string(fields, &["wanIp", "wanIP", "wanAddress"]),
+        connected_clients: field_u32(
+            fields,
+            &["connectedClients", "connectedClientCount", "numClients"],
+        ),
+        protocol: field_string(fields, &["protocol", "transportProtocol"]),
+        extra: collect_extra(fields),
+    }
+}
+
+fn parse_vpn_tunnel(fields: &std::collections::HashMap<String, serde_json::Value>) -> VpnTunnel {
+    let local_subnets = field_string_list(fields, &["localNetworks", "localSubnets"]);
+    let remote_subnets = field_string_list(fields, &["remoteNetworks", "remoteSubnets"]);
+
+    VpnTunnel {
+        id: parse_integration_entity_id(fields),
+        name: field_string(fields, &["name"]),
+        tunnel_type: field_string(fields, &["type", "tunnelType"])
+            .unwrap_or_else(|| "UNKNOWN".into()),
+        enabled: field_bool(fields, &["enabled"]),
+        peer_address: field_string(
+            fields,
+            &["peerIp", "peerAddress", "remoteAddress", "remoteHost"],
+        ),
+        local_subnets,
+        remote_subnets,
+        has_psk: fields
+            .get("psk")
+            .or_else(|| fields.get("preSharedKey"))
+            .is_some_and(|value| !value.is_null()),
+        ike_version: field_string(fields, &["ikeVersion", "ike"]),
+        extra: collect_extra(fields),
+    }
+}
+
 fn field_string(
     fields: &std::collections::HashMap<String, serde_json::Value>,
     keys: &[&str],
@@ -347,7 +349,9 @@ fn collect_extra(
 
 #[cfg(test)]
 mod tests {
-    use super::parse_integration_entity_id;
+    use super::{
+        field_string_list, parse_integration_entity_id, parse_vpn_server, parse_vpn_tunnel,
+    };
     use crate::EntityId;
 
     #[test]
@@ -370,5 +374,90 @@ mod tests {
         let id = parse_integration_entity_id(&fields);
 
         assert_eq!(id, EntityId::Legacy("unknown".into()));
+    }
+
+    #[test]
+    fn parse_vpn_server_uses_fallback_fields() {
+        let fields: std::collections::HashMap<String, serde_json::Value> =
+            serde_json::from_value(serde_json::json!({
+                "id": "11111111-1111-1111-1111-111111111111",
+                "name": "Home WG",
+                "serverType": "WIREGUARD",
+                "enabled": true,
+                "addressRange": "10.8.0.0/24",
+                "port": 51820,
+                "wanAddress": "198.51.100.10",
+                "numClients": 4,
+                "transportProtocol": "UDP"
+            }))
+            .expect("hash map");
+
+        let server = parse_vpn_server(&fields);
+
+        assert_eq!(server.name.as_deref(), Some("Home WG"));
+        assert_eq!(server.server_type, "WIREGUARD");
+        assert_eq!(server.subnet.as_deref(), Some("10.8.0.0/24"));
+        assert_eq!(server.port, Some(51_820));
+        assert_eq!(server.wan_ip.as_deref(), Some("198.51.100.10"));
+        assert_eq!(server.connected_clients, Some(4));
+        assert_eq!(server.protocol.as_deref(), Some("UDP"));
+        assert_eq!(server.extra.len(), fields.len());
+    }
+
+    #[test]
+    fn parse_vpn_tunnel_combines_subnet_aliases() {
+        let fields: std::collections::HashMap<String, serde_json::Value> =
+            serde_json::from_value(serde_json::json!({
+                "id": "22222222-2222-2222-2222-222222222222",
+                "name": "Branch Tunnel",
+                "tunnelType": "IPSEC",
+                "enabled": true,
+                "remoteAddress": "203.0.113.20",
+                "localNetworks": ["10.0.0.0/24"],
+                "localSubnets": ["10.0.1.0/24"],
+                "remoteNetworks": ["10.10.0.0/24"],
+                "remoteSubnets": ["10.10.1.0/24"],
+                "preSharedKey": "redacted",
+                "ike": 2
+            }))
+            .expect("hash map");
+
+        let tunnel = parse_vpn_tunnel(&fields);
+
+        assert_eq!(tunnel.name.as_deref(), Some("Branch Tunnel"));
+        assert_eq!(tunnel.tunnel_type, "IPSEC");
+        assert_eq!(tunnel.peer_address.as_deref(), Some("203.0.113.20"));
+        assert_eq!(
+            tunnel.local_subnets,
+            vec!["10.0.0.0/24".to_string(), "10.0.1.0/24".to_string()]
+        );
+        assert_eq!(
+            tunnel.remote_subnets,
+            vec!["10.10.0.0/24".to_string(), "10.10.1.0/24".to_string()]
+        );
+        assert!(tunnel.has_psk);
+        assert_eq!(tunnel.ike_version.as_deref(), Some("2"));
+        assert_eq!(tunnel.extra.len(), fields.len());
+    }
+
+    #[test]
+    fn field_string_list_accepts_scalar_and_array_values() {
+        let fields: std::collections::HashMap<String, serde_json::Value> =
+            serde_json::from_value(serde_json::json!({
+                "localNetworks": "10.0.0.0/24",
+                "localSubnets": ["10.0.1.0/24", 42]
+            }))
+            .expect("hash map");
+
+        let values = field_string_list(&fields, &["localNetworks", "localSubnets"]);
+
+        assert_eq!(
+            values,
+            vec![
+                "10.0.0.0/24".to_string(),
+                "10.0.1.0/24".to_string(),
+                "42".to_string()
+            ]
+        );
     }
 }
