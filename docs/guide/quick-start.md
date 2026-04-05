@@ -1,5 +1,11 @@
 # Quick Start
 
+## Prerequisites
+
+- A UniFi Network controller (Dream Machine, Cloud Key, UCG, or self-hosted)
+- An API key (Settings > Integrations) and/or admin credentials
+- unifly [installed](/guide/installation)
+
 ## Interactive Setup
 
 Run the setup wizard to configure your first controller profile:
@@ -10,7 +16,7 @@ unifly config init
 
 The wizard walks you through:
 
-1. **Controller URL**: your UniFi controller's address (e.g., `https://192.168.1.1`)
+1. **Controller URL**: your controller's address (e.g., `https://192.168.1.1`)
 2. **Authentication**: API key, username/password, or hybrid mode
 3. **Site selection**: choose which site to manage
 4. **TLS settings**: accept self-signed certificates if needed
@@ -50,12 +56,19 @@ Example output:
 Every command supports multiple output formats:
 
 ```bash
-unifly devices list                  # Default table
-unifly devices list -o json          # Full JSON
-unifly devices list -o json-compact  # Minified JSON (pipe-friendly)
+unifly devices list                  # Default table (human-readable)
+unifly devices list -o json          # Full JSON (for scripting)
+unifly devices list -o json-compact  # Single-line JSON (pipe-friendly)
 unifly devices list -o yaml          # YAML
-unifly devices list -o plain         # Plain text
+unifly devices list -o plain         # IDs only, one per line (for xargs)
 ```
+
+::: tip
+Use `-o json` for automation and `-o plain | xargs` for batch operations:
+```bash
+unifly clients list -o plain | xargs -n1 unifly clients get
+```
+:::
 
 ## Launch the TUI
 
@@ -64,10 +77,20 @@ For real-time monitoring, launch the terminal dashboard:
 ```bash
 unifly tui                   # Default profile
 unifly tui -p office         # Specific profile
-unifly tui -v                # Verbose logging to your system temp directory
 ```
 
-Navigate screens with number keys `1`-`8` or `Tab`/`Shift+Tab`. Press `q` to quit.
+```mermaid
+graph LR
+    1["1 Dashboard<br/><i>Health overview</i>"] --> 2["2 Devices<br/><i>Hardware status</i>"]
+    2 --> 3["3 Clients<br/><i>Connected users</i>"]
+    3 --> 4["4 Networks<br/><i>VLANs & DHCP</i>"]
+    4 --> 5["5 Firewall<br/><i>Policies & zones</i>"]
+    5 --> 6["6 Topology<br/><i>Network map</i>"]
+    6 --> 7["7 Events<br/><i>Live feed</i>"]
+    7 --> 8["8 Stats<br/><i>Historical data</i>"]
+```
+
+Navigate screens with number keys `1`-`8`. Press `,` for settings, `?` for help, `q` to quit.
 
 ## Multiple Controllers
 
@@ -82,7 +105,8 @@ unifly -p home devices list           # One-off override
 
 ## Next Steps
 
-- [Configuration](/guide/configuration):all config options and environment variables
-- [Authentication](/guide/authentication):API key vs password vs hybrid
-- [CLI Commands](/reference/cli):full command reference
-- [TUI Dashboard](/reference/tui):screen-by-screen guide
+- [Configuration](/guide/configuration): all config options, environment variables, and profiles
+- [Authentication](/guide/authentication): API key vs password vs hybrid
+- [CLI Commands](/reference/cli): full command reference
+- [TUI Dashboard](/reference/tui): screen-by-screen guide with all keybindings
+- [AI Agent Skill](/guide/agents): let your coding agent manage your network

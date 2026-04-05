@@ -4,7 +4,7 @@ layout: home
 hero:
   name: Unifly
   text: Your UniFi Network, at Your Fingertips
-  tagline: "CLI + TUI for UniFi Network Controllers: real-time monitoring, device management, and network administration from your terminal"
+  tagline: "26 commands, 10 TUI screens, dual-API engine. Manage your entire UniFi network from the terminal."
   actions:
     - theme: brand
       text: Get Started
@@ -16,22 +16,22 @@ hero:
 features:
   - icon: "\u26A1"
     title: Dual API Engine
-    details: Integration API (REST, API key) + Legacy API (session, cookie/CSRF) with automatic negotiation
+    details: Speaks both Integration API (REST, API key) and Legacy API (session, cookie/CSRF). You never think about which endpoint to hit.
   - icon: "\uD83D\uDCCA"
-    title: Real-Time TUI
-    details: btop-inspired dashboard with Braille traffic charts, CPU/MEM bars, and live client counts
-  - icon: "\uD83D\uDD0D"
-    title: 20+ Resource Types
-    details: Devices, clients, networks, WiFi, firewall, DNS, VPN, hotspot vouchers, DPI, and more
+    title: 10-Screen TUI
+    details: btop-inspired dashboard with Braille traffic charts, CPU/MEM bars, zoomable topology, and live event streaming.
+  - icon: "\uD83E\uDDE0"
+    title: 26 Top-Level Commands
+    details: Devices, clients, networks, WiFi, firewall, NAT, DNS, DPI, topology, raw API passthrough, and more.
   - icon: "\uD83D\uDD12"
     title: Secure Credentials
-    details: OS keyring storage for API keys and passwords. Nothing written to disk in plaintext
+    details: OS keyring storage for API keys and passwords. Nothing written to disk in plaintext.
   - icon: "\uD83C\uDF10"
     title: Multi-Profile
-    details: Named profiles for multiple controllers with instant switching via a single flag
-  - icon: "\uD83D\uDCE1"
-    title: WebSocket Events
-    details: Live event streaming with severity filtering and real-time push notifications
+    details: Named profiles for multiple controllers with instant switching. Great for managing home, office, and remote sites.
+  - icon: "\uD83E\uDD16"
+    title: AI Agent Skill
+    details: Ships with a skill bundle that teaches coding agents to provision VLANs, audit firewalls, and diagnose connectivity.
 ---
 
 <style>

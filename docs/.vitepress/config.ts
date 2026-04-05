@@ -4,20 +4,30 @@ export default defineConfig({
   title: 'Unifly',
   description: 'CLI + TUI for UniFi Network Controllers',
   base: '/unifly/',
+  lastUpdated: true,
 
   head: [
     ['meta', { name: 'theme-color', content: '#e135ff' }],
     ['meta', { property: 'og:type', content: 'website' }],
     ['meta', { property: 'og:title', content: 'Unifly Documentation' }],
     ['meta', { property: 'og:description', content: 'CLI + TUI for UniFi Network Controllers' }],
+    ['meta', { property: 'og:site_name', content: 'Unifly' }],
+    ['meta', { name: 'twitter:card', content: 'summary' }],
   ],
 
   themeConfig: {
     nav: [
       { text: 'Guide', link: '/guide/' },
-      { text: 'CLI', link: '/reference/cli' },
-      { text: 'TUI', link: '/reference/tui' },
+      {
+        text: 'Reference',
+        items: [
+          { text: 'CLI Commands', link: '/reference/cli' },
+          { text: 'TUI Dashboard', link: '/reference/tui' },
+          { text: 'Library API', link: '/reference/library' },
+        ]
+      },
       { text: 'Architecture', link: '/architecture/' },
+      { text: 'Troubleshooting', link: '/troubleshooting' },
     ],
 
     sidebar: {
@@ -30,6 +40,7 @@ export default defineConfig({
             { text: 'Quick Start', link: '/guide/quick-start' },
             { text: 'Configuration', link: '/guide/configuration' },
             { text: 'Authentication', link: '/guide/authentication' },
+            { text: 'AI Agent Skill', link: '/guide/agents' },
           ]
         }
       ],
@@ -39,6 +50,7 @@ export default defineConfig({
           items: [
             { text: 'CLI Commands', link: '/reference/cli' },
             { text: 'TUI Dashboard', link: '/reference/tui' },
+            { text: 'Library API', link: '/reference/library' },
           ]
         }
       ],
@@ -53,6 +65,19 @@ export default defineConfig({
           ]
         }
       ],
+      '/troubleshooting': [
+        {
+          text: 'Help',
+          items: [
+            { text: 'Troubleshooting', link: '/troubleshooting' },
+          ]
+        }
+      ],
+    },
+
+    editLink: {
+      pattern: 'https://github.com/hyperb1iss/unifly/edit/main/docs/:path',
+      text: 'Edit this page on GitHub'
     },
 
     socialLinks: [

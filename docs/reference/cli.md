@@ -110,18 +110,31 @@ NAT types: `masquerade`, `source`, `destination`. Create from CLI flags or a JSO
 ## Events
 
 ```bash
-unifly events list                    # Recent events
-unifly events watch                   # Live event feed
-unifly events watch --types EVT_SW_*  # Filter by event type
+unifly events list                        # Recent events
+unifly events list --hours 4              # Events from last 4 hours
+unifly events watch                       # Live event feed
+unifly events watch --types Device        # Filter by category
+unifly events watch --types Device,Client # Multiple categories
 ```
+
+The `--types` flag accepts `EventCategory` values (case-insensitive): `Device`, `Client`, `Network`, `System`, `Admin`, `Firewall`, `Vpn`, `Unknown`.
+
+::: warning
+`--types` takes category names, not `EVT_*` glob patterns. Use `Device` not `EVT_SW_*`.
+:::
 
 ## Statistics
 
 ```bash
-unifly stats gateway                  # Gateway bandwidth stats
-unifly stats client                   # Client statistics
 unifly stats site                     # Site-level statistics
+unifly stats device                   # Device bandwidth stats
+unifly stats client                   # Client statistics
+unifly stats gateway                  # Gateway stats (WAN, uptime)
+unifly stats dpi                      # DPI application breakdown
+unifly stats dpi --group-by by-cat    # Group by category instead of app
 ```
+
+Supported intervals: `5minute` (high resolution), `hourly`, `daily`, `monthly`.
 
 Intervals: `5m`, `hourly`, `daily`, `monthly`
 

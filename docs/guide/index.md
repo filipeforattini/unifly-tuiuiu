@@ -1,20 +1,44 @@
 # Introduction
 
-Unifly is a complete command-line toolkit for managing Ubiquiti UniFi network controllers. A single binary with two modes:
+Stop context-switching to the UniFi web dashboard. Unifly puts your entire network at your fingertips from the terminal you're already in.
 
 - **`unifly <command>`**: CLI for scripting, automation, and quick lookups
 - **`unifly tui`**: real-time terminal dashboard for monitoring
 
-Both powered by a shared async engine that speaks every UniFi API dialect.
+Both are powered by a shared async engine that speaks every UniFi API dialect, so you never have to think about which endpoint to hit.
 
-## Why Unifly?
+## The Problem
 
-UniFi controllers expose multiple APIs with different capabilities:
+UniFi controllers expose two completely different APIs:
+
+```mermaid
+graph LR
+    subgraph "Integration API"
+        I["REST + API Key"]
+        I1["Networks, WiFi, Firewall"]
+        I2["DNS, ACL, NAT, Traffic Lists"]
+    end
+
+    subgraph "Legacy API"
+        L["Cookie + CSRF"]
+        L1["Events, Stats, DPI"]
+        L2["Device Commands, Admin"]
+    end
+
+    subgraph unifly
+        U["Unified Interface"]
+    end
+
+    I --> U
+    L --> U
+    U --> CLI["CLI Output"]
+    U --> TUI["TUI Dashboard"]
+```
 
 - **Integration API**: RESTful, API-key authenticated, covers CRUD for most resources
 - **Legacy API**: Session-based with cookie/CSRF, required for events, statistics, and device commands
 
-Unifly unifies these into a single, coherent interface. You don't need to know which API endpoint provides what. Unifly handles the routing, authentication, and data merging automatically.
+Most tools only speak one dialect. The web dashboard is slow and can't be scripted. Unifly handles the routing, authentication, and data merging automatically.
 
 ## What You Can Do
 
@@ -24,28 +48,32 @@ Unifly unifies these into a single, coherent interface. You don't need to know w
 | **Client Monitoring** | See connected clients with signal, traffic, and VLAN info |
 | **Network Configuration** | Manage VLANs, subnets, DHCP, and IPv6 settings |
 | **WiFi Management** | Create and modify SSIDs, view radio stats |
-| **Firewall** | Manage policies, zones, and ACL rules |
+| **Firewall & NAT** | Manage policies, zones, ACL rules, and NAT rules |
 | **Events & Alarms** | Stream live events, acknowledge and archive alarms |
 | **Statistics** | Query bandwidth, client counts, and DPI data over time |
+| **Raw API Access** | Hit any controller endpoint directly with `unifly api` |
 | **Real-Time Dashboard** | Monitor everything with live Braille charts and status bars |
 
 ## Architecture at a Glance
 
-```
-  unifly (CLI + TUI binaries)
-       │
-       ▼
-  unifly-api (library)
-  ├── HTTP/WS transport
-  ├── Controller lifecycle
-  ├── Reactive DataStore
-  └── Domain models
+```mermaid
+graph TD
+    UNIFLY["unifly<br/><i>CLI + TUI (single binary)</i>"]
+    API["unifly-api<br/><i>Library crate on crates.io</i>"]
+
+    UNIFLY --> API
+
+    API --> INT["Integration Client<br/>REST + API Key"]
+    API --> LEG["Legacy Client<br/>Cookie + CSRF"]
+    API --> WS["WebSocket<br/>Live Events"]
+    API --> DS["DataStore<br/>DashMap + watch channels"]
 ```
 
-Two crates with a clean dependency chain. See the [Architecture](/architecture/) section for the full picture.
+Two crates with a clean dependency chain. The library is published independently for Rust developers building custom integrations. See the [Architecture](/architecture/) section for the full picture.
 
 ## Next Steps
 
-- [Installation](/guide/installation):get unifly on your system
-- [Quick Start](/guide/quick-start):configure and run your first commands
-- [Configuration](/guide/configuration):deep dive into profiles and settings
+- [Installation](/guide/installation): get unifly on your system
+- [Quick Start](/guide/quick-start): configure and run your first commands
+- [Authentication](/guide/authentication): understand API key vs password vs hybrid
+- [AI Agent Skill](/guide/agents): let your coding agent manage your network

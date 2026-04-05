@@ -1,8 +1,27 @@
 # Authentication
 
-Unifly supports three authentication modes, each suited to different use cases.
+Unifly supports three authentication modes. The right choice depends on what you need to do.
 
-## API Key (Recommended)
+## Which Mode Do I Need?
+
+```mermaid
+flowchart TD
+    START["What do you need?"] --> Q1{"Events, stats, or<br/>device commands?"}
+    Q1 -->|"No, just CRUD"| APIKEY["API Key Mode"]
+    Q1 -->|"Yes"| Q2{"Do you also need<br/>network/WiFi/firewall CRUD?"}
+    Q2 -->|"No"| LEGACY["Username/Password Mode"]
+    Q2 -->|"Yes"| HYBRID["Hybrid Mode ✨"]
+
+    style HYBRID fill:#50fa7b,color:#0a0a0f
+    style APIKEY fill:#80ffea,color:#0a0a0f
+    style LEGACY fill:#f1fa8c,color:#0a0a0f
+```
+
+::: tip Recommended
+**Hybrid mode** gives you full access to everything. Use it unless you have a specific reason not to.
+:::
+
+## API Key
 
 Generate a key on your controller under **Settings > Integrations**. Provides full CRUD access via the Integration API.
 
@@ -11,33 +30,50 @@ unifly config init                     # Select "API Key" during setup
 unifly --api-key <KEY> devices list    # Or pass directly
 ```
 
-**Pros:** Simplest setup, no session management, works with all Integration API endpoints.
+| Pros | Limitations |
+|---|---|
+| Simplest setup | No event streaming |
+| No session management | No historical statistics |
+| Stable, no token expiry | No device commands (restart, adopt, locate) |
+| Works for all config CRUD | Client/device records miss some fields |
 
-**Limitation:** No access to Legacy API features (events, statistics, device commands).
+Best for: CI/CD pipelines, scripted provisioning, config-only workflows.
 
 ## Username / Password
 
-Legacy session-based auth with cookie and CSRF token handling. Required for events, statistics, and device commands not yet in the Integration API.
+Legacy session-based auth with cookie and CSRF token handling.
 
 ```bash
 unifly config init                     # Select "Username/Password" during setup
 ```
 
-**Pros:** Full access to Legacy API features.
+| Pros | Limitations |
+|---|---|
+| Full Legacy API access | Sessions expire periodically |
+| Events, stats, device commands | No access to modern Integration endpoints |
+| Admin management | DNS, ACL, traffic lists unavailable |
 
-**Limitation:** Session tokens expire, requires periodic re-authentication.
+Best for: Monitoring-focused setups, event streaming, read-heavy workflows.
 
 ## Hybrid Mode
 
-Best of both worlds:API key for Integration API CRUD, username/password for Legacy API features. The setup wizard offers this when both are available.
+Both APIs at once. API key for Integration CRUD, username/password for Legacy features. The setup wizard offers this when you provide both.
 
 ```bash
 unifly config init                     # Select "Hybrid" during setup
 ```
 
-**Pros:** Complete access to all API features.
+| Capability | API Used |
+|---|---|
+| Networks, WiFi, Firewall, DNS, ACL | Integration API |
+| NAT policies | Legacy v2 API |
+| Events, Stats, DPI | Legacy API |
+| Device commands (restart, adopt) | Legacy API |
+| Client/device field enrichment | Both (merged by IP/MAC) |
 
-**How it works:** Unifly uses the API key for standard CRUD operations and transparently falls back to session auth for Legacy-only endpoints.
+How it works: unifly routes each request to the best API automatically. Client and device records are enriched by merging Integration data with Legacy fields (traffic bytes, hostname, wireless info, uplink MAC, VLAN).
+
+To verify Hybrid is working, check that `clients list` shows traffic bytes and hostname columns populated.
 
 ## Credential Storage
 
@@ -51,6 +87,13 @@ All credentials are stored in your OS keyring:
 
 Nothing is ever written to disk in plaintext. The `config.toml` file only stores non-sensitive settings like controller URLs and site names.
 
+To update a stored password:
+
+```bash
+unifly config set-password              # Updates the active profile
+unifly config set-password --profile office  # Updates a specific profile
+```
+
 ## Environment Variables
 
 For CI/CD and scripting, pass credentials via environment:
@@ -61,6 +104,28 @@ export UNIFI_URL="https://192.168.1.1"
 unifly devices list
 ```
 
-::: tip
-Environment variables take precedence over profile config but are overridden by CLI flags.
-:::
+```mermaid
+graph LR
+    A["CLI Flags"] -->|highest| RESULT["Final Value"]
+    B["Environment Variables"] -->|medium| RESULT
+    C["Config File"] -->|lowest| RESULT
+
+    style A fill:#ff6ac1,color:#0a0a0f
+    style B fill:#f1fa8c,color:#0a0a0f
+    style C fill:#80ffea,color:#0a0a0f
+```
+
+CLI flags override environment variables, which override config file values.
+
+## MFA / TOTP
+
+If your controller requires two-factor authentication:
+
+```bash
+# One-shot with 1Password CLI
+UNIFI_TOTP=$(op read "op://Personal/UniFi/one-time password") \
+  unifly devices list
+
+# Or configure in your profile
+unifly config set totp_env UNIFI_TOTP
+```
