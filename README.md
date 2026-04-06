@@ -1,42 +1,42 @@
 # unifly-tuiuiu
 
-Estudo de viabilidade para reconstruir a experiência terminal do `unifly` com `TypeScript + tuiuiu.js`, mantendo a implementação original em Rust como baseline técnico e funcional.
+This fork is a focused **viability study** for rebuilding the `unifly` terminal experience with **TypeScript + `tuiuiu.js`**, while keeping the original Rust codebase as the baseline.
 
-## O que este fork é
+## What This Repository Is
 
-Este repositório não é mais uma distribuição geral do projeto original.
+This is no longer a general-purpose distribution repo for the original project.
 
-Ele existe para responder uma pergunta bem específica:
+It exists to answer one engineering question:
 
-> uma arquitetura em `JS/TS` com `tuiuiu.js` consegue entregar uma experiência de terminal mais poderosa, mais iterável e mais expressiva do que a implementação atual em Rust?
+> Can a `tuiuiu.js`-based TUI architecture deliver a more powerful, more iterable, and more expressive terminal experience than the current Rust implementation?
 
-Por isso o repositório agora fica reduzido a dois blocos:
+The repository is intentionally reduced to two active areas:
 
 - `crates/`
-  código Rust original, preservado como referência e baseline
+  the original Rust implementation, preserved as the baseline
 - `apps/unifly-ts/`
-  nova implementação experimental em TypeScript com `tuiuiu.js`
+  the TypeScript/TUIUIU experimental implementation
 
-Todo o resto foi removido para deixar o estudo direto, legível e sem ruído.
+Everything else was removed to keep the repo centered on the study.
 
-## Estrutura
+## Repository Layout
 
 ```text
 .
 ├── apps/
-│   └── unifly-ts/      # estudo TUI-first em TypeScript + tuiuiu.js
+│   └── unifly-ts/      # TUI-first study in TypeScript + tuiuiu.js
 ├── crates/
-│   ├── unifly/         # app original em Rust
-│   └── unifly-api/     # core original em Rust
+│   ├── unifly/         # original Rust app
+│   └── unifly-api/     # original Rust API/runtime core
 ├── Cargo.toml
 └── README.md
 ```
 
-## Como rodar
+## Running The Study
 
-### 1. Rodar o estudo em TypeScript
+### TypeScript / `tuiuiu.js`
 
-Requisitos:
+Requirements:
 
 - `node >= 20`
 - `pnpm`
@@ -47,45 +47,16 @@ pnpm install
 pnpm start
 ```
 
-Atalhos da TUI:
+TUI shortcuts:
 
-- `1-5` troca de tela
-- `r` força refresh
-- `d` alterna o pulse do modo demo
-- `q` ou `Esc` sai
+- `1-5` switch screens
+- `r` force refresh
+- `d` toggle demo pulse
+- `q` or `Esc` quit
 
-### 2. Rodar o baseline em Rust
+### Real Read-Only Mode
 
-Requisitos:
-
-- `rustup`
-- toolchain compatível com o workspace
-- `just`
-
-```bash
-just tui
-```
-
-ou:
-
-```bash
-just cli devices list
-```
-
-## Modos do `unifly-ts`
-
-### Demo
-
-Usa dados sintéticos com comportamento UniFi-like para iterar rapidamente a UX e a arquitetura do runtime.
-
-```bash
-cd apps/unifly-ts
-pnpm start
-```
-
-### Real
-
-Usa leitura real via UniFi API com `X-API-KEY`, Integration API + Session HTTP read-only, e cai para demo se o bootstrap falhar.
+This mode uses live UniFi reads through Integration API + Session HTTP with `X-API-KEY`.
 
 ```bash
 cd apps/unifly-ts
@@ -96,88 +67,193 @@ UNIFI_API_KEY=... \
 pnpm start
 ```
 
-## O que já foi implementado no `unifly-ts`
+If bootstrap fails, the app falls back to demo mode while keeping the failure visible in the UI.
 
-- scaffold TS isolado do workspace Rust
-- contratos explícitos de domínio e runtime
-- `DataStore` reativa em TS
-- `DemoController` para exploração de UX
-- `RealController` inicial para leitura real
-- clientes HTTP separados para Integration API e Session API
-- normalização de snapshot para alimentar uma TUI única
-- TUI navegável com dashboard, devices, clients, networks e events
-- fallback explícito de live mode para demo
-- metadados de runtime visíveis na interface
+## Running The Rust Baseline
 
-## Comparação prática: implementação TS vs Rust
+Requirements:
 
-### 1. Estrutura de runtime
+- `rustup`
+- compatible Rust toolchain for the workspace
+- `just`
 
-Rust:
+```bash
+just tui
+```
 
-- o baseline original concentra a orquestração em `Controller`, `DataStore`, refresh loop, subscriptions e transporte async
-- excelente para segurança de tipos, previsibilidade e performance
-- mais custoso para iterar rapidamente na camada visual e nos fluxos de interação
+Or:
 
-TS + `tuiuiu.js`:
+```bash
+just cli devices list
+```
 
-- separamos `domain`, `runtime`, `transport` e `ui` desde o começo
-- a TUI consome snapshots e sinais, sem vazar detalhe de transporte para a camada visual
-- a iteração na UX é mais rápida porque o ciclo de mudança e teste é muito menor
+## What Is Already Implemented In `unifly-ts`
 
-### 2. Construção da interface
+- isolated TS workspace under `apps/unifly-ts`
+- explicit domain and runtime contracts
+- reactive `DataStore`
+- `DemoController` for UX iteration
+- initial `RealController` for live read-only mode
+- separate Integration API and Session API HTTP clients
+- normalized runtime snapshot feeding a single TUI
+- navigable TUI with dashboard, devices, clients, networks, and events
+- explicit demo/live/fallback runtime metadata visible inside the UI
 
-Rust:
+## Practical Implementation Comparison
 
-- a TUI original em Ratatui é sólida, mas a composição costuma ser mais estrutural e menos fluida para experimentar layouts e interações novas
-- mudar o desenho de telas ou overlays tende a exigir mais esforço de plumbing
+The point of this fork is not abstract discussion. It is implementation comparison.
 
-TS + `tuiuiu.js`:
+### 1. App bootstrap
 
-- a UI fica muito mais direta de ler e montar
-- o custo de experimentar painéis, estados, navegação e visualização é menor
-- a prova atual já mostra runtime/status/source/erro live com pouca cerimônia
+Rust baseline:
 
-### 3. Estratégia de integração
+[`crates/unifly/src/tui/mod.rs`](/home/cyber/Work/FF/unifly-tuiuiu/crates/unifly/src/tui/mod.rs)
 
-Rust:
+```rust
+pub async fn launch(global: &GlobalOpts, args: TuiArgs) -> Result<()> {
+    terminal::install_hooks()?;
 
-- já cobre muito mais superfície funcional
-- tem o domínio UniFi consolidado e mais profundo
-- continua sendo a fonte de verdade para endpoint shape, auth modes e quirks
+    let _log_guard = setup_tracing(global.verbose, &args.log_file);
 
-TS + `tuiuiu.js`:
+    let config_theme = config::load_config().ok().and_then(|c| c.defaults.theme);
+    let theme_name = args.theme.as_deref().or(config_theme.as_deref());
+    theme::initialize(theme_name);
 
-- ainda está atrás em cobertura
-- usa o código Rust como mapa de contratos e comportamento
-- está sendo construído primeiro para provar superioridade de experiência, não paridade total de features
+    let controller = build_controller_direct(global)
+        .or_else(|| build_controller_from_config(global.profile.as_deref()));
 
-### 4. Onde o TS está melhorando o experimento
+    let mut app = app::App::new(controller);
+    app.run().await?;
 
-- bootstrap mais fácil para demo e para live read-only
-- separação explícita entre modo demo, live e fallback
-- TUI mais honesta sobre estado real da conexão
-- base mais favorável para explorar workflows mais densos e interativos
+    Ok(())
+}
+```
 
-### 5. Onde Rust ainda leva vantagem hoje
+`tuiuiu.js` study:
 
-- cobertura funcional real
-- maturidade da integração UniFi
-- robustez geral do core existente
+[`apps/unifly-ts/src/ui/app.ts`](/home/cyber/Work/FF/unifly-tuiuiu/apps/unifly-ts/src/ui/app.ts)
 
-## Como avaliar se o estudo está funcionando
+```ts
+export async function launchApp(controller: Controller): Promise<void> {
+  setTheme(darkTheme);
+  await controller.connect();
 
-O estudo é bem-sucedido se o `unifly-ts` provar pelo menos estes pontos:
+  const { waitUntilExit } = render(() => App({ controller }), { fullHeight: true });
+  await waitUntilExit();
+  await controller.disconnect();
+}
+```
 
-- a arquitetura JS/TS não degrada a clareza do domínio
-- a TUI fica mais rápida de evoluir do que no baseline Rust
-- a UX final consegue ficar mais expressiva e mais poderosa
-- o custo de manter dual-API coverage em TS continua aceitável
+Practical difference:
 
-## Próximos passos
+- the Rust entrypoint handles more boot concerns in one place: hooks, tracing, config, theme, controller construction, app lifecycle
+- the TS version is thinner because controller construction and runtime mode selection were pushed out of the UI layer
+- the TS shape is easier to recompose quickly while the Rust version is currently more operationally mature
 
-- aumentar a cobertura do `RealController`
-- aprofundar merge entre Integration e Session
-- expandir workflows operacionais além de observabilidade
-- comparar lado a lado os mesmos cenários de uso entre Rust e `tuiuiu.js`
+### 2. Reactive UI wiring
 
+Rust baseline:
+
+- the architecture is split across `Controller`, `DataStore`, `data_bridge`, `App`, screens, and screen state
+- this is robust, but moving data from transport to render tends to involve more plumbing across modules
+
+`tuiuiu.js` study:
+
+[`apps/unifly-ts/src/ui/app.ts`](/home/cyber/Work/FF/unifly-tuiuiu/apps/unifly-ts/src/ui/app.ts)
+
+```ts
+const [snapshot, setSnapshot] = useState<ControllerSnapshot>(props.controller.store.current());
+
+useEffect(() => props.controller.store.subscribe((nextSnapshot) => setSnapshot(nextSnapshot)));
+```
+
+Practical difference:
+
+- the TS version makes the store-to-view wiring extremely obvious
+- the Rust version gives you stronger compile-time guarantees, but the path from runtime state to screen rendering is less lightweight to iterate on
+
+### 3. Top-level screen composition
+
+Rust baseline:
+
+- composition is spread across the TUI app runtime, screen traits, and Ratatui render code
+- powerful, but more structural and lower-level
+
+`tuiuiu.js` study:
+
+[`apps/unifly-ts/src/ui/app.ts`](/home/cyber/Work/FF/unifly-tuiuiu/apps/unifly-ts/src/ui/app.ts)
+
+```ts
+return Screen(
+  {},
+  Header(...),
+  Main(
+    { padding: 1 },
+    Box(
+      { flexDirection: 'row', gap: 1, height: 'fill' },
+      NavigationPanel(screen()),
+      ContentPanel(current, screen()),
+    ),
+  ),
+  Footer(...),
+);
+```
+
+Practical difference:
+
+- the `tuiuiu.js` version reads much closer to the final layout
+- the Rust version exposes more of the rendering mechanics
+- for layout experimentation, the TS version is materially faster to reshape
+
+### 4. Runtime transparency inside the UI
+
+`tuiuiu.js` study:
+
+[`apps/unifly-ts/src/ui/app.ts`](/home/cyber/Work/FF/unifly-tuiuiu/apps/unifly-ts/src/ui/app.ts)
+
+```ts
+Panel(
+  { title: 'Runtime', height: 10 },
+  Box(
+    { flexDirection: 'column', gap: 1 },
+    Text({}, `Mode: ${snapshot.runtime.appMode}`),
+    Text({}, `Source: ${snapshot.runtime.dataSource}`),
+    Text({}, `Controller: ${snapshot.runtime.controllerUrl}`),
+    Text({}, `Site: ${snapshot.runtime.site}`),
+    Text(
+      { color: snapshot.runtime.lastError ? 'error' : 'mutedForeground' },
+      snapshot.runtime.lastError ?? snapshot.runtime.statusMessage,
+    ),
+  ),
+)
+```
+
+Practical difference:
+
+- this study deliberately surfaces whether the app is running on demo data, live data, or fallback-demo data
+- that makes the experiment honest: the UI should never “look live” when it is not
+- this kind of instrumentation was cheap to add in the TS version because the runtime snapshot shape is simple and directly consumed by the view
+
+## Current Assessment
+
+### Where Rust is still stronger
+
+- broader real feature coverage
+- deeper UniFi domain handling
+- more mature runtime and operational behavior
+
+### Where `tuiuiu.js` is already proving useful
+
+- faster layout iteration
+- simpler screen composition
+- easier runtime-state visibility in the UI
+- lower friction for trying new interaction models
+
+## Success Criteria For The Study
+
+This study is successful if `unifly-ts` proves that:
+
+- JS/TS can preserve domain clarity without collapsing into weakly-typed glue
+- the TUI can evolve faster than the Rust baseline
+- the resulting interface can become more expressive than the current Ratatui version
+- dual-API UniFi support remains manageable in a TS runtime

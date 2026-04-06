@@ -1,24 +1,25 @@
 # unifly-ts
 
-Primeira onda da migração do `unifly` para TypeScript com `tuiuiu.js`.
+First implementation wave of the `unifly` TypeScript rebuild using `tuiuiu.js`.
 
-## Objetivo
+## Goal
 
-Este app existe em paralelo ao workspace Rust para validar uma direção TUI-first:
+This app exists next to the Rust workspace to validate a TUI-first direction:
 
-- runtime e domínio em TypeScript;
-- shell TUI em `tuiuiu.js`;
-- foco inicial em observabilidade e workflows de operação;
-- base pronta para conectar Integration API e Session API depois.
+- runtime and domain modeled in TypeScript
+- terminal UI built with `tuiuiu.js`
+- initial focus on observability and operator workflows
+- architecture ready to absorb Integration API and Session API behavior
 
-## Estado atual
+## Current State
 
-- contratos centrais de domínio/runtime;
-- store reativa com snapshots;
-- `DemoController` com dados simulados e eventos ao vivo;
-- dashboard e telas prioritárias navegáveis.
+- core domain and runtime contracts
+- reactive store with snapshots
+- `DemoController` with synthetic live behavior
+- initial `RealController` for live read-only bootstrapping
+- dashboard and priority views already navigable
 
-## Como rodar
+## Run
 
 ```bash
 cd apps/unifly-ts
@@ -26,7 +27,7 @@ pnpm install
 pnpm start
 ```
 
-Modo real, read-only por API key:
+Real read-only mode:
 
 ```bash
 UNIFLY_TS_MODE=real \
@@ -36,18 +37,11 @@ UNIFI_API_KEY=... \
 pnpm start
 ```
 
-Se o bootstrap em modo real falhar, o app cai de volta para demo e registra o erro.
+If real bootstrap fails, the app falls back to demo mode and exposes the failure in the runtime panel.
 
-## Atalhos
+## Shortcuts
 
-- `1-5`: alterna telas
-- `r`: força refresh
-- `d`: alterna modo demo pulse
-- `q` ou `Esc`: sai
-
-## Próximos passos
-
-- plugar config/env real do UniFi;
-- expandir os clientes HTTP reais além do read-only por API key;
-- trocar partes da demo por dados normalizados da controller real;
-- expandir workflows operacionais.
+- `1-5` switch screens
+- `r` force refresh
+- `d` toggle demo pulse
+- `q` or `Esc` quit
