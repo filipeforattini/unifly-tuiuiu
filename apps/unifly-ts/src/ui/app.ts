@@ -5,7 +5,6 @@ import {
   Header,
   LineChart,
   Main,
-  Panel,
   Screen,
   Spacer,
   Text,
@@ -80,83 +79,90 @@ function App(props: { controller: Controller }) {
     {},
     Header(
       { backgroundColor: 'muted', width: 'fill', paddingX: 1 },
-      Title('unifly-ts / tuiuiu.js lab', { color: 'foreground' }),
+      Title('unifly-ts', { color: 'foreground' }),
+      Text({ color: 'cyan' }, '  tuiuiu.js study'),
       Spacer(),
-      Text({ color: 'mutedForeground' }, current.connectionState.toUpperCase()),
-      Text({ color: 'mutedForeground' }, '  '),
-      Text(
-        { color: current.runtime.dataSource === 'unifi-live' ? 'success' : 'warning' },
-        current.runtime.dataSource.toUpperCase(),
+      HeaderBadge(connectionLabel(current.connectionState), connectionColor(current.connectionState)),
+      Text({ color: 'mutedForeground' }, ' '),
+      HeaderBadge(
+        current.runtime.dataSource === 'unifi-live' ? 'LIVE' : current.runtime.dataSource.toUpperCase(),
+        current.runtime.dataSource === 'unifi-live' ? 'magenta' : 'warning',
       ),
       Text({ color: 'mutedForeground' }, '  '),
-      Text({ color: 'cyan' }, `refresh ${formatTimestamp(current.lastRefreshAt)}`),
+      Text({ color: 'mutedForeground' }, `site ${current.runtime.site}`),
+      Text({ color: 'mutedForeground' }, '  '),
+      Text({ color: 'cyan' }, formatTimestamp(current.lastRefreshAt)),
     ),
     Main(
-      { padding: 1 },
+      { paddingX: 1 },
       Box(
-        { flexDirection: 'row', gap: 1, height: 'fill' },
-        NavigationPanel(screen()),
+        { flexDirection: 'column', gap: 1, height: 'fill' },
+        ScreenTabs(screen()),
+        HeroMetrics(current),
         ContentPanel(current, screen()),
       ),
     ),
     Footer(
       { backgroundColor: 'muted', width: 'fill', paddingX: 1 },
-      Text({ color: 'mutedForeground' }, '[1-5] Screens'),
-      Text({ color: 'mutedForeground' }, '  [R] Refresh'),
-      Text({ color: 'mutedForeground' }, '  [D] Demo pulse'),
+      Text({ color: 'success' }, '●'),
+      Text({ color: 'mutedForeground' }, ` ${current.runtime.statusMessage}`),
       Spacer(),
-      Text(
-        { color: current.demoPulseEnabled ? 'success' : 'warning' },
-        current.demoPulseEnabled ? 'Pulse on' : 'Pulse paused',
-      ),
-      Text({ color: 'mutedForeground' }, '  [Q] Quit'),
+      Text({ color: 'mutedForeground' }, '[1-5] views'),
+      Text({ color: 'mutedForeground' }, '  [h/l] cycle'),
+      Text({ color: 'mutedForeground' }, '  [r] refresh'),
+      Text({ color: 'mutedForeground' }, '  [q] quit'),
     ),
   );
 }
 
-function NavigationPanel(activeScreen: ScreenId) {
-  return Panel(
-    { title: 'Views', width: 28, height: 'fill' },
-    Box(
-      { flexDirection: 'column', gap: 1 },
-      ...SCREEN_ORDER.map((screenId, index) =>
-        Text(
-          { color: activeScreen === screenId ? 'cyan' : 'foreground', bold: activeScreen === screenId },
-          `${index + 1}. ${screenId}`,
-        ),
-      ),
-      Text({ color: 'mutedForeground' }, ''),
-      Text({ color: 'mutedForeground' }, 'TUI-first proving ground for tuiuiu.js.'),
-      Text({ color: 'mutedForeground' }, 'Runtime/store contracts stay isolated from the view.'),
-    ),
-  );
-}
-
-function ContentPanel(snapshot: ControllerSnapshot, activeScreen: ScreenId) {
+function ScreenTabs(activeScreen: ScreenId) {
   return Box(
-    { flexDirection: 'column', flexGrow: 1, gap: 1, height: 'fill' },
-    HeroMetrics(snapshot),
-    activeScreen === 'dashboard'
-      ? DashboardScreen(snapshot)
-      : activeScreen === 'devices'
-        ? DevicesScreen(snapshot)
-        : activeScreen === 'clients'
-          ? ClientsScreen(snapshot)
-          : activeScreen === 'networks'
-            ? NetworksScreen(snapshot)
-            : EventsScreen(snapshot),
+    { flexDirection: 'row', gap: 2, paddingX: 1 },
+    ...SCREEN_ORDER.map((screenId, index) => {
+      const active = screenId === activeScreen;
+      const label = `${index + 1} ${screenId.charAt(0).toUpperCase()}${screenId.slice(1)}`;
+      return active
+        ? Text({ color: 'magenta', bold: true, inverse: true }, ` ${label} `)
+        : Text({ color: 'mutedForeground' }, label);
+    }),
   );
 }
 
 function HeroMetrics(snapshot: ControllerSnapshot) {
-  const metrics = snapshot.metrics;
+  const m = snapshot.metrics;
   return Box(
-    { flexDirection: 'row', gap: 1, minHeight: 10 },
-    MetricPanel('Clients', String(metrics.activeClients), 'cyan'),
-    MetricPanel('Devices', String(metrics.onlineDevices), 'green'),
-    MetricPanel('TX', formatThroughput(metrics.totalTxMbps), 'yellow'),
-    MetricPanel('RX', formatThroughput(metrics.totalRxMbps), 'magenta'),
+    { flexDirection: 'row', gap: 2, paddingX: 1 },
+    HeroItem('Clients', String(m.activeClients), 'cyan'),
+    HeroItem('Online', String(m.onlineDevices), 'green'),
+    HeroItem('TX', formatThroughput(m.totalTxMbps), 'yellow'),
+    HeroItem('RX', formatThroughput(m.totalRxMbps), 'magenta'),
+    Text({ color: 'mutedForeground' }, `  lat ${m.siteHealth.gatewayLatencyMs.toFixed(1)}ms`),
+    Text({ color: 'mutedForeground' }, `  loss ${formatPercent(m.siteHealth.packetLossPct)}`),
   );
+}
+
+function HeroItem(label: string, value: string, color: string) {
+  return Box(
+    { flexDirection: 'row', gap: 1 },
+    Text({ color: 'mutedForeground' }, `${label}:`),
+    Text({ color, bold: true }, value),
+  );
+}
+
+function ContentPanel(snapshot: ControllerSnapshot, activeScreen: ScreenId) {
+  if (activeScreen === 'dashboard') {
+    return DashboardScreen(snapshot);
+  }
+  if (activeScreen === 'devices') {
+    return DevicesScreen(snapshot);
+  }
+  if (activeScreen === 'clients') {
+    return ClientsScreen(snapshot);
+  }
+  if (activeScreen === 'networks') {
+    return NetworksScreen(snapshot);
+  }
+  return EventsScreen(snapshot);
 }
 
 function DashboardScreen(snapshot: ControllerSnapshot) {
@@ -164,76 +170,139 @@ function DashboardScreen(snapshot: ControllerSnapshot) {
   const rxChartData = snapshot.metrics.throughputHistory.map((point) => point.rxMbps);
 
   return Box(
-    { flexDirection: 'row', gap: 1, height: 'fill' },
+    { flexDirection: 'column', gap: 1, height: 'fill' },
+    CompactPanel(
+      { label: 'WAN Traffic', height: 9 },
+      LineChart({
+        series: [
+          { name: 'TX', data: chartData, color: 'cyan' },
+          { name: 'RX', data: rxChartData, color: 'magenta' },
+        ],
+        height: 6,
+        showLegend: true,
+      }),
+    ),
     Box(
-      { flexDirection: 'column', flexGrow: 2, gap: 1 },
-      Panel(
-        { title: 'Throughput timeline', height: 16 },
-        LineChart({
-          series: [
-            { name: 'TX', data: chartData, color: 'cyan' },
-            { name: 'RX', data: rxChartData, color: 'magenta' },
-          ],
-          height: 12,
-          showLegend: true,
-        }),
-      ),
-      Panel(
-        { title: 'Recent events', height: 'fill' },
-        Box(
-          { flexDirection: 'column', gap: 1 },
-          ...snapshot.events.slice(0, 6).map((event) =>
-            Text(
-              { color: statusColor(event.severity) },
-              `${event.category.toUpperCase()}  ${event.title}  ${event.detail}`,
-            ),
+      { flexDirection: 'row', gap: 1, minHeight: 8 },
+      RuntimeCard(snapshot),
+      HealthCard(snapshot),
+      FocusCard(snapshot),
+    ),
+    Box(
+      { flexDirection: 'row', gap: 1, minHeight: 10 },
+      NetworksCard(snapshot),
+      ClientsHeatCard(snapshot),
+      DevicesHeatCard(snapshot),
+    ),
+    CompactPanel(
+      { label: 'Recent Events', height: 'fill' },
+      Box(
+        { flexDirection: 'column', paddingX: 1 },
+        ...snapshot.events.slice(0, 8).map((event) =>
+          Text(
+            { color: statusColor(event.severity) },
+            `${formatTimestamp(event.timestamp)} ${pad(event.category.toUpperCase(), 7)} ${truncate(event.title, 18)} ${truncate(event.detail, 70)}`,
           ),
         ),
       ),
     ),
+  );
+}
+
+function RuntimeCard(snapshot: ControllerSnapshot) {
+  return CompactPanel(
+    { label: 'Runtime', flexGrow: 1, height: 6 },
     Box(
-      { flexDirection: 'column', flexGrow: 1, gap: 1 },
-      Panel(
-        { title: 'Runtime', height: 10 },
-        Box(
-          { flexDirection: 'column', gap: 1 },
-          Text({}, `Mode: ${snapshot.runtime.appMode}`),
-          Text({}, `Source: ${snapshot.runtime.dataSource}`),
-          Text({}, `Controller: ${snapshot.runtime.controllerUrl}`),
-          Text({}, `Site: ${snapshot.runtime.site}`),
+      { flexDirection: 'column', paddingX: 1 },
+      Text({ color: 'foreground' }, `${snapshot.runtime.appMode} / ${snapshot.runtime.dataSource}`),
+      Text({ color: 'mutedForeground' }, truncate(snapshot.runtime.controllerUrl, 26)),
+      Text({ color: 'mutedForeground' }, `site ${snapshot.runtime.site}`),
+      Text(
+        { color: snapshot.runtime.lastError ? 'error' : 'mutedForeground' },
+        truncate(snapshot.runtime.lastError ?? snapshot.runtime.statusMessage, 34),
+      ),
+    ),
+  );
+}
+
+function HealthCard(snapshot: ControllerSnapshot) {
+  return CompactPanel(
+    { label: 'Health', flexGrow: 1, height: 6 },
+    Box(
+      { flexDirection: 'column', paddingX: 1 },
+      Gauge({
+        value: snapshot.metrics.siteHealth.wifiExperiencePct,
+        max: 100,
+        style: 'linear',
+        label: `WiFi ${formatPercent(snapshot.metrics.siteHealth.wifiExperiencePct)}`,
+      }),
+      Gauge({
+        value: snapshot.metrics.siteHealth.wanUptimePct,
+        max: 100,
+        style: 'linear',
+        label: `WAN ${formatPercent(snapshot.metrics.siteHealth.wanUptimePct)}`,
+      }),
+      Text({ color: 'mutedForeground' }, `lat ${snapshot.metrics.siteHealth.gatewayLatencyMs.toFixed(1)} ms`),
+    ),
+  );
+}
+
+function FocusCard(snapshot: ControllerSnapshot) {
+  return CompactPanel(
+    { label: 'Focus', flexGrow: 1, height: 6 },
+    Box(
+      { flexDirection: 'column', paddingX: 1 },
+      Text({ color: 'foreground' }, 'Snapshot-driven UI'),
+      Text({ color: 'foreground' }, 'Full-width dashboard'),
+      Text({ color: 'foreground' }, 'TS runtime isolated from view'),
+      Text({ color: 'mutedForeground' }, truncate(snapshot.runtime.statusMessage, 34)),
+    ),
+  );
+}
+
+function NetworksCard(snapshot: ControllerSnapshot) {
+  return CompactPanel(
+    { label: 'Networks', flexGrow: 1, height: 7 },
+    Box(
+      { flexDirection: 'column', paddingX: 1 },
+      ...snapshot.networks.slice(0, 5).map((network) =>
+        Text(
+          { color: network.healthPct >= 95 ? 'success' : network.healthPct >= 85 ? 'warning' : 'error' },
+          `${pad(truncate(network.name, 12), 12)} v${pad(network.vlan === null ? '-' : String(network.vlan), 4)} c${pad(String(network.clients), 3)} ${network.healthPct.toFixed(0)}%`,
+        ),
+      ),
+    ),
+  );
+}
+
+function ClientsHeatCard(snapshot: ControllerSnapshot) {
+  return CompactPanel(
+    { label: 'Top Clients', flexGrow: 1, height: 7 },
+    Box(
+      { flexDirection: 'column', paddingX: 1 },
+      ...snapshot.clients
+        .slice()
+        .sort((left, right) => right.trafficMbps - left.trafficMbps)
+        .slice(0, 5)
+        .map((client) =>
           Text(
-            { color: snapshot.runtime.lastError ? 'error' : 'mutedForeground' },
-            snapshot.runtime.lastError ?? snapshot.runtime.statusMessage,
+            { color: client.roaming ? 'warning' : 'foreground' },
+            `${pad(truncate(client.name, 18), 18)} ${pad(client.trafficMbps.toFixed(1), 5)}M ${pad(client.experiencePct.toFixed(0), 3)}%`,
           ),
         ),
-      ),
-      Panel(
-        { title: 'Site health', height: 16 },
-        Box(
-          { flexDirection: 'column', gap: 1 },
-          Gauge({
-            value: snapshot.metrics.siteHealth.wifiExperiencePct,
-            max: 100,
-            style: 'linear',
-            label: `WiFi experience ${formatPercent(snapshot.metrics.siteHealth.wifiExperiencePct)}`,
-          }),
-          Gauge({
-            value: snapshot.metrics.siteHealth.wanUptimePct,
-            max: 100,
-            style: 'linear',
-            label: `WAN uptime ${formatPercent(snapshot.metrics.siteHealth.wanUptimePct)}`,
-          }),
-          Text({}, `Gateway latency: ${snapshot.metrics.siteHealth.gatewayLatencyMs.toFixed(1)} ms`),
-          Text({}, `Packet loss: ${formatPercent(snapshot.metrics.siteHealth.packetLossPct)}`),
-        ),
-      ),
-      Panel(
-        { title: 'Intent', height: 'fill' },
-        Box(
-          { flexDirection: 'column', gap: 1 },
-          Text({ color: 'foreground' }, 'The TS runtime is separated from the view.'),
-          Text({ color: 'foreground' }, 'This makes it easier to fan out into richer terminal workflows.'),
-          Text({ color: 'mutedForeground' }, snapshot.runtime.statusMessage),
+    ),
+  );
+}
+
+function DevicesHeatCard(snapshot: ControllerSnapshot) {
+  return CompactPanel(
+    { label: 'Devices', flexGrow: 1, height: 7 },
+    Box(
+      { flexDirection: 'column', paddingX: 1 },
+      ...snapshot.devices.slice(0, 5).map((device) =>
+        Text(
+          { color: statusColor(device.status) },
+          `${pad(truncate(device.name, 16), 16)} c${pad(device.cpuPct.toFixed(0), 3)} m${pad(device.memPct.toFixed(0), 3)} u${pad(String(device.clients), 3)}`,
         ),
       ),
     ),
@@ -241,17 +310,15 @@ function DashboardScreen(snapshot: ControllerSnapshot) {
 }
 
 function DevicesScreen(snapshot: ControllerSnapshot) {
-  return Panel(
-    { title: 'Devices', height: 'fill' },
+  return CompactPanel(
+    { label: `Devices (${snapshot.devices.length})`, height: 'fill' },
     Box(
-      { flexDirection: 'column', gap: 1 },
+      { flexDirection: 'column', paddingX: 1 },
+      Text({ color: 'mutedForeground' }, 'Sta Name               Model        IP            CPU Mem Cli TX   RX'),
       ...snapshot.devices.map((device) =>
         Text(
           { color: statusColor(device.status) },
-          `${pad(device.name, 22)} ${pad(device.model, 14)} ${pad(device.ip, 14)} ` +
-            `CPU ${device.cpuPct.toFixed(0)}%  MEM ${device.memPct.toFixed(0)}%  ` +
-            `Clients ${pad(String(device.clients), 3)}  TX ${pad(device.txMbps.toFixed(1), 6)}  ` +
-            `RX ${pad(device.rxMbps.toFixed(1), 6)}  ${device.status.toUpperCase()}`,
+          `${dot(device.status)}  ${pad(truncate(device.name, 18), 18)} ${pad(device.model, 12)} ${pad(device.ip, 13)} ${pad(device.cpuPct.toFixed(0), 3)} ${pad(device.memPct.toFixed(0), 3)} ${pad(String(device.clients), 3)} ${pad(device.txMbps.toFixed(0), 4)} ${pad(device.rxMbps.toFixed(0), 4)}`,
         ),
       ),
     ),
@@ -259,18 +326,15 @@ function DevicesScreen(snapshot: ControllerSnapshot) {
 }
 
 function ClientsScreen(snapshot: ControllerSnapshot) {
-  return Panel(
-    { title: 'Clients', height: 'fill' },
+  return CompactPanel(
+    { label: `Clients (${snapshot.clients.length})`, height: 'fill' },
     Box(
-      { flexDirection: 'column', gap: 1 },
+      { flexDirection: 'column', paddingX: 1 },
+      Text({ color: 'mutedForeground' }, 'Typ Name                 IP            AP           Sig Exp TX/RX'),
       ...snapshot.clients.map((client) =>
         Text(
           { color: client.roaming ? 'warning' : 'foreground' },
-          `${pad(client.name, 24)} ${pad(client.network, 10)} ${pad(client.apName, 14)} ` +
-            `${pad(client.ip, 14)} signal ${pad(String(client.signalDbm), 4)}  ` +
-            `exp ${pad(client.experiencePct.toFixed(1), 5)}  ` +
-            `traffic ${pad(client.trafficMbps.toFixed(1), 5)} Mbps` +
-            `${client.roaming ? '  ROAM' : ''}`,
+          `${client.network === 'Unknown' ? 'E' : 'W'}   ${pad(truncate(client.name, 20), 20)} ${pad(client.ip, 13)} ${pad(truncate(client.apName, 10), 10)} ${pad(String(client.signalDbm), 4)} ${pad(client.experiencePct.toFixed(0), 3)} ${pad(client.trafficMbps.toFixed(1), 5)}M`,
         ),
       ),
     ),
@@ -278,58 +342,63 @@ function ClientsScreen(snapshot: ControllerSnapshot) {
 }
 
 function NetworksScreen(snapshot: ControllerSnapshot) {
-  return Box(
-    { flexDirection: 'row', gap: 1, height: 'fill' },
-    Panel(
-      { title: 'Networks', flexGrow: 2, height: 'fill' },
-      Box(
-        { flexDirection: 'column', gap: 1 },
-        ...snapshot.networks.map((network) =>
-          Text(
-            { color: network.healthPct >= 95 ? 'success' : network.healthPct >= 85 ? 'warning' : 'error' },
-            `${pad(network.name, 12)} ${pad(network.purpose, 10)} ${pad(network.subnet, 18)} ` +
-              `VLAN ${pad(network.vlan === null ? '-' : String(network.vlan), 4)} ` +
-              `Clients ${pad(String(network.clients), 4)} ` +
-              `Health ${network.healthPct.toFixed(1)}%`,
-          ),
+  return CompactPanel(
+    { label: `Networks (${snapshot.networks.length})`, height: 'fill' },
+    Box(
+      { flexDirection: 'column', paddingX: 1 },
+      Text({ color: 'mutedForeground' }, 'Name         VLAN Gateway           Clients Health Purpose'),
+      ...snapshot.networks.map((network) =>
+        Text(
+          { color: network.healthPct >= 95 ? 'success' : network.healthPct >= 85 ? 'warning' : 'error' },
+          `${pad(truncate(network.name, 12), 12)} ${pad(network.vlan === null ? '-' : String(network.vlan), 4)} ${pad(truncate(network.subnet, 16), 16)} ${pad(String(network.clients), 6)} ${pad(network.healthPct.toFixed(0), 4)}% ${network.purpose}`,
         ),
-      ),
-    ),
-    Panel(
-      { title: 'Why this architecture', flexGrow: 1, height: 'fill' },
-      Box(
-        { flexDirection: 'column', gap: 1 },
-        Text({}, 'The domain model is now explicit in TS.'),
-        Text({}, 'Dual-API merge logic can land in the runtime without leaking transport quirks into the UI.'),
-        Text({ color: 'mutedForeground' }, `Last event: ${formatTimestamp(snapshot.lastEventAt)}`),
       ),
     ),
   );
 }
 
 function EventsScreen(snapshot: ControllerSnapshot) {
-  return Panel(
-    { title: 'Live events', height: 'fill' },
+  return CompactPanel(
+    { label: 'Events', height: 'fill' },
     Box(
-      { flexDirection: 'column', gap: 1 },
+      { flexDirection: 'column', paddingX: 1 },
       ...snapshot.events.map((event) =>
         Text(
           { color: statusColor(event.severity) },
-          `${formatTimestamp(event.timestamp)}  ${pad(event.category.toUpperCase(), 8)}  ${pad(event.severity.toUpperCase(), 5)}  ${event.title}  ${event.detail}`,
+          `${formatTimestamp(event.timestamp)} ${pad(event.category.toUpperCase(), 7)} ${pad(event.severity.toUpperCase(), 5)} ${truncate(event.title, 18)} ${truncate(event.detail, 78)}`,
         ),
       ),
     ),
   );
 }
 
-function MetricPanel(label: string, value: string, color: string) {
-  return Panel(
-    { title: label, flexGrow: 1, height: 10 },
-    Box(
-      { flexDirection: 'column', justifyContent: 'center', height: 'fill' },
-      Text({ color, bold: true }, value),
-    ),
-  );
+function HeaderBadge(label: string, color: string) {
+  return Text({ color, bold: true }, label);
+}
+
+function CompactPanel(
+  options: {
+    label: string;
+    height?: number | 'fill';
+    width?: number;
+    flexGrow?: number;
+  },
+  ...children: ReturnType<typeof Box>[]
+) {
+  const panelProps = {
+      borderText: options.label,
+      borderTextAlign: 'left',
+      borderStyle: 'round',
+      borderColor: 'muted',
+      padding: 0,
+      flexDirection: 'column',
+      height: options.height,
+      width: options.width,
+      flexGrow: options.flexGrow,
+    } as const;
+
+  // `tuiuiu.js` runtime supports `borderText`, but the published d.ts does not expose it yet.
+  return Box(panelProps as any, ...children);
 }
 
 function nextScreen(current: ScreenId, delta: 1 | -1): ScreenId {
@@ -340,4 +409,25 @@ function nextScreen(current: ScreenId, delta: 1 | -1): ScreenId {
 
 function pad(value: string, size: number): string {
   return value.padEnd(size, ' ');
+}
+
+function truncate(value: string, size: number): string {
+  return value.length <= size ? value : `${value.slice(0, Math.max(0, size - 1))}…`;
+}
+
+function dot(status: ControllerSnapshot['devices'][number]['status']): string {
+  if (status === 'online') return '●';
+  if (status === 'degraded') return '◐';
+  return '○';
+}
+
+function connectionColor(state: ControllerSnapshot['connectionState']): string {
+  if (state === 'connected') return 'success';
+  if (state === 'failed') return 'error';
+  if (state === 'connecting' || state === 'reconnecting') return 'warning';
+  return 'mutedForeground';
+}
+
+function connectionLabel(state: ControllerSnapshot['connectionState']): string {
+  return state.toUpperCase();
 }
