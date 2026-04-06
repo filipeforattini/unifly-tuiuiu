@@ -94,11 +94,21 @@ export interface DashboardMetrics {
   throughputHistory: ThroughputPoint[];
 }
 
+export interface RuntimeMeta {
+  appMode: 'demo' | 'real';
+  dataSource: 'demo' | 'unifi-live' | 'fallback-demo';
+  controllerUrl: string;
+  site: string;
+  statusMessage: string;
+  lastError: string | null;
+}
+
 export interface ControllerSnapshot {
   connectionState: ConnectionState;
   lastRefreshAt: string | null;
   lastEventAt: string | null;
   demoPulseEnabled: boolean;
+  runtime: RuntimeMeta;
   metrics: DashboardMetrics;
   devices: DeviceSummary[];
   clients: ClientSummary[];

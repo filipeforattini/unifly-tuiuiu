@@ -21,7 +21,16 @@ export class DemoController implements Controller {
   #tick = 0;
 
   constructor(readonly config: ControllerConfig) {
-    this.store = new DataStore(createInitialSnapshot(this.#seed));
+    const initial = createInitialSnapshot(this.#seed);
+    initial.runtime = {
+      appMode: 'demo',
+      dataSource: 'demo',
+      controllerUrl: config.controllerUrl,
+      site: config.site,
+      statusMessage: 'demo mode using synthetic UniFi-like data',
+      lastError: null,
+    };
+    this.store = new DataStore(initial);
   }
 
   async connect(): Promise<void> {
@@ -33,6 +42,11 @@ export class DemoController implements Controller {
       ...snapshot,
       connectionState: 'connected',
       lastRefreshAt: new Date().toISOString(),
+      runtime: {
+        ...snapshot.runtime,
+        statusMessage: 'demo stream connected',
+        lastError: null,
+      },
     }));
 
     this.#startTimers();

@@ -17,12 +17,29 @@ export class RealController implements Controller {
     const apiKey = extractApiKey(config);
     this.#integration = new IntegrationApiClient(config.controllerUrl, apiKey);
     this.#session = new SessionApiClient(config.controllerUrl, apiKey);
-    this.store = new DataStore(createInitialSnapshot(createSeedData()));
+    const initial = createInitialSnapshot(createSeedData());
+    initial.runtime = {
+      appMode: 'real',
+      dataSource: 'fallback-demo',
+      controllerUrl: config.controllerUrl,
+      site: config.site,
+      statusMessage: 'waiting for first live UniFi refresh',
+      lastError: null,
+    };
+    this.store = new DataStore(initial);
     this.#resolvedSessionSite = config.site;
   }
 
   async connect(): Promise<void> {
-    this.store.update((snapshot) => ({ ...snapshot, connectionState: 'connecting' }));
+    this.store.update((snapshot) => ({
+      ...snapshot,
+      connectionState: 'connecting',
+      runtime: {
+        ...snapshot.runtime,
+        statusMessage: 'resolving site and fetching Integration + Session data',
+        lastError: null,
+      },
+    }));
     await this.refresh();
     this.#refreshTimer = setInterval(() => {
       void this.refresh();
@@ -91,6 +108,12 @@ export class RealController implements Controller {
       ...snapshot,
       connectionState: 'failed',
       lastEventAt: new Date().toISOString(),
+      runtime: {
+        ...snapshot.runtime,
+        dataSource: 'fallback-demo',
+        statusMessage: 'live UniFi refresh failed; showing last known snapshot',
+        lastError: detail,
+      },
       events: [
         {
           id: { kind: 'legacy' as const, value: `bootstrap-${Date.now()}` },

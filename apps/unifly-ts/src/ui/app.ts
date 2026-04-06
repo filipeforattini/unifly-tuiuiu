@@ -84,6 +84,11 @@ function App(props: { controller: Controller }) {
       Spacer(),
       Text({ color: 'mutedForeground' }, current.connectionState.toUpperCase()),
       Text({ color: 'mutedForeground' }, '  '),
+      Text(
+        { color: current.runtime.dataSource === 'unifi-live' ? 'success' : 'warning' },
+        current.runtime.dataSource.toUpperCase(),
+      ),
+      Text({ color: 'mutedForeground' }, '  '),
       Text({ color: 'cyan' }, `refresh ${formatTimestamp(current.lastRefreshAt)}`),
     ),
     Main(
@@ -121,8 +126,8 @@ function NavigationPanel(activeScreen: ScreenId) {
         ),
       ),
       Text({ color: 'mutedForeground' }, ''),
-      Text({ color: 'mutedForeground' }, 'This first cut is TUI-first and demo-backed.'),
-      Text({ color: 'mutedForeground' }, 'The runtime/store contracts are already isolated from the view.'),
+      Text({ color: 'mutedForeground' }, 'TUI-first proving ground for tuiuiu.js.'),
+      Text({ color: 'mutedForeground' }, 'Runtime/store contracts stay isolated from the view.'),
     ),
   );
 }
@@ -189,6 +194,20 @@ function DashboardScreen(snapshot: ControllerSnapshot) {
     Box(
       { flexDirection: 'column', flexGrow: 1, gap: 1 },
       Panel(
+        { title: 'Runtime', height: 10 },
+        Box(
+          { flexDirection: 'column', gap: 1 },
+          Text({}, `Mode: ${snapshot.runtime.appMode}`),
+          Text({}, `Source: ${snapshot.runtime.dataSource}`),
+          Text({}, `Controller: ${snapshot.runtime.controllerUrl}`),
+          Text({}, `Site: ${snapshot.runtime.site}`),
+          Text(
+            { color: snapshot.runtime.lastError ? 'error' : 'mutedForeground' },
+            snapshot.runtime.lastError ?? snapshot.runtime.statusMessage,
+          ),
+        ),
+      ),
+      Panel(
         { title: 'Site health', height: 16 },
         Box(
           { flexDirection: 'column', gap: 1 },
@@ -214,7 +233,7 @@ function DashboardScreen(snapshot: ControllerSnapshot) {
           { flexDirection: 'column', gap: 1 },
           Text({ color: 'foreground' }, 'The TS runtime is separated from the view.'),
           Text({ color: 'foreground' }, 'This makes it easier to fan out into richer terminal workflows.'),
-          Text({ color: 'mutedForeground' }, 'Next milestone: replace demo data with real Session/Integration queries.'),
+          Text({ color: 'mutedForeground' }, snapshot.runtime.statusMessage),
         ),
       ),
     ),

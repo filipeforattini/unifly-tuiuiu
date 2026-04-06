@@ -1,438 +1,183 @@
-<h1 align="center">
-  <br>
-  🌐 unifly
-  <br>
-</h1>
+# unifly-tuiuiu
 
-<p align="center">
-  <strong>Your UniFi Network, at Your Fingertips</strong><br>
-  <sub>✦ CLI + TUI for UniFi Network Controllers ✦</sub>
-</p>
+Estudo de viabilidade para reconstruir a experiência terminal do `unifly` com `TypeScript + tuiuiu.js`, mantendo a implementação original em Rust como baseline técnico e funcional.
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Rust-1.94+-e135ff?style=for-the-badge&logo=rust&logoColor=white" alt="Rust">
-  <img src="https://img.shields.io/badge/Edition-2024-80ffea?style=for-the-badge&logo=rust&logoColor=0a0a0f" alt="Edition 2024">
-  <img src="https://img.shields.io/badge/ratatui-TUI-ff6ac1?style=for-the-badge&logo=gnometerminal&logoColor=white" alt="ratatui">
-  <img src="https://img.shields.io/badge/opaline-Theme-e135ff?style=for-the-badge&logo=rust&logoColor=white" alt="opaline">
-  <img src="https://img.shields.io/badge/tokio-Async-f1fa8c?style=for-the-badge&logo=rust&logoColor=0a0a0f" alt="tokio">
-  <img src="https://img.shields.io/badge/License-Apache--2.0-50fa7b?style=for-the-badge&logo=apache&logoColor=0a0a0f" alt="License">
-  <a href="https://github.com/sponsors/hyperb1iss">
-    <img src="https://img.shields.io/badge/Sponsor-ff6ac1?style=for-the-badge&logo=githubsponsors&logoColor=white" alt="Sponsor">
-  </a>
-</p>
+## O que este fork é
 
-<p align="center">
-  <a href="#-features">Features</a> •
-  <a href="#-install">Install</a> •
-  <a href="#-quick-start">Quick Start</a> •
-  <a href="#-cli">CLI</a> •
-  <a href="#-tui">TUI</a> •
-  <a href="#-architecture">Architecture</a> •
-  <a href="#-library">Library</a> •
-  <a href="#-ai-agent-skill">AI Agent Skill</a> •
-  <a href="#-development">Development</a>
-</p>
+Este repositório não é mais uma distribuição geral do projeto original.
 
----
+Ele existe para responder uma pergunta bem específica:
 
-## Fork Note
+> uma arquitetura em `JS/TS` com `tuiuiu.js` consegue entregar uma experiência de terminal mais poderosa, mais iterável e mais expressiva do que a implementação atual em Rust?
 
-This fork exists primarily as a **viability study for rebuilding the TUI in TypeScript with `tuiuiu.js`** while keeping the original Rust codebase as the functional baseline.
+Por isso o repositório agora fica reduzido a dois blocos:
 
-The intent is not to dismiss the Rust implementation. The point of this fork is to answer a concrete product/engineering question:
+- `crates/`
+  código Rust original, preservado como referência e baseline
+- `apps/unifly-ts/`
+  nova implementação experimental em TypeScript com `tuiuiu.js`
 
-> can a `tuiuiu.js`-based architecture deliver a more powerful terminal experience for UniFi operations than the current Ratatui-based app?
+Todo o resto foi removido para deixar o estudo direto, legível e sem ruído.
 
-For that reason, this repository now contains:
+## Estrutura
 
-- the original Rust workspace, preserved as the reference implementation;
-- a parallel TS proving ground under [`apps/unifly-ts`](apps/unifly-ts);
-- ongoing experiments around TUI density, interaction models, and runtime architecture.
+```text
+.
+├── apps/
+│   └── unifly-ts/      # estudo TUI-first em TypeScript + tuiuiu.js
+├── crates/
+│   ├── unifly/         # app original em Rust
+│   └── unifly-api/     # core original em Rust
+├── Cargo.toml
+└── README.md
+```
 
-If you are looking for the original project story, install flow, and Rust-first architecture, the rest of this README still applies. If you are evaluating the fork-specific experiment, start in [`apps/unifly-ts/README.md`](apps/unifly-ts/README.md).
+## Como rodar
 
----
+### 1. Rodar o estudo em TypeScript
 
-## 💜 What is unifly?
+Requisitos:
 
-A complete command-line toolkit for managing Ubiquiti UniFi network controllers. One binary with 26 top-level commands for scripting and a built-in TUI dashboard for real-time monitoring, powered by a shared async engine that speaks every UniFi API dialect.
-
-> _Manage devices, monitor clients, inspect VLANs, stream events, and watch bandwidth charts, all without leaving your terminal._
-
-UniFi controllers expose multiple APIs with different capabilities. unifly unifies them all into a single, coherent interface so you never have to think about which endpoint to hit.
-
----
-
-> ### 🤖 AI Agent? 👤 Human? Both Welcome.
->
-> unifly speaks fluent silicon *and* carbon.
->
-> **Coding agents** get a dedicated [skill bundle](skills/unifly/SKILL.md): full CLI reference, automation workflows, and a ready-made network manager agent that can provision VLANs, audit firewalls, and diagnose connectivity without asking permission for every command. One command to install:
->
-> ```bash
-> npx skills add hyperb1iss/unifly
-> ```
->
-> **Humans** get a gorgeous 10-screen TUI, shell completions, pipe-friendly output, and the quiet satisfaction of never opening the UniFi web UI again. Keep scrolling to [Install](#-install).
-
----
-
-## ✦ Features
-
-| Capability | What You Get |
-| --- | --- |
-| 🔮 **Dual API Engine** | Integration API (REST, API key) + Session API (session, cookie/CSRF) with automatic Hybrid negotiation |
-| ⚡ **Real-Time TUI** | 10-screen dashboard with area-fill traffic charts, CPU/MEM gauges, live client counts, zoomable topology |
-| 🦋 **26 Top-Level Commands** | Devices, clients, networks, WiFi, firewall policies, zones, ACLs, NAT, DNS, VPN, DPI, RADIUS, topology, raw API passthrough, `tui`... |
-| 💎 **Flexible Output** | Table, JSON, compact JSON, YAML, and plain text. Pipe-friendly for scripting |
-| 🔒 **Secure Credentials** | OS keyring storage for API keys and passwords, with plaintext config support when you choose it |
-| 🌐 **Multi-Profile** | Named profiles for multiple controllers. Switch with a single flag |
-| 🧠 **Smart Config** | Interactive wizard, environment variables, TOML config, CLI overrides |
-| 📡 **WebSocket Events** | Live event streaming with 10K rolling buffer, severity filtering, pause/scroll-back |
-| 📊 **Historical Stats** | WAN bandwidth area fills, client counts, DPI app/category breakdown (1h to 30d) |
-| 🎨 **SilkCircuit Theme** | Neon-on-dark color palette powered by [opaline](https://crates.io/crates/opaline). Token-based theming across CLI and TUI with ANSI fallback |
-
----
-
-## ⚡ Install
-
-### Linux / macOS
+- `node >= 20`
+- `pnpm`
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/hyperb1iss/unifly/main/install.sh | sh
+cd apps/unifly-ts
+pnpm install
+pnpm start
 ```
 
-### Windows (PowerShell)
+Atalhos da TUI:
 
-```powershell
-irm https://raw.githubusercontent.com/hyperb1iss/unifly/main/install.ps1 | iex
-```
+- `1-5` troca de tela
+- `r` força refresh
+- `d` alterna o pulse do modo demo
+- `q` ou `Esc` sai
 
-### Other Methods
+### 2. Rodar o baseline em Rust
 
-| Method | Command |
-| --- | --- |
-| **Homebrew** | `brew install hyperb1iss/tap/unifly` |
-| **AUR** | `yay -S unifly-bin` |
-| **Cargo** | `cargo install --git https://github.com/hyperb1iss/unifly.git unifly` |
-| **Binary** | Download from [GitHub Releases](https://github.com/hyperb1iss/unifly/releases/latest) |
+Requisitos:
 
----
-
-## 🔮 Quick Start
-
-Run the interactive setup wizard:
+- `rustup`
+- toolchain compatível com o workspace
+- `just`
 
 ```bash
-unifly config init
+just tui
 ```
 
-The wizard walks you through controller URL, authentication method, and site selection. Credentials can be stored in your OS keyring or saved in plaintext config, depending on the option you choose.
-
-Once configured:
+ou:
 
 ```bash
-unifly devices list          # All adopted devices
-unifly clients list          # Connected clients
-unifly networks list         # VLANs and subnets
-unifly events watch          # Live event feed (requires session auth or Hybrid)
+just cli devices list
 ```
 
-```
- ID                                   | Name            | Model           | Status
---------------------------------------+-----------------+-----------------+--------
- a1b2c3d4-e5f6-7890-abcd-ef1234567890 | Office Gateway  | UDM-Pro         | ONLINE
- b2c3d4e5-f6a7-8901-bcde-f12345678901 | Living Room AP  | U6-LR           | ONLINE
- c3d4e5f6-a7b8-9012-cdef-123456789012 | Garage Switch   | USW-Lite-8-PoE  | ONLINE
-```
+## Modos do `unifly-ts`
 
----
+### Demo
 
-## 🔐 Authentication
-
-### API Key (recommended)
-
-Generate a key on your controller under **Settings > Integrations**. On UniFi
-OS controllers, the same key also authenticates session HTTP endpoints, so API
-key mode covers most CLI automation: CRUD, device commands, stats, DHCP
-reservations, admin operations, and `events list`.
+Usa dados sintéticos com comportamento UniFi-like para iterar rapidamente a UX e a arquitetura do runtime.
 
 ```bash
-unifly config init                     # Select "API Key" during setup
-unifly --api-key <KEY> devices list    # Or pass directly
+cd apps/unifly-ts
+pnpm start
 ```
 
-Live WebSocket features still need a session cookie, so `events watch`
-requires **Username/Password** or **Hybrid**.
+### Real
 
-### Username / Password
-
-Session-based auth with cookie and CSRF token handling. Use this when
-you need live WebSocket features (`events watch`) or when your controller does
-not accept API keys on session HTTP endpoints.
+Usa leitura real via UniFi API com `X-API-KEY`, Integration API + Session HTTP read-only, e cai para demo se o bootstrap falhar.
 
 ```bash
-unifly config init                     # Select "Username/Password" during setup
+cd apps/unifly-ts
+UNIFLY_TS_MODE=real \
+UNIFI_CONTROLLER=https://192.168.1.1 \
+UNIFI_SITE=default \
+UNIFI_API_KEY=... \
+pnpm start
 ```
 
-### Hybrid Mode
-
-Best of both worlds: API key for Integration API plus session HTTP, and
-username/password for the WebSocket cookie session. Choose this when you want
-full live monitoring plus maximum compatibility.
-
-### Environment Variables
-
-| Variable | Description |
-| --- | --- |
-| `UNIFI_API_KEY` | Integration API key |
-| `UNIFI_URL` | Controller URL |
-| `UNIFI_PROFILE` | Profile name |
-| `UNIFI_SITE` | Site name or UUID |
-| `UNIFI_OUTPUT` | Default output format |
-| `UNIFI_INSECURE` | Accept self-signed TLS certs |
-| `UNIFI_TIMEOUT` | Request timeout (seconds) |
-
----
-
-## 💻 CLI
-
-### Commands
-
-| Command | Alias | Description |
-| --- | --- | --- |
-| `acl` | | Manage ACL rules |
-| `admin` | | Administrator management |
-| `alarms` | | Manage alarms |
-| `clients` | `cl` | Manage clients and DHCP reservations |
-| `completions` | | Generate shell completions |
-| `config` | | Manage CLI configuration |
-| `countries` | | List available country codes |
-| `devices` | `dev`, `d` | Manage adopted and pending devices |
-| `dns` | | Manage DNS policies (local records) |
-| `dpi` | | DPI reference data |
-| `events` | | View and stream events |
-| `firewall` | `fw` | Manage firewall policies and zones |
-| `nat` | | Manage NAT policies (masquerade, SNAT, DNAT) |
-| `hotspot` | | Manage hotspot vouchers |
-| `networks` | `net`, `n` | Manage networks and VLANs |
-| `radius` | | View RADIUS profiles |
-| `sites` | | Manage sites |
-| `stats` | | Query statistics and reports |
-| `system` | `sys` | System operations and info |
-| `topology` | `topo` | Show network topology tree |
-| `traffic-lists` | | Manage traffic matching lists |
-| `vpn` | | View VPN inventory, session site-to-site, remote-access, and client records, OpenVPN helpers, VPN connections, WireGuard peers, magic site-to-site configs, and VPN settings |
-| `wans` | | View WAN interfaces |
-| `wifi` | `w` | Manage WiFi broadcasts (SSIDs) |
-| `api` | | Raw API passthrough (GET/POST/PUT/PATCH/DELETE to any endpoint) |
-| `tui` | | Launch the real-time terminal dashboard |
-
-Most resource groups support `list` and `get`; some also expose `create`, `update`, `delete`, `patch`, or specialized actions. Run `unifly <command> --help` for details.
-
-### Global Flags
-
-```
--p, --profile <NAME>     Controller profile to use
--c, --controller <URL>   Controller URL (overrides profile)
--s, --site <SITE>        Site name or UUID
--o, --output <FORMAT>    Output: table, json, json-compact, yaml, plain
--k, --insecure           Accept self-signed TLS certificates
--v, --verbose            Increase verbosity (-v, -vv, -vvv)
--q, --quiet              Suppress non-error output
--y, --yes                Skip confirmation prompts
-    --timeout <SECS>     Request timeout (default: 30)
-    --color <MODE>       Color: auto, always, never
-```
-
-### Shell Completions
-
-```bash
-# Bash
-unifly completions bash > ~/.local/share/bash-completion/completions/unifly
-
-# Zsh
-unifly completions zsh > ~/.zfunc/_unifly
-
-# Fish
-unifly completions fish > ~/.config/fish/completions/unifly.fish
-
-# PowerShell
-unifly completions powershell | Out-String | Invoke-Expression
-```
-
----
-
-## 🖥️ TUI
-
-`unifly tui` launches a 10-screen real-time dashboard for monitoring and managing your network.
-
-```bash
-unifly tui                   # Launch with default profile
-unifly tui -p office         # Use a specific profile
-unifly tui -k                # Accept self-signed TLS certs
-```
-
-<p align="center">
-  <img src="docs/images/dashboard.png" alt="unifly tui dashboard" width="900">
-</p>
+## O que já foi implementado no `unifly-ts`
 
-| Screen | Highlights |
-| --- | --- |
-| **Dashboard** | btop-style overview: WAN traffic chart, gateway info, CPU/MEM gauges, top clients, recent events |
-| **Devices** | Model, firmware, uptime, CPU/MEM. 5-tab detail panel. Restart, locate, upgrade |
-| **Clients** | Signal, traffic, VLAN. Filter by type. Block/unblock/kick |
-| **Networks** | VLAN topology with inline edit overlay for live config changes |
-| **Firewall** | Policies, zones, ACL, NAT across four sub-tabs with drag reordering |
-| **Topology** | Zoomable network tree with pan, zoom, fit-to-view |
-| **Events** | Live WebSocket stream with 10K buffer, pause, severity filtering |
-| **Stats** | WAN bandwidth, client counts, DPI breakdown (1h/24h/7d/30d) |
-| **Settings** | Profile switching, theme selector, display preferences |
-| **Onboarding** | First-run setup wizard |
+- scaffold TS isolado do workspace Rust
+- contratos explícitos de domínio e runtime
+- `DataStore` reativa em TS
+- `DemoController` para exploração de UX
+- `RealController` inicial para leitura real
+- clientes HTTP separados para Integration API e Session API
+- normalização de snapshot para alimentar uma TUI única
+- TUI navegável com dashboard, devices, clients, networks e events
+- fallback explícito de live mode para demo
+- metadados de runtime visíveis na interface
 
-<p align="center">
-  <img src="docs/images/devices.png" alt="unifly tui devices" width="900">
-  <img src="docs/images/clients.png" alt="unifly tui clients" width="900">
-</p>
+## Comparação prática: implementação TS vs Rust
 
-Full keybinding reference and screen details in the [TUI documentation](https://hyperb1iss.github.io/unifly/reference/tui).
+### 1. Estrutura de runtime
 
----
+Rust:
 
-## 🏗️ Architecture
+- o baseline original concentra a orquestração em `Controller`, `DataStore`, refresh loop, subscriptions e transporte async
+- excelente para segurança de tipos, previsibilidade e performance
+- mais custoso para iterar rapidamente na camada visual e nos fluxos de interação
 
-Two crates, clean dependency chain:
+TS + `tuiuiu.js`:
 
-| Crate | Purpose |
-| --- | --- |
-| **unifly-api** | Async HTTP/WebSocket client, Controller lifecycle, reactive DataStore (`DashMap` + `tokio::watch`), entity models. Published on [crates.io](https://crates.io/crates/unifly-api) |
-| **unifly** | Single binary: CLI commands + `unifly tui` dashboard via feature flags, profile/keyring config, 10-screen ratatui dashboard with SilkCircuit theme |
+- separamos `domain`, `runtime`, `transport` e `ui` desde o começo
+- a TUI consome snapshots e sinais, sem vazar detalhe de transporte para a camada visual
+- a iteração na UX é mais rápida porque o ciclo de mudança e teste é muito menor
 
-Deep dive: [Architecture documentation](https://hyperb1iss.github.io/unifly/architecture/)
+### 2. Construção da interface
 
----
+Rust:
 
-## ⚙️ Configuration
+- a TUI original em Ratatui é sólida, mas a composição costuma ser mais estrutural e menos fluida para experimentar layouts e interações novas
+- mudar o desenho de telas ou overlays tende a exigir mais esforço de plumbing
 
-```bash
-unifly config init             # Interactive setup wizard
-unifly config profiles         # List profiles (* marks active)
-unifly config use office       # Switch default profile
-unifly -p home devices list    # One-off override
-```
+TS + `tuiuiu.js`:
 
-Named profiles for multiple controllers, OS keyring credential storage, environment variable overrides, and TOML config files. Full details: [Configuration guide](https://hyperb1iss.github.io/unifly/guide/configuration)
+- a UI fica muito mais direta de ler e montar
+- o custo de experimentar painéis, estados, navegação e visualização é menor
+- a prova atual já mostra runtime/status/source/erro live com pouca cerimônia
 
----
+### 3. Estratégia de integração
 
-## 📦 Library
+Rust:
 
-[![unifly-api](https://img.shields.io/crates/v/unifly-api.svg)](https://crates.io/crates/unifly-api) · Async HTTP/WebSocket transport, high-level Controller, reactive DataStore, domain models
+- já cobre muito mais superfície funcional
+- tem o domínio UniFi consolidado e mais profundo
+- continua sendo a fonte de verdade para endpoint shape, auth modes e quirks
 
-```rust
-use unifly_api::{Controller, ControllerConfig, AuthCredentials, TlsVerification};
-use secrecy::SecretString;
+TS + `tuiuiu.js`:
 
-let config = ControllerConfig {
-    url: "https://192.168.1.1".parse()?,
-    auth: AuthCredentials::ApiKey(SecretString::from("your-api-key")),
-    tls: TlsVerification::DangerAcceptInvalid,
-    ..Default::default()
-};
-let controller = Controller::new(config);
-controller.connect().await?;
+- ainda está atrás em cobertura
+- usa o código Rust como mapa de contratos e comportamento
+- está sendo construído primeiro para provar superioridade de experiência, não paridade total de features
 
-let devices = controller.devices_snapshot();
-println!("Found {} devices", devices.len());
-```
+### 4. Onde o TS está melhorando o experimento
 
-Full API docs on [docs.rs/unifly-api](https://docs.rs/unifly-api). Usage guide with more examples: [Library documentation](https://hyperb1iss.github.io/unifly/reference/library)
+- bootstrap mais fácil para demo e para live read-only
+- separação explícita entre modo demo, live e fallback
+- TUI mais honesta sobre estado real da conexão
+- base mais favorável para explorar workflows mais densos e interativos
 
----
+### 5. Onde Rust ainda leva vantagem hoje
 
-## 🤖 AI Agent Skill
+- cobertura funcional real
+- maturidade da integração UniFi
+- robustez geral do core existente
 
-### Install Options
+## Como avaliar se o estudo está funcionando
 
-```bash
-npx skills add hyperb1iss/unifly                    # Claude Code, Cursor, Copilot, Codex, Gemini, ...
-npx skills add hyperb1iss/unifly -a claude-code     # Target a specific agent
-/plugin marketplace add hyperb1iss/unifly           # As a Claude Code plugin
-```
+O estudo é bem-sucedido se o `unifly-ts` provar pelo menos estes pontos:
 
-### What's Included
+- a arquitetura JS/TS não degrada a clareza do domínio
+- a TUI fica mais rápida de evoluir do que no baseline Rust
+- a UX final consegue ficar mais expressiva e mais poderosa
+- o custo de manter dual-API coverage em TS continua aceitável
 
-| Component | Description |
-| --- | --- |
-| **unifly skill** | Complete CLI reference, command patterns, output formats, automation tips |
-| **Network Manager agent** | Autonomous agent for provisioning, diagnostics, and security audits |
-| **Reference docs** | Command reference, UniFi networking concepts, workflow patterns |
+## Próximos passos
 
----
+- aumentar a cobertura do `RealController`
+- aprofundar merge entre Integration e Session
+- expandir workflows operacionais além de observabilidade
+- comparar lado a lado os mesmos cenários de uso entre Rust e `tuiuiu.js`
 
-## 🦋 Development
-
-### Prerequisites
-
-- Rust 1.94+ (edition 2024)
-- A UniFi Network controller (Cloud Key, Dream Machine, or self-hosted)
-
-### Build
-
-```bash
-git clone https://github.com/hyperb1iss/unifly.git
-cd unifly
-cargo build --workspace
-```
-
-### Test & Lint
-
-```bash
-cargo test --workspace
-cargo clippy --workspace --all-targets
-```
-
-### Run
-
-```bash
-cargo run -p unifly -- devices list
-cargo run -p unifly -- tui
-```
-
-### Workspace Layout
-
-```
-crates/
-  unifly-api/      # Library: HTTP/WS transport, Controller, DataStore, domain models
-  unifly/          # Single binary: CLI commands + tui subcommand, config, profiles
-```
-
-### Lint Policy
-
-Pedantic clippy with `unsafe_code = "forbid"`. See `Cargo.toml` workspace lints for the full configuration. It's opinionated and we like it that way.
-
----
-
-## ⚖️ License
-
-Apache-2.0. See [LICENSE](LICENSE)
-
----
-
-<p align="center">
-  <a href="https://github.com/sponsors/hyperb1iss">
-    <img src="https://img.shields.io/badge/Sponsor-hyperb1iss-e135ff?style=for-the-badge&logo=githubsponsors&logoColor=white" alt="Sponsor on GitHub">
-  </a>
-  &nbsp;
-  <a href="https://github.com/hyperb1iss/unifly">
-    <img src="https://img.shields.io/github/stars/hyperb1iss/unifly?style=for-the-badge&logo=github&logoColor=white&color=80ffea" alt="Star on GitHub">
-  </a>
-</p>
-
-<p align="center">
-  <sub>
-    If unifly keeps your network running smooth, <a href="https://github.com/sponsors/hyperb1iss"><strong>sponsor the project</strong></a> or give it a ⭐
-    <br><br>
-    ✦ Built with obsession by <a href="https://hyperbliss.tech"><strong>Hyperbliss Technologies</strong></a> ✦
-  </sub>
-</p>
