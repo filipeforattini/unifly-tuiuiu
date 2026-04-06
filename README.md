@@ -32,20 +32,35 @@ Everything else was removed to keep the repo centered on the study.
 └── README.md
 ```
 
-## Running The Study
+## How To Run
 
-### TypeScript / `tuiuiu.js`
+### 1. Clone the repository
+
+```bash
+git clone git@github.com:filipeforattini/unifly-tuiuiu.git
+cd unifly-tuiuiu
+```
+
+### 2. Run the TypeScript / `tuiuiu.js` study
 
 Requirements:
 
 - `node >= 20`
 - `pnpm`
 
+From the repository root:
+
 ```bash
 cd apps/unifly-ts
 pnpm install
 pnpm start
 ```
+
+What this does:
+
+- installs the local TS study dependencies
+- starts the `unifly-ts` TUI
+- launches the study in demo mode by default
 
 TUI shortcuts:
 
@@ -54,12 +69,13 @@ TUI shortcuts:
 - `d` toggle demo pulse
 - `q` or `Esc` quit
 
-### Real Read-Only Mode
+### 3. Run the TypeScript app against a real controller
 
 This mode uses live UniFi reads through Integration API + Session HTTP with `X-API-KEY`.
 
+From `apps/unifly-ts`:
+
 ```bash
-cd apps/unifly-ts
 UNIFLY_TS_MODE=real \
 UNIFI_CONTROLLER=https://192.168.1.1 \
 UNIFI_SITE=default \
@@ -69,7 +85,7 @@ pnpm start
 
 If bootstrap fails, the app falls back to demo mode while keeping the failure visible in the UI.
 
-## Running The Rust Baseline
+### 4. Run the Rust baseline
 
 Requirements:
 
@@ -77,15 +93,29 @@ Requirements:
 - compatible Rust toolchain for the workspace
 - `just`
 
+From the repository root, start the original Rust TUI:
+
 ```bash
 just tui
 ```
 
-Or:
+Run the original Rust CLI instead:
 
 ```bash
 just cli devices list
 ```
+
+Run the Rust test/check flow:
+
+```bash
+just check
+```
+
+In practice:
+
+- `just tui` runs the original Rust terminal application
+- `just cli ...` runs the original Rust CLI entrypoint
+- `just check` runs the Rust workspace validation flow
 
 ## What Is Already Implemented In `unifly-ts`
 
