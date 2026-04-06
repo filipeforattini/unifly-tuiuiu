@@ -1,0 +1,26 @@
+{
+  "name": "unifly-ts",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "TypeScript/Tuiuiu.js proving ground for a next-generation UniFi terminal experience.",
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "start": "tsx src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "tuiuiu.js": "file:../../../../tetis/libs/tuiuiu.js"
+  },
+  "devDependencies": {
+    "@types/node": "^24.5.2",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.4"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

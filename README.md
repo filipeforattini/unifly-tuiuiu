@@ -35,6 +35,24 @@
 
 ---
 
+## Fork Note
+
+This fork exists primarily as a **viability study for rebuilding the TUI in TypeScript with `tuiuiu.js`** while keeping the original Rust codebase as the functional baseline.
+
+The intent is not to dismiss the Rust implementation. The point of this fork is to answer a concrete product/engineering question:
+
+> can a `tuiuiu.js`-based architecture deliver a more powerful terminal experience for UniFi operations than the current Ratatui-based app?
+
+For that reason, this repository now contains:
+
+- the original Rust workspace, preserved as the reference implementation;
+- a parallel TS proving ground under [`apps/unifly-ts`](apps/unifly-ts);
+- ongoing experiments around TUI density, interaction models, and runtime architecture.
+
+If you are looking for the original project story, install flow, and Rust-first architecture, the rest of this README still applies. If you are evaluating the fork-specific experiment, start in [`apps/unifly-ts/README.md`](apps/unifly-ts/README.md).
+
+---
+
 ## 💜 What is unifly?
 
 A complete command-line toolkit for managing Ubiquiti UniFi network controllers. One binary with 26 top-level commands for scripting and a built-in TUI dashboard for real-time monitoring, powered by a shared async engine that speaks every UniFi API dialect.
