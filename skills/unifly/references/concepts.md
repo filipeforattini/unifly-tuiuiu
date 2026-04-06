@@ -112,6 +112,8 @@ matrix to pick the right `auth_mode`.
 - `wifi` (list/get/create/update/delete)
 - `countries`
 - `radius profiles`
+- `vpn servers` (list/get)
+- `vpn tunnels` (list/get)
 
 ### Session HTTP-backed (username + password, or API key on UniFi OS)
 
@@ -129,6 +131,13 @@ matrix to pick the right `auth_mode`.
 - `sites create | delete`
 - `stats site | device | client | gateway | dpi`: `/stat/report/*`
 - `system health | sysinfo | backup | reboot | poweroff`
+- `vpn site-to-site` (list/get/create/update/delete): `/rest/networkconf`
+- `vpn remote-access` (list/get/create/update/delete/suggest-port/download-config): `/rest/networkconf`, `/v2/api/site/{site}/network/port-suggest`, `/v2/api/site/{site}/vpn/openvpn/{id}/configuration`
+- `vpn clients` (list/get/create/update/delete): `/rest/networkconf`
+- `vpn connections` (list/get/restart): `/v2/api/site/{site}/vpn/connections`
+- `vpn peers` (list/get/create/update/delete/subnets): `/v2/api/site/{site}/wireguard/*/users`
+- `vpn magic-site-to-site` (list/get): `/v2/api/site/{site}/magicsitetositevpn/configs`
+- `vpn settings` (list/get/set/patch): `/rest/setting`
 - `wifi neighbors`: `/stat/rogueap`
 - `wifi channels`: `/stat/current-channel`
 
@@ -138,6 +147,11 @@ matrix to pick the right `auth_mode`.
 
 The TUI can still launch without WebSocket auth, but live event streaming
 falls back to polling when no session cookie is available.
+
+### Session HTTP for VPN observability
+
+- `vpn status`: IPsec SA state via `/stat/ipsec-sa`
+- `vpn health`: VPN subsystem health from cached store (populated by session refresh)
 
 ### Enriched when session HTTP is available
 

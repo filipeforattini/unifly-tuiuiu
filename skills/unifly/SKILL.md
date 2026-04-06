@@ -178,9 +178,9 @@ unifly api "cmd/stamgr" -m post -d '{"cmd":"kick-sta","mac":"aa:bb:cc:dd:ee:ff"}
 unifly api "api/s/default/set/setting/teleport" -m put -d '{"enabled":true}'
 ```
 
-### Legacy VPN payloads and settings
+### Session API VPN payloads and settings
 
-`unifly vpn site-to-site` wraps legacy `rest/networkconf` records whose
+`unifly vpn site-to-site` wraps Session API `rest/networkconf` records whose
 `purpose` is `site-vpn`. This is the current CRUD path for manual IPsec and
 OpenVPN site-to-site records exposed by the controller.
 
@@ -192,7 +192,7 @@ unifly vpn site-to-site update <id> -F site-to-site.json
 unifly vpn site-to-site delete <id>
 ```
 
-`unifly vpn remote-access` wraps legacy `rest/networkconf` records whose
+`unifly vpn remote-access` wraps Session API `rest/networkconf` records whose
 `purpose` is `remote-user-vpn`. This is the current CRUD path for L2TP,
 OpenVPN, and WireGuard remote-access servers exposed by the controller.
 
@@ -206,7 +206,7 @@ unifly vpn remote-access download-config <id> --path .
 unifly vpn remote-access delete <id>
 ```
 
-`unifly vpn clients` wraps legacy `rest/networkconf` records whose
+`unifly vpn clients` wraps Session API `rest/networkconf` records whose
 `purpose` is `vpn-client`. This is the current CRUD path for configured
 OpenVPN and WireGuard client profiles exposed by the controller.
 
@@ -218,7 +218,7 @@ unifly vpn clients update <id> -F vpn-client.json
 unifly vpn clients delete <id>
 ```
 
-`unifly vpn peers` wraps the legacy v2 WireGuard peer endpoints for
+`unifly vpn peers` wraps the Session v2 API WireGuard peer endpoints for
 remote-access VPN servers. `list` can enumerate all peers or scope to a
 single server ID; `create`, `update`, and `delete` require the parent
 remote-access server ID.
@@ -233,7 +233,7 @@ unifly vpn peers delete <server-id> <peer-id>
 unifly vpn peers subnets -o json
 ```
 
-`unifly vpn connections` wraps the legacy v2 VPN client connection
+`unifly vpn connections` wraps the Session v2 API VPN client connection
 inventory exposed at `v2/api/site/<site>/vpn/connections`. `restart`
 issues the same controller action the web UI uses for a single connection.
 
@@ -243,7 +243,7 @@ unifly vpn connections get <id> -o json
 unifly vpn connections restart <id>
 ```
 
-`unifly vpn magic-site-to-site` wraps the legacy v2
+`unifly vpn magic-site-to-site` wraps the Session v2 API
 `magicsitetositevpn/configs` inventory endpoint. It is currently
 read-only.
 
@@ -252,7 +252,7 @@ unifly vpn magic-site-to-site list -o json
 unifly vpn magic-site-to-site get <id> -o json
 ```
 
-`unifly vpn settings` wraps the legacy `rest/setting` records for the VPN
+`unifly vpn settings` wraps the Session API `rest/setting` records for the VPN
 feature toggles the controller exposes today: `teleport`,
 `magic-site-to-site-vpn`, `openvpn`, and `peer-to-peer`.
 
@@ -268,7 +268,7 @@ unifly vpn settings patch peer-to-peer -F peer-to-peer.json
 summary fields and the sanitized controller payload under `fields`.
 
 `settings get` returns a redacted wrapper with `key`, `enabled`, and `fields`.
-`patch` accepts either the raw legacy setting body or that wrapper shape and
+`patch` accepts either the raw session setting body or that wrapper shape and
 will send the inner `fields` object back to the controller.
 
 ### Bulk operations via filter DSL

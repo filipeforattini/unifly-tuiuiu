@@ -18,7 +18,7 @@ Every command supports `--help` for exhaustive flag listings. This page document
 | `dns`           |            | I     | Manage DNS policies (local records)            |
 | `traffic-lists` |            | I     | Manage traffic matching lists                  |
 | `hotspot`       |            | I     | Manage hotspot vouchers                        |
-| `vpn`           |            | Mixed | View VPN inventory, legacy site-to-site, remote-access, and client VPN records, OpenVPN helpers, connections, WireGuard peers, magic site-to-site configs, and VPN settings |
+| `vpn`           |            | Mixed | View VPN inventory, session site-to-site, remote-access, and client VPN records, OpenVPN helpers, connections, WireGuard peers, magic site-to-site configs, and VPN settings |
 | `events`        |            | L     | View and stream events                         |
 | `alarms`        |            | L     | Manage alarms                                  |
 | `stats`         |            | L     | Query statistics and reports                   |
@@ -291,24 +291,24 @@ unifly system poweroff                          # Power off hardware (UDM only)
 unifly topology                                 # Network tree visualization
 unifly vpn servers                              # List VPN servers
 unifly vpn tunnels                              # List site-to-site tunnels
-unifly vpn site-to-site list                    # List legacy site-to-site VPN records
+unifly vpn site-to-site list                    # List session site-to-site VPN records
 unifly vpn site-to-site get <ID>                # Inspect one site-to-site VPN record
-unifly vpn site-to-site create -F vpn.json      # Create a legacy site-to-site VPN
-unifly vpn site-to-site update <ID> -F vpn.json # Update a legacy site-to-site VPN
-unifly vpn site-to-site delete <ID>             # Delete a legacy site-to-site VPN
-unifly vpn remote-access list                   # List legacy remote-access VPN servers
+unifly vpn site-to-site create -F vpn.json      # Create a session site-to-site VPN
+unifly vpn site-to-site update <ID> -F vpn.json # Update a session site-to-site VPN
+unifly vpn site-to-site delete <ID>             # Delete a session site-to-site VPN
+unifly vpn remote-access list                   # List session remote-access VPN servers
 unifly vpn remote-access get <ID>               # Inspect one remote-access VPN server
-unifly vpn remote-access create -F vpn.json     # Create a legacy remote-access VPN server
-unifly vpn remote-access update <ID> -F vpn.json # Update a legacy remote-access VPN server
+unifly vpn remote-access create -F vpn.json     # Create a session remote-access VPN server
+unifly vpn remote-access update <ID> -F vpn.json # Update a session remote-access VPN server
 unifly vpn remote-access suggest-port           # Suggest available OpenVPN ports
 unifly vpn remote-access download-config <ID>   # Download an OpenVPN client config
-unifly vpn remote-access delete <ID>            # Delete a legacy remote-access VPN server
-unifly vpn clients list                         # List configured legacy VPN clients
+unifly vpn remote-access delete <ID>            # Delete a session remote-access VPN server
+unifly vpn clients list                         # List configured session VPN clients
 unifly vpn clients get <ID>                     # Inspect one configured VPN client
 unifly vpn clients create -F vpn.json           # Create a configured VPN client
 unifly vpn clients update <ID> -F vpn.json      # Update a configured VPN client
 unifly vpn clients delete <ID>                  # Delete a configured VPN client
-unifly vpn connections list                     # List legacy VPN client connections
+unifly vpn connections list                     # List session VPN client connections
 unifly vpn connections get <ID>                 # Inspect one VPN client connection
 unifly vpn connections restart <ID>             # Restart one VPN client connection
 unifly vpn peers list [SERVER_ID]               # List WireGuard peers, optionally by server
@@ -319,7 +319,7 @@ unifly vpn peers delete <SERVER_ID> <ID>        # Delete a WireGuard peer
 unifly vpn peers subnets                        # List subnets already used by peers
 unifly vpn magic-site-to-site list              # List magic site-to-site VPN configs
 unifly vpn magic-site-to-site get <ID>          # Inspect one magic site-to-site VPN config
-unifly vpn settings list                        # List legacy VPN-related site settings
+unifly vpn settings list                        # List session VPN-related site settings
 unifly vpn settings get teleport                # Inspect one VPN setting
 unifly vpn settings set teleport --enabled true # Toggle a VPN setting
 unifly vpn settings patch peer-to-peer -F peer.json   # Apply a JSON payload

@@ -204,7 +204,7 @@ full live monitoring plus maximum compatibility.
 | `system` | `sys` | System operations and info |
 | `topology` | `topo` | Show network topology tree |
 | `traffic-lists` | | Manage traffic matching lists |
-| `vpn` | | View VPN inventory, legacy site-to-site, remote-access, and client records, OpenVPN helpers, VPN connections, WireGuard peers, magic site-to-site configs, and VPN settings |
+| `vpn` | | View VPN inventory, session site-to-site, remote-access, and client records, OpenVPN helpers, VPN connections, WireGuard peers, magic site-to-site configs, and VPN settings |
 | `wans` | | View WAN interfaces |
 | `wifi` | `w` | Manage WiFi broadcasts (SSIDs) |
 | `api` | | Raw API passthrough (GET/POST/PUT/PATCH/DELETE to any endpoint) |

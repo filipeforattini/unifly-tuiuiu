@@ -371,32 +371,6 @@ unifly system poweroff
 - `reboot` and `poweroff` are destructive. Always summarize to the user
   before running even with `--yes`.
 
-## VPN `[I for servers/tunnels, L for status/health]`
-
-```bash
-unifly vpn servers [--all] [--limit N]
-unifly vpn servers get <id>
-unifly vpn tunnels [--all] [--limit N]
-unifly vpn tunnels get <id>
-unifly vpn status
-unifly vpn health
-```
-
-**Gotchas:**
-
-- `servers` and `tunnels` remain read-only. The new `get` variants expose
-  richer detail, but they do not mutate controller config.
-- `status` uses `GET /api/s/{site}/stat/ipsec-sa` and only shows live IPsec
-  security associations. WireGuard and OpenVPN state do not appear there.
-- An empty `status` result means no IPsec tunnels are currently negotiated,
-  not that VPN is unconfigured.
-- `health` filters the VPN subsystem out of the broader `stat/health`
-  snapshot. If the site does not expose a VPN subsystem, the command returns
-  a not-found style error instead of fabricating empty data.
-- The Integration API's VPN list schema is still sparse in the published
-  OpenAPI document. unifly parses common fields defensively and preserves the
-  full raw payload in structured output.
-
 ## Admin `[L]`
 
 ```bash
@@ -463,28 +437,28 @@ unifly vpn settings patch <key> -F payload.json
 **Gotchas:**
 
 - `servers` and `tunnels` are Integration API inventory only.
-- `site-to-site` uses Legacy `rest/networkconf` records filtered to
+- `site-to-site` uses Session API `rest/networkconf` records filtered to
   `purpose=site-vpn`.
-- `remote-access` uses Legacy `rest/networkconf` records filtered to
+- `remote-access` uses Session API `rest/networkconf` records filtered to
   `purpose=remote-user-vpn`.
-- `remote-access suggest-port` uses the Legacy v2
+- `remote-access suggest-port` uses the Session v2 API
   `network/port-suggest?service=openvpn` helper and returns
   `available_ports`.
-- `remote-access download-config` fetches the Legacy v2
+- `remote-access download-config` fetches the Session v2 API
   `vpn/openvpn/<id>/configuration` export and writes `<id>.ovpn` by
   default.
-- `clients` uses Legacy `rest/networkconf` records filtered to
+- `clients` uses Session API `rest/networkconf` records filtered to
   `purpose=vpn-client`.
-- `connections` uses the Legacy v2 `vpn/connections` inventory and
+- `connections` uses the Session v2 API `vpn/connections` inventory and
   `vpn/<id>/restart` action.
-- `peers` uses Legacy v2 `wireguard/*/users` batch endpoints. `create`,
+- `peers` uses Session v2 API `wireguard/*/users` batch endpoints. `create`,
   `update`, and `delete` require the parent remote-access server ID.
 - `subnets` lists already-consumed subnets from
   `v2/api/site/<site>/wireguard/users/existing-subnets`.
-- `magic-site-to-site` uses the Legacy v2
+- `magic-site-to-site` uses the Session v2 API
   `magicsitetositevpn/configs` inventory endpoint and is read-only.
-- `settings` uses Legacy `rest/setting` records for VPN feature toggles.
-- `patch` accepts either a raw legacy setting body or the wrapper emitted
+- `settings` uses Session API `rest/setting` records for VPN feature toggles.
+- `patch` accepts either a raw session setting body or the wrapper emitted
   by `get` (`{ "key": ..., "enabled": ..., "fields": { ... } }`).
 - Sensitive nested material such as private keys and PSKs is redacted from
   `get` output. Reconstruct those fields explicitly before updating if the
